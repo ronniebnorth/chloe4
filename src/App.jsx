@@ -2587,11 +2587,11 @@ function Visualizer({ analyserRef, playing, rootIdx, active, K }) {
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // Polygon
+        // Polygon over 24 quarter-tone positions (semitone s sits at position 2s)
         const activePts = [];
-        for (let i = 0; i < 12; i++) {
-          if (act.has(i)) {
-            const a = (i / 12) * Math.PI * 2 - Math.PI / 2;
+        for (let k = 0; k < 24; k++) {
+          if (act.has(k / 2)) {
+            const a = (k / 24) * Math.PI * 2 - Math.PI / 2;
             activePts.push([cx + wheelR * Math.cos(a), cy + wheelR * Math.sin(a)]);
           }
         }
@@ -2613,16 +2613,30 @@ function Visualizer({ analyserRef, playing, rootIdx, active, K }) {
         ctx.font = `500 ${fontSize}px 'JetBrains Mono', monospace`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        for (let i = 0; i < 12; i++) {
-          const a = (i / 12) * Math.PI * 2 - Math.PI / 2;
+        // 24 positions: the 12 semitones always get a dot; the quarter tones in
+        // between get a small tick, or a smaller labelled dot when the scale uses them
+        // (semitones first, quarter tones on top so they sit over their neighbours)
+        const order = [...Array(12).keys()].map(i => 2 * i).concat([...Array(12).keys()].map(i => 2 * i + 1));
+        for (const k of order) {
+          const s = k / 2, quarter = k % 2 === 1;
+          const a = (k / 24) * Math.PI * 2 - Math.PI / 2;
           const x = cx + wheelR * Math.cos(a);
           const y = cy + wheelR * Math.sin(a);
-          const isActive = act.has(i);
-          const isPlaying = playingRef.current === i;
-          const label = CHROMATIC[(rootOff + i) % 12];
+          const isActive = act.has(s);
+          const isPlaying = playingRef.current === s;
+          if (quarter && !isActive && !isPlaying) {
+            ctx.beginPath();
+            ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+            ctx.fillStyle = whBr;
+            ctx.fill();
+            continue;
+          }
+          const label = S24.noteName(rootOff, s);
+          const r = quarter ? dotR * 0.85 : dotR;
+          ctx.font = `500 ${quarter ? Math.max(6, Math.round(fontSize * 0.72)) : fontSize}px 'JetBrains Mono', monospace`;
 
           ctx.beginPath();
-          ctx.arc(x, y, dotR - 1, 0, Math.PI * 2);
+          ctx.arc(x, y, r - 1, 0, Math.PI * 2);
           ctx.fillStyle = isPlaying ? Kc.a : isActive ? Kc.a + "30" : Kc.wh;
           ctx.fill();
           ctx.strokeStyle = isActive ? Kc.a : whBr;
