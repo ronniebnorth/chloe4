@@ -535,3 +535,15 @@ journey with wander, no console errors. To tune by ear: the 0.18 tempo and
   = only that size, click a second = the span between, click the single one
   again or "all" = every size. 9–12 are dimmed while outside is off.
   Checked headless: 5 → [5]; then 7 → [5 6 7]; 9 → [9]; 9 again → all.
+
+## World scales share slider — built 2026-11-09
+
+Natural share of non-12 scales in Auto's picks was ~1 in 10 (105 of 665
+regular scales; cents scales 28 → ~1 in 35), so Ronnie hadn't seen a ± cents
+note yet. **WORLD SCALES** (Studio, under MOOD): natural (default, no change)
+or 0–100% of picks from the world groups; world picks choose maqam ·
+dastgah / Turkish / real intonation in equal turns; a world pick skips the
+outside chance. Applies to free Auto and brightness-picking journeys (not
+Persia/Shur/Makam or a limited draw pool). Saved (`chloe-world-share`); links
+carry `ws=`. Checked headless at 100%: Just Dorian, Just Mixolydian, a Shur-as-
+played mode, a Turkish makam, Chahargah; no errors.

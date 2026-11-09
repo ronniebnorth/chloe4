@@ -2039,6 +2039,9 @@ const grpKey = (fam) => fam.real ? "rel" : fam.turkish ? "trk" : fam.maqam ? "ma
 const grpRank = (fam) => fam.real ? 3 : fam.turkish ? 2 : fam.maqam ? 1 : 0;
 // Which scales a drawn journey may use
 const DRAW_POOLS = [["all", "all scales"], ["western", "western"], ["maqam", "maqam · dastgah"], ["turkish", "turkish"], ["real", "real intonation"]];
+// World scales: maqam · dastgah, Turkish makam, real intonation (everything off the 12-note grid families)
+const WORLD_GROUPS = [["maqam", f => !!f.maqam], ["turkish", f => !!f.turkish], ["real", f => !!f.real]];
+const isWorldFam = (f) => !!(f.maqam || f.turkish || f.real);
 const inDrawPool = (fam, pool) => pool === "western" ? !fam.maqam && !fam.turkish && !fam.real : pool === "maqam" ? !!fam.maqam
   : pool === "turkish" ? !!fam.turkish : pool === "real" ? !!fam.real : true;
 // Outside scales are passing colour, not a brightness position: brightness/EEG
@@ -2453,6 +2456,7 @@ const HELP_SECTIONS = [
   { title: "RESOLUTION", body: "The RESOLUTION slider (Studio, under TUNING) sets how finely the octave is divided when notes are played: every pitch is rounded to the nearest of that many equal steps, from 12 to 1200. 12 = piano: quarter tones, Turkish and cents scales collapse onto it. 24 = quarter tones: maqam and dastgah come alive. 53 = Turkish commas, and just intervals within about a cent. 1200 = cents: exact, every scale as stored. Buttons jump to 12, 24, 31 (Huygens), 41, 53, 72 (Byzantine chant) and 1200. Slide slowly up with Rast or Just major playing to hear the music sharpen into its true shape; in-between values like 64 put some intervals noticeably off, which is why those numbers matter. The wheel shows a tick per step (a fine ring past 150), and the note names follow what you hear. The Persia and Shur journeys raise it to at least 24 and Makam to at least 53 when they start (never lower), with a short note beside the slider. Brightness, the scale list and journeys stay on the exact cents. Saved, and carried in share links (edo=)." },
   { title: "BRIGHT FEEL", body: "Studio, under RESOLUTION: a slider from ROOT to FELT for how journeys judge a move toward brighter or darker. Root (0%) = by each scale's fixed brightness, measured from the root, as always. Felt (100%) = also by what you've just heard: every note leaves a memory in the ear that grows the longer and louder it sounds and fades over about 3 seconds; the drone counts as a root held all the time. A move that changes a note you're holding (a long E dropping to E♭) is felt strongly; the same move when E hasn't sounded lately slips by. Still heading for the journey's target, felt picks hidden moves when it's close and moves you'll feel in the right direction when it's further off. In between blends the two. WANDER lets Chloe drift the slider itself, slowly and smoothly, on overlapping waves of a few minutes, so it shifts under you. While it's on, WANDER SPEED sets how fast (¼× ≈ 16 minutes a sweep, 1× ≈ 4, 4× ≈ 1) and WANDER RANGE how far: 100% sweeps from root to felt, less drifts around where the slider was when you switched wander on. On the Listen page: felt (on/off) and felt ~ (wander). The wheel glows on the notes being held, more strongly the further toward felt. The difference is biggest with the drone off and a melody that lingers." },
   { title: "MOOD: CHILL ↔ EPIC", body: "Studio, under BRIGHT FEEL (chill, epic and mood ~ on the Listen page): one slider that leans everything Auto and the journeys do. Toward chill: slower (to −18%), notes ring longer, deeper reverb, drums and orchestra calmer, soft sounds (space, felt, glass, pads), consonant scales. Toward epic: faster (to +18%), punchier notes, drier, drums and orchestra busier (fills, marches, timpani), bold sounds (guitar, saw, leads), more tension allowed. The middle (neutral) changes nothing; double-click the slider to return there. A journey keeps its shape and mood sets how chill or epic it's played. The BPM shown stays yours; mood scales it as it plays. WANDER drifts the mood slowly on its own, with WANDER SPEED (¼× ≈ 19 minutes a sweep, 4× ≈ a minute) and WANDER RANGE (100% = chill to epic; less = around where you set it). Saved, and carried in share links." },
+  { title: "WORLD SCALES SLIDER", body: "Studio, under MOOD: how often Auto picks a world scale (maqam · dastgah, Turkish makam, real intonation). NATURAL = as they fall in the full list: about 1 pick in 10, and the cents scales (real intonation) only about 1 in 35. Move the slider to set the share yourself, from 0% (never, Western only) to 100% (always); world picks take the three groups in equal turns, so cents scales come up as often as the others. Journeys that pick by brightness follow it too; Persia, Shur, Makam and a draw journey limited to one kind of scale keep their own scales. Saved, and carried in share links (ws=)." },
   { title: "BRIGHTNESS SORTING", body: "Within each family, modes are sorted bright to dark by summing their active semitone positions (raw brightness). Lydian scores highest (raised 4th), Locrian lowest (flatted 2nd and 5th). This mirrors the circle-of-fifths: Lydian → Ionian → Mixolydian → Dorian → Aeolian → Phrygian → Locrian. Positions count in semitones, so quarter tones and cents scales score in between: Rast 37 (beside Mixolydian), Bayati 34.5 (between Aeolian and Phrygian), Just major 37.6. The sidebar and scale list show the raw brightness score (e.g. Dorian = 36). The EEG system uses a separate normalized brightness (0.0–1.0) that adjusts for note count, so pentatonics and tetratonics are comparable to heptatonics — Dorian normalizes to exactly 0.5 as the neutral midpoint." },
   { title: "SCALE WHEEL", body: "The circle shows the 12 chromatic notes, with a small dot for each quarter tone between them (24 positions). Active tones are highlighted and connected by a polygon; a quarter-tone note gets its own labelled dot (E½♭), and a Turkish or cents note lights the nearest dot with its exact name (B⁻¹, E−14¢), drawn at its true angle. Wide polygons = sparse scales. Compact polygons = denser chromatic scales. A perfect regular polygon = equal temperament." },
   { title: "SEARCH & FILTER", body: "The left sidebar has a search box that filters scales by name as you type — results narrow to only matching modes within each family (e.g. searching 'dorian' shows just the Dorian row, not all 7 modes). The NOTES buttons below it (3 to 12) pick how many notes per scale: click a number for only that size (5 = pentatonics), click a second number for everything between (5 then 7 = pentatonic to heptatonic), click all (or the single number again) to reset. The range also limits what Auto and the journeys pick (the Persia, Shur and Makam paths keep their own scales), so it sets how many corners the polygon has. Scales with 9 to 12 notes all contain a cluster of semitones, so they are outside scales (Nonatonic, Decatonic, Hendecatonic, Chromatic): switch on outside to see and hear them; with a 9–12 range Auto then picks only those. The sus chip (or searching 'sus' or 'suspended') shows suspended scales: no 3rd, so neither major nor minor, with a 5th and a 2nd or 4th. These compose with each other and with the header filter bar. The header filter accepts comma-separated terms: family ID (hep-6), group prefix (pen, hep, hex), scale name, binary fragment, decimal value, or interval pattern (2-2-1). The star button on any row marks a favourite; the favs button in the header shows starred scales only. Custom names are searchable too." },
@@ -3829,6 +3833,14 @@ export default function Chloe() {
     const iv = setInterval(step, 1000);
     return () => clearInterval(iv);
   }, [moodWander]);
+  // World scales share: null = natural (as the list falls, ~1 pick in 10), or 0..1 = that
+  // share of Auto's picks comes from the world groups, the three groups taking equal turns
+  const [worldShare, setWorldShare] = useState(() => {
+    const v = new URLSearchParams(window.location.search).get("ws") ?? localStorage.getItem("chloe-world-share");
+    return v == null || v === "" || v === "natural" || isNaN(+v) ? null : Math.max(0, Math.min(1, +v));
+  });
+  const worldShareRef = useRef(worldShare);
+  useEffect(() => { worldShareRef.current = worldShare; localStorage.setItem("chloe-world-share", worldShare == null ? "natural" : String(worldShare)); }, [worldShare]);
   const [noteRange, setNoteRange] = useState(() => {
     const m = (new URLSearchParams(window.location.search).get("nr") ?? localStorage.getItem("chloe-note-range") ?? "").match(/^(\d+)-(\d+)$/);
     const lo = m ? Math.max(NOTES_MIN, Math.min(NOTES_MAX, +m[1])) : NOTES_MIN, hi = m ? Math.max(lo, Math.min(NOTES_MAX, +m[2])) : NOTES_MAX;
@@ -6979,6 +6991,20 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       const catalogue = catalogue0.some(e => inNoteRange(e.fam.n, nr)) ? catalogue0.filter(e => inNoteRange(e.fam.n, nr)) : catalogue0;
       // Only outside scales fit the range (9-12 notes): pick them every time, not one in three
       const onlyOutside = outsideOpts.length > 0 && !catalogue0.some(e => inNoteRange(e.fam.n, nr));
+      // World scales share: this pick comes from a world group (one of the three, chosen
+      // evenly, so the small real-intonation group comes up as often as the others) or
+      // from the 12-note families. Only in free Auto and journeys without their own path or pool.
+      const ws = worldShareRef.current, pathJ = JOURNEYS[journeyRef.current?.id]?.persian;
+      let worldPick = null;
+      if (ws != null && pool === "all" && !pathJ) {
+        if (Math.random() < ws) {
+          const groups = WORLD_GROUPS.filter(([, t]) => catalogue.some(e => t(e.fam)));
+          if (groups.length) { const [, t] = groups[Math.floor(Math.random() * groups.length)]; worldPick = true; catalogue.splice(0, catalogue.length, ...catalogue.filter(e => t(e.fam))); }
+        } else {
+          const west = catalogue.filter(e => !isWorldFam(e.fam));
+          if (west.length) { worldPick = false; catalogue.splice(0, catalogue.length, ...west); }
+        }
+      }
 
       // Now and then, a passing outside scale (only when the outside toggle is on)
       // The Wait picks its own scales, whatever the pool, and holds still once the pulse is over
@@ -6987,7 +7013,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       const waitPh = waitRun ? waitPhase(Math.min(1, waitEl / ((waitRun.mins ?? 15) * 60000)), waitRun.drop) : null;
 
       let entry = null;
-      if (outsideOpts.length && !susPoolRef.current && !waitRun && !JOURNEYS[journeyRef.current?.id]?.persian && (onlyOutside || Math.random() < OUTSIDE_CHANCE))
+      if (outsideOpts.length && !susPoolRef.current && !waitRun && !JOURNEYS[journeyRef.current?.id]?.persian && worldPick !== true && (onlyOutside || Math.random() < OUTSIDE_CHANCE))
         entry = pickOutside(outsideOpts);
 
       // Journey: walk toward its brightness target one note at a time (a one-note
@@ -7515,6 +7541,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (resolution !== S24.RES_MAX) p.set("edo", resolution);
     if (noteRangeOn) p.set("nr", noteRange.join("-"));
     if (showOutside) p.set("xo", "1");
+    if (worldShare != null) p.set("ws", worldShare);
     if (feltAmt > 0) p.set("bf", feltAmt);
     if (feltRandom) p.set("bfr", "1");
     if (wanderSpeed !== 1) p.set("bfs", wanderSpeed);
@@ -7550,7 +7577,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (sidebarW !== 520) p.set("sw", sidebarW);
     const qs = p.toString();
     return window.location.origin + window.location.pathname + (qs ? "?" + qs : "");
-  }, [showOutside, resolution, noteRange, noteRangeOn, feltAmt, feltRandom, wanderSpeed, wanderRange, mood, moodWander, moodWSpeed, moodWRange, drawLine, susPool, rootIdx, timbre, instrument, noteVol, reverbAmt, delayAmt, sustainMult, bpm, filter, sel, aRef, droneOct, droneOn, droneWave, melMode, grouping, blend, tempoGlide, soundBlend, tuning, autoTempo, symphonic, beatStyle, beatWander, world, worldWander, weatherBrain, journey, journeyMins, sleepMins, smooth, autoLocks, sidebarW]);
+  }, [showOutside, worldShare, resolution, noteRange, noteRangeOn, feltAmt, feltRandom, wanderSpeed, wanderRange, mood, moodWander, moodWSpeed, moodWRange, drawLine, susPool, rootIdx, timbre, instrument, noteVol, reverbAmt, delayAmt, sustainMult, bpm, filter, sel, aRef, droneOct, droneOn, droneWave, melMode, grouping, blend, tempoGlide, soundBlend, tuning, autoTempo, symphonic, beatStyle, beatWander, world, worldWander, weatherBrain, journey, journeyMins, sleepMins, smooth, autoLocks, sidebarW]);
 
   // Record button: start tapping the master output; stop → download the WAV
   const toggleRec = useCallback(async () => {
@@ -9228,6 +9255,18 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                 <span style={{ color: K.a, fontSize: 10, minWidth: 36, textAlign: "right" }}>{Math.round(moodWRange * 100)}%</span>
               </div>
             )}
+            {/* World scales — how often Auto picks maqam / Turkish / real intonation */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <span title="How often Auto (and the journeys that pick by brightness) chooses a world scale: maqam · dastgah, Turkish makam or real intonation. Natural = as they fall in the full list (about 1 pick in 10, and cents scales rarely). Otherwise the slider sets the share of picks, from 0% (never) to 100% (always); world picks take the three groups in equal turns, so the cents scales come up as often as the others. Persia, Shur, Makam and a draw journey limited to one kind of scale keep their own scales." style={{ color: K.lbl, fontSize: 9, letterSpacing: 2, cursor: "help" }}>WORLD SCALES</span>
+              <input type="range" min={0} max={1} step={0.01} value={worldShare ?? 0.1} onChange={e => setWorldShare(+e.target.value)}
+                style={{ flex: 1, minWidth: 0, accentColor: K.a, opacity: worldShare == null ? 0.5 : 1 }} />
+              <span style={{ color: K.a, fontSize: 10, minWidth: 48, textAlign: "right" }}>{worldShare == null ? "natural" : `${Math.round(worldShare * 100)}%`}</span>
+              <button onClick={() => setWorldShare(null)} style={{
+                background: worldShare == null ? K.a : K.bg3, color: worldShare == null ? "#000" : K.txt,
+                border: `1px solid ${worldShare == null ? K.a : K.br}`, borderRadius: 3, padding: "3px 8px",
+                fontSize: 9, cursor: "pointer", fontFamily: "inherit", fontWeight: worldShare == null ? 600 : 400,
+              }}>natural</button>
+            </div>
             {/* Symphonic — sampled strings + double bass under the line */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <span title="Adds an orchestra under the line: a string section swells on chords built from the current scale, cellos drive a low pulse, a double bass holds the roots, and timpani and taiko drums hit the changes (a big boom on a new scale), violin and flute weave fast runs through it, all in a cathedral reverb. Uses real recorded samples, a one-time download of about 30 MB in all the first time you switch it on." style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>SYMPHONIC{orchLoading ? " · loading…" : ""}</span>
