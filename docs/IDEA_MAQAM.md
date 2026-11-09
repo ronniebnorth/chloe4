@@ -648,4 +648,14 @@ on the spiral → gamelan world (slendro/pelog as cents scales, a gong cycle).
   3.52, 4.41, 5.33, 6.62) as detuned pairs for slow beating, the high ones
   decaying first, a 1.6–6 s ring, landing 7¢ sharp and settling over 0.35 s, with a
   padded mallet thump. Level measured offline: 0.69. Not yet heard by Ronnie.
+- **Tam-tam** (done as an instrument, `tamtam`). Ronnie: "a real gong, the kind
+  that have endless harmonics and ring out". Built from 129 partials in an
+  OfflineAudioContext, rendered once per base pitch (65/130/260 Hz; 20/15/11 s;
+  about 2.5 s to render all three, off the main thread). The partials are a hum
+  pair, 22 low modes, 45 mid (bloom attacks of 0.25–1.15 s) and 60 high (bloom
+  0.7–2.1 s, the shortest decays). A fixed seed means the same gong every time.
+  Notes play the nearest base via playbackRate, with more than 4 rings damping
+  the oldest. Level 0.62 (matched to the gong on sparse strikes). Next: tam-tam as an accent
+  (journey peaks, orchestra resolutions, Storm/Rise, temple), then the opera gong
+  on the spiral.
 
