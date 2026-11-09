@@ -658,4 +658,10 @@ on the spiral → gamelan world (slendro/pelog as cents scales, a gong cycle).
   the oldest. Level 0.62 (matched to the gong on sparse strikes). Next: tam-tam as an accent
   (journey peaks, orchestra resolutions, Storm/Rise, temple), then the opera gong
   on the spiral.
+- **Gongs in the spiral** (done). The lead rotates dulcimer → flute → tuned gong
+  (yunluo-like), 24–48 notes each. Each key move is marked by the tam-tam on the
+  new home note, an octave under the line, struck once the key has arrived. Moves
+  happen at Auto's picks, so the strikes come at each key change, not every
+  53rd of the journey. Headless check: strikes at D+4¢ (147.2 Hz) and E+8¢
+  (165.6 Hz). The opera gong may replace the tam-tam here later.
 
