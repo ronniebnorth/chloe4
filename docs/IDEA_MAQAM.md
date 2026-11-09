@@ -431,3 +431,19 @@ Unlocked next (backlog):
   Shumays' "The Fuzzy Boundaries of Intonation in Maqam" (2009).
 - Checked headless: draw + real intonation picks Just, Pythagorean and
   overtone modes; no console errors.
+
+## Resolution slider — built 2026-11-09
+
+Ronnie: a slider "from 12 to 1200" for how finely Chloe divides the octave.
+- Studio, under TUNING: **RESOLUTION**, log-scaled 12–1200, with buttons for
+  12, 24, 31, 41, 53, 72, 1200. Every played pitch is rounded to the nearest
+  of n equal steps (n-EDO) inside `tunedRatio`, so all instruments and the
+  orchestra follow (some percussion tuned straight from scale degrees does
+  not). 1200 = exact. Brightness, scale list and journeys stay exact.
+- Note names and the wheel follow what you hear; the wheel's inner ring gets a
+  tick per step (a fine ring past 150). Saved (`chloe-edo`), share links
+  carry `edo=`.
+- Checked: maqam Rast at 12 → C D E F G A B, at 24 → E½♭ B½♭; Turkish Rast
+  at 24 rounds to major (its 385¢ 3rd is nearer 400 than 350, which is why
+  Turkish Rast sounds brighter than Arabic), at 53 exact; Just major at 53
+  within 1¢. Headless: plays at 31 with no console errors.

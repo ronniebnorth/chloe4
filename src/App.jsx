@@ -1205,12 +1205,19 @@ const TUNINGS = {
   just: [1, 16/15, 9/8, 6/5, 5/4, 4/3, 45/32, 3/2, 8/5, 5/3, 9/5, 15/8],
   pyth: [1, 256/243, 9/8, 32/27, 81/64, 4/3, 729/512, 3/2, 128/81, 27/16, 16/9, 243/128],
 };
-const tunedRatio = (semi, tuning) => {
+// Resolution (steps per octave) every played pitch is rounded to; set from the
+// Studio's RESOLUTION slider. 1200 = exact.
+let RESOLUTION = S24.RES_MAX;
+const tunedRatioRaw = (semi, tuning) => {
   const r = TUNINGS[tuning];
   if (!r) return 2 ** (semi / 12);
   const pc = ((semi % 12) + 12) % 12;
   if (!Number.isInteger(pc)) return 2 ** (semi / 12);   // quarter tones: equal temperament
   return 2 ** ((semi - pc) / 12) * r[pc];
+};
+const tunedRatio = (semi, tuning) => {
+  const r = tunedRatioRaw(semi, tuning);
+  return RESOLUTION >= S24.RES_MAX ? r : 2 ** (S24.quantizeCents(1200 * Math.log2(r), RESOLUTION) / 1200);
 };
 
 // Per-sound gain so every instrument/wave plays at about the same loudness
@@ -2404,6 +2411,7 @@ const HELP_SECTIONS = [
   { title: "LISTEN", body: "The simple page: pick a journey, press ▶, and Chloe plays it. The stage at the top shows the light show, the journey's path and a dot for where you are on it. Under the journey cards: LENGTH (5, 15, 30 or 60 minutes; Endless has none), and orchestra, drums and drone switches. The world row sets the surroundings (see WORLDS). While drums are on, a row picks their feel; wander lets them roam across every style. The sleep timer (15 to 90 minutes) stops the music, fading out over the last 90 seconds. While it plays, ♥ more of this steers Chloe toward what you're hearing; in Map it only marks the moment. ⏺ record this journey saves a WAV. copy link, under record, copies a link to the journey with your current sound; whoever opens it presses ▶, and Auto makes its own picks, so the shape is the same but not every note. On the DRAW card, draw your line straight on the stage; clear appears beside LENGTH with a scales row (all scales, western, maqam · dastgah, turkish, real intonation), and the link carries your line and that choice. STUDIO → goes to the full app, and LISTEN in the Studio's top bar comes back." },
   { title: "BINARY NOTATION", body: "Each scale is a binary string written root-first (leftmost digit = root), so it reads like the scale. 1 = active, 0 = inactive. Ordinary scales show 12 digits, one per semitone, with their familiar number (Ionian = 2741). Scales with quarter tones show 24 digits, one per quarter tone, and a 24-step number. Search takes either form. The MAQAM group holds Arabic maqamat with quarter tones (Rast, Bayati, Saba, Huzam and their modes, such as Sikah and Iraq); quarter-tone notes are named half-flat, e.g. E½♭. Scales are grouped into families sharing the same interval structure - e.g. hep-6 contains all 7 standard modes." },
   { title: "WORLD SCALES & TUNINGS", body: "Every scale is stored as its pitches in cents above the root (100 cents = a semitone). Four groups sit below the Western ones in the sidebar. MAQAM · DASTGAH · QUARTER TONES: Arabic maqamat (Rast, Bayati, Saba, Huzam and their modes, such as Sikah and Iraq) and Persian dastgahs (Chahargah, Homayun; Shur, Segah and Mahur share notes with Bayati, Sikah and Ionian and show both names), on a 24-step grid, half-flat notes written E½♭. TURKISH MAKAM · 53 COMMAS: Rast, Uşşak, Hicaz, Bûselik and their modes (Hüseynî, Kürdî) in true Turkish pitches; a whole tone is 9 commas, codes show the steps in commas (Rast = 9·8·5·9·9·8·5), and B⁻¹ means B one comma flat. REAL INTONATION · CENTS: Just major and its modes (pure ratios, 3rds 14¢ low). Just major is note for note Ionian with TUNING set to just; the difference is in its modes, which keep that one C-major tuning like a fixed just keyboard, so some have a sour 'wolf' 5th (Just Dorian's is 680¢). For pure intervals on any scale, from its own root, use the TUNING switch (equal / just / pyth) instead., Pythagorean major and its modes, the overtone scale (harmonics 8–14) and Shur as played (measured, Abdoli); notes show their offset, e.g. E−14¢. Search maqam, makam or real to find each group. Sources and details: docs/IDEA_MAQAM.md in the Chloe4 repo." },
+  { title: "RESOLUTION", body: "The RESOLUTION slider (Studio, under TUNING) sets how finely the octave is divided when notes are played: every pitch is rounded to the nearest of that many equal steps, from 12 to 1200. 12 = piano: quarter tones, Turkish and cents scales collapse onto it. 24 = quarter tones: maqam and dastgah come alive. 53 = Turkish commas, and just intervals within about a cent. 1200 = cents: exact, every scale as stored. Buttons jump to 12, 24, 31 (Huygens), 41, 53, 72 (Byzantine chant) and 1200. Slide slowly up with Rast or Just major playing to hear the music sharpen into its true shape; in-between values like 64 put some intervals noticeably off, which is why those numbers matter. The wheel shows a tick per step (a fine ring past 150), and the note names follow what you hear. Brightness, the scale list and journeys stay on the exact cents. Saved, and carried in share links (edo=)." },
   { title: "BRIGHTNESS SORTING", body: "Within each family, modes are sorted bright to dark by summing their active semitone positions (raw brightness). Lydian scores highest (raised 4th), Locrian lowest (flatted 2nd and 5th). This mirrors the circle-of-fifths: Lydian → Ionian → Mixolydian → Dorian → Aeolian → Phrygian → Locrian. Positions count in semitones, so quarter tones and cents scales score in between: Rast 37 (beside Mixolydian), Bayati 34.5 (between Aeolian and Phrygian), Just major 37.6. The sidebar and scale list show the raw brightness score (e.g. Dorian = 36). The EEG system uses a separate normalized brightness (0.0–1.0) that adjusts for note count, so pentatonics and tetratonics are comparable to heptatonics — Dorian normalizes to exactly 0.5 as the neutral midpoint." },
   { title: "SCALE WHEEL", body: "The circle shows the 12 chromatic notes, with a small dot for each quarter tone between them (24 positions). Active tones are highlighted and connected by a polygon; a quarter-tone note gets its own labelled dot (E½♭), and a Turkish or cents note lights the nearest dot with its exact name (B⁻¹, E−14¢), drawn at its true angle. Wide polygons = sparse scales. Compact polygons = denser chromatic scales. A perfect regular polygon = equal temperament." },
   { title: "SEARCH & FILTER", body: "The left sidebar has a search box that filters scales by name as you type — results narrow to only matching modes within each family (e.g. searching 'dorian' shows just the Dorian row, not all 7 modes). The number chips (3–8) below it filter by note count — click any to isolate tritonic, pentatonic, heptatonic, etc. The sus chip (or searching 'sus' or 'suspended') shows suspended scales: no 3rd, so neither major nor minor, with a 5th and a 2nd or 4th. These compose with each other and with the header filter bar. The header filter accepts comma-separated terms: family ID (hep-6), group prefix (pen, hep, hex), scale name, binary fragment, decimal value, or interval pattern (2-2-1). The star button on any row marks a favourite; the favs button in the header shows starred scales only. Custom names are searchable too." },
@@ -2524,9 +2532,9 @@ function HelpModal({ onClose, K }) {
    VISUALIZER
 ═══════════════════════════════════════════════════════ */
 
-function Visualizer({ analyserRef, playing, rootIdx, active, sys, K }) {
-  const sysRef = useRef(sys);
-  useEffect(() => { sysRef.current = sys; }, [sys]);
+function Visualizer({ analyserRef, playing, rootIdx, active, sys, res = 1200, K }) {
+  const sysRef = useRef(sys), resRef = useRef(res);
+  useEffect(() => { sysRef.current = sys; resRef.current = res; }, [sys, res]);
   const canvasRef  = useRef(null);
   const rafRef     = useRef(null);
   const KRef       = useRef(K);
@@ -2641,12 +2649,27 @@ function Visualizer({ analyserRef, playing, rootIdx, active, sys, K }) {
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // Inner ring
+        // Inner ring, with a tick for every step of the RESOLUTION (a fine ring above ~150 steps)
         ctx.beginPath();
         ctx.arc(cx, cy, wheelR - dotR - 4, 0, Math.PI * 2);
         ctx.strokeStyle = whBr;
         ctx.lineWidth = 1;
         ctx.stroke();
+        {
+          const n = resRef.current, rIn = wheelR - dotR - 4;
+          if (n <= 150) {
+            ctx.beginPath();
+            for (let j = 0; j < n; j++) {
+              const a = (j / n) * Math.PI * 2 - Math.PI / 2, len = j % (n / 12) === 0 ? 7 : 4;
+              ctx.moveTo(cx + rIn * Math.cos(a), cy + rIn * Math.sin(a));
+              ctx.lineTo(cx + (rIn - len) * Math.cos(a), cy + (rIn - len) * Math.sin(a));
+            }
+            ctx.strokeStyle = Kc.a; ctx.globalAlpha = 0.45; ctx.lineWidth = 1; ctx.stroke(); ctx.globalAlpha = 1;
+          } else {
+            ctx.beginPath(); ctx.arc(cx, cy, rIn - 2.5, 0, Math.PI * 2);
+            ctx.strokeStyle = Kc.a; ctx.globalAlpha = 0.3; ctx.lineWidth = 4; ctx.stroke(); ctx.globalAlpha = 1;
+          }
+        }
 
         // Polygon over 24 quarter-tone positions (semitone s sits at position 2s)
         // (exact angles, so Turkish notes between the grid points land where they sound)
@@ -2685,7 +2708,8 @@ function Visualizer({ analyserRef, playing, rootIdx, active, sys, K }) {
           const x = cx + wheelR * Math.cos(a);
           const y = cy + wheelR * Math.sin(a);
           const isActive = act.has(s);
-          const isPlaying = playingRef.current === s;
+          const pq = playingRef.current === null ? null : S24.quantize(playingRef.current, resRef.current);
+          const isPlaying = pq !== null && Math.abs(pq - s) < 1e-6;
           if (quarter && !isActive && !isPlaying) {
             ctx.beginPath();
             ctx.arc(x, y, 1.5, 0, Math.PI * 2);
@@ -2714,7 +2738,7 @@ function Visualizer({ analyserRef, playing, rootIdx, active, sys, K }) {
         for (const s of act) {
           if (Number.isInteger(s * 2) || [...near.values()].includes(s)) continue;
           const a = (s / 12) * Math.PI * 2 - Math.PI / 2, x = cx + wheelR * Math.cos(a), y = cy + wheelR * Math.sin(a);
-          const isPlaying = playingRef.current !== null && Math.abs(playingRef.current - s) < 1e-6;
+          const isPlaying = playingRef.current !== null && Math.abs(S24.quantize(playingRef.current, resRef.current) - s) < 1e-6;
           ctx.font = `500 ${Math.max(6, Math.round(fontSize * 0.72))}px 'JetBrains Mono', monospace`;
           ctx.beginPath();
           ctx.arc(x, y, dotR * 0.85 - 1, 0, Math.PI * 2);
@@ -2951,6 +2975,11 @@ export default function Chloe() {
   const [tempoGlide, setTempoGlide] = useState(_u.tempoGlide ?? true);
   const [soundBlend, setSoundBlend] = useState(_u.soundBlend ?? true);
   const [tuning, setTuning] = useState(_u.tuning ?? "equal");
+  const [resolution, setResolution] = useState(() => {
+    const v = +(new URLSearchParams(window.location.search).get("edo") ?? localStorage.getItem("chloe-edo") ?? S24.RES_MAX);
+    return v >= S24.RES_MIN && v <= S24.RES_MAX ? Math.round(v) : S24.RES_MAX;
+  });
+  useEffect(() => { RESOLUTION = resolution; localStorage.setItem("chloe-edo", String(resolution)); }, [resolution]);
   // Auto tempo: drift = wander in small steps; bursts = hold steady, with short surprises
   const [autoTempo, setAutoTempo] = useState(_u.autoTempo ?? "bursts");
   // Journey — see JOURNEYS above. journeyRef holds the live run while Auto plays one
@@ -7299,8 +7328,11 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     setArpOn(true);
   };
 
-  const selSemis = morphSemis ? new Set(morphSemis) : sel ? new Set(toSemis(sel.pattern)) : new Set();
-  const selNotes = sel ? toSemis(sel.pattern).map(s => S24.noteName(rootIdx, s, S24.systemOf(sel.pattern))) : [];
+  // What you hear: pitches rounded to the RESOLUTION (exact at 1200)
+  const resQ = x => S24.quantize(x, resolution);
+  const resSys = resolution === 53 ? "53" : resolution >= S24.RES_MAX ? (sel ? S24.systemOf(sel.pattern) : "12") : "cents";
+  const selSemis = morphSemis ? new Set(morphSemis.map(resQ)) : sel ? new Set(toSemis(sel.pattern).map(resQ)) : new Set();
+  const selNotes = sel ? toSemis(sel.pattern).map(s => S24.noteName(rootIdx, resQ(s), resSys)) : [];
   const selIvs = sel
     ? S24.intervalLabels(sel.pattern)
     : [];
@@ -7324,6 +7356,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (sel)         p.set("s",  sel.id);
     if (susPool)     p.set("pool", "sus");
     if (aRef !== 440) p.set("a", aRef);
+    if (resolution !== S24.RES_MAX) p.set("edo", resolution);
     if (droneOct)    p.set("do", droneOct);
     if (droneOn)     p.set("dr", "1");
     if (droneWave !== "tanpura") p.set("dw", droneWave);
@@ -7351,7 +7384,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (sidebarW !== 520) p.set("sw", sidebarW);
     const qs = p.toString();
     return window.location.origin + window.location.pathname + (qs ? "?" + qs : "");
-  }, [drawLine, susPool, rootIdx, timbre, instrument, noteVol, reverbAmt, delayAmt, sustainMult, bpm, filter, sel, aRef, droneOct, droneOn, droneWave, melMode, grouping, blend, tempoGlide, soundBlend, tuning, autoTempo, symphonic, beatStyle, beatWander, world, worldWander, weatherBrain, journey, journeyMins, sleepMins, smooth, autoLocks, sidebarW]);
+  }, [resolution, drawLine, susPool, rootIdx, timbre, instrument, noteVol, reverbAmt, delayAmt, sustainMult, bpm, filter, sel, aRef, droneOct, droneOn, droneWave, melMode, grouping, blend, tempoGlide, soundBlend, tuning, autoTempo, symphonic, beatStyle, beatWander, world, worldWander, weatherBrain, journey, journeyMins, sleepMins, smooth, autoLocks, sidebarW]);
 
   // Record button: start tapping the master output; stop → download the WAV
   const toggleRec = useCallback(async () => {
@@ -7525,7 +7558,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
         {/* Stage: the light show, with the journey's path and where you are on it */}
         <div style={{ width: "100%", maxWidth: 720, position: "relative", height: 260, borderRadius: 10, overflow: "hidden", border: `1px solid ${K.br}`, background: K.bg2 }}>
           <div style={{ position: "absolute", inset: 0, opacity: playingNow ? 0.85 : 0.25, transition: "opacity 2s" }}>
-            <Visualizer analyserRef={analyserRef} playing={playing} rootIdx={rootIdx} active={selSemis} sys={sel ? S24.systemOf(sel.pattern) : "12"} K={K} />
+            <Visualizer analyserRef={analyserRef} playing={playing} rootIdx={rootIdx} active={selSemis} sys={resSys} res={resolution} K={K} />
           </div>
           <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, width: "100%", height: J === "draw" ? "100%" : 110 }}>
             {big.hill && <path d={big.hill} fill={JOURNEY_COLOR} opacity={0.12} />}
@@ -8492,7 +8525,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
           </div>
           <div style={{ flex: 1, overflow: "hidden" }}>
             {centerTab === "viz"
-              ? <Visualizer analyserRef={analyserRef} playing={playing} rootIdx={rootIdx} active={selSemis} sys={sel ? S24.systemOf(sel.pattern) : "12"} K={K} />
+              ? <Visualizer analyserRef={analyserRef} playing={playing} rootIdx={rootIdx} active={selSemis} sys={resSys} res={resolution} K={K} />
               : <ScaleInfo sel={sel} selName={selName} selIvs={selIvs} selNotes={selNotes} demoKey={demoKey} K={K} />
             }
           </div>
@@ -8932,6 +8965,24 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                     fontSize: 9, cursor: "pointer", fontFamily: "inherit",
                     fontWeight: tuning === v ? 600 : 400,
                   }}>{v}</button>
+                ))}
+              </div>
+            </div>
+            {/* Resolution — steps per octave every played pitch is rounded to */}
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span title="How finely the octave is divided when notes are played: every pitch is rounded to the nearest of this many equal steps. 12 = piano (quarter tones and cents scales collapse onto it), 24 = quarter tones (maqam, dastgah), 53 = Turkish commas (and near-pure just intervals), 1200 = cents, exact. Brightness and the scale list stay exact; only what you hear and the wheel change." style={{ color: K.lbl, fontSize: 9, letterSpacing: 2, cursor: "help" }}>RESOLUTION</span>
+                <input type="range" min={0} max={1} step={0.001} value={S24.resToPos(resolution)} onChange={e => setResolution(S24.posToRes(+e.target.value))}
+                  style={{ flex: 1, accentColor: K.a }} />
+                <span style={{ color: K.a, fontSize: 10, minWidth: 92, textAlign: "right" }}>{resolution}{(S24.RES_STOPS.find(([n]) => n === resolution)?.[1] ?? "") ? ` · ${S24.RES_STOPS.find(([n]) => n === resolution)[1]}` : " / oct"}</span>
+              </div>
+              <div style={{ display: "flex", gap: 3, justifyContent: "flex-end", marginTop: 4, flexWrap: "wrap" }}>
+                {S24.RES_STOPS.map(([n]) => (
+                  <button key={n} onClick={() => setResolution(n)} style={{
+                    background: resolution === n ? K.a : K.bg3, color: resolution === n ? "#000" : K.txt,
+                    border: `1px solid ${resolution === n ? K.a : K.br}`, borderRadius: 3, padding: "2px 6px",
+                    fontSize: 9, cursor: "pointer", fontFamily: "inherit", fontWeight: resolution === n ? 600 : 400,
+                  }}>{n}</button>
                 ))}
               </div>
             </div>

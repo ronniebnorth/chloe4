@@ -324,3 +324,17 @@ for (const sd of REAL_SEEDS) {
   });
 }
 export const realRotations = (id) => { const c = centsOf(id); return c.map((_, k) => fromCents(rotCents(c, k), "cents")); };
+
+/* ── Resolution: how finely the octave is divided when notes are played ──
+   Every pitch is rounded to the nearest of n equal steps per octave (n-EDO).
+   12 = piano, 24 = quarter tones, 53 = Turkish commas (and near-pure just
+   intervals), 1200 = cents, i.e. exact. Brightness and the scale list stay on
+   the exact cents; only what you hear and see on the wheel is rounded. */
+export const RES_MIN = 12, RES_MAX = 1200;
+export const quantize = (semi, n) => n >= RES_MAX ? semi : Math.round(semi * n / 12) * 12 / n;
+export const quantizeCents = (c, n) => n >= RES_MAX ? c : Math.round(c * n / 1200) * 1200 / n;
+// Named stops on the slider
+export const RES_STOPS = [[12, "piano"], [24, "quarter tones"], [31, "Huygens"], [41, ""], [53, "Turkish commas"], [72, "Byzantine"], [1200, "cents (exact)"]];
+// Log-scaled slider position (0..1) ↔ n
+export const resToPos = (n) => Math.log(n / RES_MIN) / Math.log(RES_MAX / RES_MIN);
+export const posToRes = (x) => Math.round(RES_MIN * (RES_MAX / RES_MIN) ** x);
