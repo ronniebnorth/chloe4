@@ -2923,6 +2923,9 @@ export default function Chloe() {
   // Outside scales (3-semitone clusters): shown in the list and used by
   // demo/auto/randomizer only when this is on
   const [showOutside, setShowOutside] = useState(() => {
+    // A link can switch it on or off (xo=1 / xo=0); otherwise it's remembered per device
+    const q = new URLSearchParams(window.location.search).get("xo");
+    if (q === "1" || q === "0") return q === "1";
     try { return localStorage.getItem("chloe-show-outside") === "1"; } catch { return false; }
   });
   useEffect(() => { try { localStorage.setItem("chloe-show-outside", showOutside ? "1" : "0"); } catch {} }, [showOutside]);
@@ -7511,6 +7514,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (aRef !== 440) p.set("a", aRef);
     if (resolution !== S24.RES_MAX) p.set("edo", resolution);
     if (noteRangeOn) p.set("nr", noteRange.join("-"));
+    if (showOutside) p.set("xo", "1");
     if (feltAmt > 0) p.set("bf", feltAmt);
     if (feltRandom) p.set("bfr", "1");
     if (wanderSpeed !== 1) p.set("bfs", wanderSpeed);
@@ -7546,7 +7550,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (sidebarW !== 520) p.set("sw", sidebarW);
     const qs = p.toString();
     return window.location.origin + window.location.pathname + (qs ? "?" + qs : "");
-  }, [resolution, noteRange, noteRangeOn, feltAmt, feltRandom, wanderSpeed, wanderRange, mood, moodWander, moodWSpeed, moodWRange, drawLine, susPool, rootIdx, timbre, instrument, noteVol, reverbAmt, delayAmt, sustainMult, bpm, filter, sel, aRef, droneOct, droneOn, droneWave, melMode, grouping, blend, tempoGlide, soundBlend, tuning, autoTempo, symphonic, beatStyle, beatWander, world, worldWander, weatherBrain, journey, journeyMins, sleepMins, smooth, autoLocks, sidebarW]);
+  }, [showOutside, resolution, noteRange, noteRangeOn, feltAmt, feltRandom, wanderSpeed, wanderRange, mood, moodWander, moodWSpeed, moodWRange, drawLine, susPool, rootIdx, timbre, instrument, noteVol, reverbAmt, delayAmt, sustainMult, bpm, filter, sel, aRef, droneOct, droneOn, droneWave, melMode, grouping, blend, tempoGlide, soundBlend, tuning, autoTempo, symphonic, beatStyle, beatWander, world, worldWander, weatherBrain, journey, journeyMins, sleepMins, smooth, autoLocks, sidebarW]);
 
   // Record button: start tapping the master output; stop → download the WAV
   const toggleRec = useCallback(async () => {
