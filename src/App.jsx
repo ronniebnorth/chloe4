@@ -732,7 +732,8 @@ const BEAT_PATTERNS = {
 // (3-8 notes WITH a cluster) are appended after them as x-<pfx>-<k> so the
 // main ids never shift.
 function buildFamilies() {
-  return [...buildFamilySet(false), ...buildMaqamFamilies(), ...buildFamilySet(true)];
+  const test = { id: "x-tet-qt", n: 4, canon: S24.QUARTER_TEST, modes: [S24.QUARTER_TEST], outside: true, test: true };
+  return [...buildFamilySet(false), ...buildMaqamFamilies(), ...buildFamilySet(true), test];
 }
 
 // 12-note families: Chloe3's generator over 12-bit patterns, lifted to 24 steps.
@@ -2344,7 +2345,7 @@ function Lbl({ children, K }) {
 const HELP_SECTIONS = [
   { title: "WHAT IS CHLOE?", body: "Chloe generates every possible scale from 3 to 8 notes. Scales with 3 or more notes in a row a semitone apart are kept apart as outside scales: they're hidden unless you switch on outside, under the scale search, and then Auto uses them about one pick in three, like passing tones. Use it to hear how different scales sound over a drone note and develop your ear for modal colour. It has two doors: Listen, where you pick a journey and press play, and the Studio, with every scale and setting. This help covers both." },
   { title: "LISTEN", body: "The simple page: pick a journey, press ▶, and Chloe plays it. The stage at the top shows the light show, the journey's path and a dot for where you are on it. Under the journey cards: LENGTH (5, 15, 30 or 60 minutes; Endless has none), and orchestra, drums and drone switches. The world row sets the surroundings (see WORLDS). While drums are on, a row picks their feel; wander lets them roam across every style. The sleep timer (15 to 90 minutes) stops the music, fading out over the last 90 seconds. While it plays, ♥ more of this steers Chloe toward what you're hearing; in Map it only marks the moment. ⏺ record this journey saves a WAV. copy link, under record, copies a link to the journey with your current sound; whoever opens it presses ▶, and Auto makes its own picks, so the shape is the same but not every note. On the DRAW card, draw your line straight on the stage; clear appears beside LENGTH, and the link carries your line. STUDIO → goes to the full app, and LISTEN in the Studio's top bar comes back." },
-  { title: "BINARY NOTATION", body: "Each scale is a 24-digit binary string, one digit per quarter tone from the root (two digits per semitone). 1 = active, 0 = inactive. It is written root-first (leftmost digit = root), so it reads like the scale. Search also takes Chloe3-style 12-digit patterns (one digit per semitone) for scales without quarter tones. The MAQAM group holds Arabic maqamat with quarter tones (Rast, Bayati, Saba, Huzam and their modes, such as Sikah and Iraq); quarter-tone notes are named half-flat, e.g. E½♭. Scales are grouped into families sharing the same interval structure - e.g. hep-6 contains all 7 standard modes." },
+  { title: "BINARY NOTATION", body: "Each scale is a binary string written root-first (leftmost digit = root), so it reads like the scale. 1 = active, 0 = inactive. Ordinary scales show 12 digits, one per semitone, with their familiar number (Ionian = 2741). Scales with quarter tones show 24 digits, one per quarter tone, and a 24-step number. Search takes either form. The MAQAM group holds Arabic maqamat with quarter tones (Rast, Bayati, Saba, Huzam and their modes, such as Sikah and Iraq); quarter-tone notes are named half-flat, e.g. E½♭. Scales are grouped into families sharing the same interval structure - e.g. hep-6 contains all 7 standard modes." },
   { title: "BRIGHTNESS SORTING", body: "Within each family, modes are sorted bright to dark by summing their active semitone positions (raw brightness). Lydian scores highest (raised 4th), Locrian lowest (flatted 2nd and 5th). This mirrors the circle-of-fifths: Lydian → Ionian → Mixolydian → Dorian → Aeolian → Phrygian → Locrian. The sidebar and scale list show the raw brightness score (e.g. Dorian = 36). The EEG system uses a separate normalized brightness (0.0–1.0) that adjusts for note count, so pentatonics and tetratonics are comparable to heptatonics — Dorian normalizes to exactly 0.5 as the neutral midpoint." },
   { title: "SCALE WHEEL", body: "The circle shows all 12 chromatic notes. Active tones are highlighted and connected by a polygon. Wide polygons = sparse scales. Compact polygons = denser chromatic scales. A perfect regular polygon = equal temperament." },
   { title: "SEARCH & FILTER", body: "The left sidebar has a search box that filters scales by name as you type — results narrow to only matching modes within each family (e.g. searching 'dorian' shows just the Dorian row, not all 7 modes). The number chips (3–8) below it filter by note count — click any to isolate tritonic, pentatonic, heptatonic, etc. The sus chip (or searching 'sus' or 'suspended') shows suspended scales: no 3rd, so neither major nor minor, with a 5th and a 2nd or 4th. These compose with each other and with the header filter bar. The header filter accepts comma-separated terms: family ID (hep-6), group prefix (pen, hep, hex), scale name, binary fragment, decimal value, or interval pattern (2-2-1). The star button on any row marks a favourite; the favs button in the header shows starred scales only. Custom names are searchable too." },
@@ -6662,7 +6663,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       if (loopOnRef.current) { timeout = setTimeout(pickNext, 1000); return; }
       const { sel: cur } = stRef.current;
       const all = buildCatalogue();
-      const outsideOpts = all.filter(e => e.fam.outside && (!cur || e.pat !== cur.pattern));
+      const outsideOpts = all.filter(e => e.fam.outside && !e.fam.test && (!cur || e.pat !== cur.pattern));
       const catalogue = all.filter(e => !e.fam.outside);
 
       // Now and then, a passing outside scale (only when the outside toggle is on)
@@ -8252,10 +8253,11 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                             color: isFav ? K.a : K.txt,
                             transition: "color .15s",
                           }}>{isFav ? "★" : "☆"}</button>
-                          <span style={{ color: isSel ? K.a : K.txt, fontSize: 10, letterSpacing: 1.5, fontWeight: isSel ? 500 : 300, minWidth: 130, fontFamily: "inherit" }}>
-                            {toBin(mode)}
+                          {/* 12-note scales show their familiar 12-digit code and Chloe3/Ian Ring value; quarter-tone scales the 24-digit code, packed tighter */}
+                          <span style={{ color: isSel ? K.a : K.txt, fontSize: S24.isMicro(mode) ? 8 : 10, letterSpacing: S24.isMicro(mode) ? 0 : 1.5, fontWeight: isSel ? 500 : 300, minWidth: 130, whiteSpace: "nowrap", fontFamily: "inherit" }}>
+                            {S24.toBin12(mode) ?? toBin(mode)}
                           </span>
-                          <span style={{ color: K.t2, fontSize: 9, minWidth: 40 }}>({mode})</span>
+                          <span style={{ color: K.t2, fontSize: 9, minWidth: 40, whiteSpace: "nowrap" }}>({S24.down24(mode) ?? mode})</span>
                           <span style={{ color: K.t2, fontSize: 9, opacity: 0.7, minWidth: 28 }}>{fam.outside ? "b—" : `b${bright(mode)}`}</span>
                           {name && (
                             <span style={{ color: isSel ? K.a : K.t1, fontSize: 10 }}>{name}</span>
@@ -8973,8 +8975,8 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                 </div>
 
                 <Lbl K={K}>BINARY PATTERN</Lbl>
-                <div style={{ color: K.t2, fontSize: 10, letterSpacing: 2, marginBottom: 2 }}>{toBin(sel.pattern)}</div>
-                <div style={{ color: K.t2, fontSize: 9, opacity: 0.6, marginBottom: 14 }}>decimal {sel.pattern} · brightness {bright(sel.pattern)}</div>
+                <div style={{ color: K.t2, fontSize: 10, letterSpacing: S24.isMicro(sel.pattern) ? 0.5 : 2, marginBottom: 2 }}>{S24.toBin12(sel.pattern) ?? toBin(sel.pattern)}</div>
+                <div style={{ color: K.t2, fontSize: 9, opacity: 0.6, marginBottom: 14 }}>decimal {S24.down24(sel.pattern) ?? sel.pattern}{S24.isMicro(sel.pattern) ? " (24-step)" : ""} · brightness {bright(sel.pattern)}</div>
 
                 <Lbl K={K}>KEYBOARD</Lbl>
                 <Piano active={selSemis} playing={playing} K={K} />

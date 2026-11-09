@@ -83,14 +83,15 @@ export const fromSteps = (steps) => steps.reduce((p, i) => p | (1 << (((i % Q) +
 export const fromSemis = (semis) => fromSteps(semis.map(s => Math.round(s * 2)));
 
 // Note names for a semitone value (fractional allowed) above a root index 0..11.
-// Quarter tones are named as the note above, half-flat: E½♭.
+// Quarter tones: half-flat of the note above when that's a natural (E½♭, B½♭),
+// otherwise half-sharp of the natural below (C½♯, F½♯).
 const CHROM = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
-const FLAT_NAME = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
 export const noteName = (rootIdx, semi) => {
   const x = ((rootIdx + semi) % 12 + 12) % 12;
   if (Number.isInteger(x)) return CHROM[x];
   const up = Math.ceil(x) % 12;
-  return FLAT_NAME[up] + "½♭";
+  if (CHROM[up].length === 1) return CHROM[up] + "½♭";
+  return CHROM[Math.floor(x)] + "½♯";
 };
 
 /* ── Maqam catalogue (Arabic, 24-step teaching grid) ─────────────────────
@@ -106,7 +107,12 @@ export const MAQAM_SEEDS = [
   { name: "Huzam", steps: [0, 3, 7, 9, 15, 17, 21] },
 ];
 
+// Test scale: notes a quarter tone apart, to hear how they rub (C, C½♯, D, G).
+// Lives in the outside group; auto mode never picks it.
+export const QUARTER_TEST = fromSteps([0, 1, 4, 14]);
+
 export const MAQAM_NAMES = {
+  [QUARTER_TEST]: "Quarter-tone test",
   [fromSteps([0, 4, 7, 10, 14, 18, 21])]: "Rast",
   [fromSteps([0, 3, 7, 11, 14, 17, 21])]: "Sikah",
   [fromSteps([0, 3, 7, 10, 13, 17, 21])]: "Iraq",
