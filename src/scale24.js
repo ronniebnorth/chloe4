@@ -109,7 +109,8 @@ export const MAQAM_SEEDS = [
   // Shur shares Bayati's notes, Segah = Sikah, Mahur = Ionian: those are named, not seeded.
   { name: "Chahargah", steps: [0, 3, 8, 10, 14, 17, 22] },
   { name: "Homayun", steps: [0, 3, 8, 10, 14, 16, 20] },
-  { name: "Afshari", steps: [0, 3, 6, 10, 13, 16, 20] },
+  // Shur with its lowered 5th (D½♭); its rotations give Afshari (on C) for the Shur journey
+  { name: "Shur (lowered 5th)", steps: [0, 3, 6, 10, 13, 16, 20] },
 ];
 
 // Test scale: notes a quarter tone apart, to hear how they rub (C, C½♯, D, G).
@@ -130,7 +131,10 @@ const NAME_LIST = [
   [[0, 3, 7, 9, 15, 17, 21], "Huzam"],
   [[0, 3, 8, 10, 14, 17, 22], "Chahargah"],
   [[0, 3, 8, 10, 14, 16, 20], "Homayun"],
-  [[0, 3, 6, 10, 13, 16, 20], "Afshari"],
+  [[0, 3, 6, 10, 13, 16, 20], "Shur (lowered 5th)"],
+  [[0, 3, 6, 10, 14, 17, 20], "Afshari"],
+  [[0, 2, 6, 10, 13, 16, 20], "Dashti"],
+  [[0, 4, 8, 10, 14, 18, 21], "Bayat-e Tork"],
   // 12-note maqamat and dastgah, named on their existing patterns
   [[0, 2, 8, 10, 14, 16, 20], "Hijaz"],
   [[0, 4, 6, 10, 14, 16, 22], "Nahawand"],
@@ -153,16 +157,33 @@ for (const [st, name] of NAME_LIST) {
    through its gushes. Stations by journey fraction. */
 export const PERSIAN_PATH = [
   { at: 0.00, name: "Shur", steps: [0, 3, 6, 10, 14, 16, 20] },
-  { at: 0.16, name: "Afshari", steps: [0, 3, 6, 10, 13, 16, 20] },
-  { at: 0.30, name: "Homayun", steps: [0, 3, 8, 10, 14, 16, 20] },
+  { at: 0.20, name: "Homayun", steps: [0, 3, 8, 10, 14, 16, 20] },
   { at: 0.44, name: "Segah", steps: [0, 3, 7, 11, 14, 17, 21] },
   { at: 0.58, name: "Chahargah", steps: [0, 3, 8, 10, 14, 17, 22] },
   { at: 0.70, name: "Mahur", steps: [0, 4, 8, 10, 14, 18, 22] },
   { at: 0.82, name: "Homayun", steps: [0, 3, 8, 10, 14, 16, 20] },
   { at: 0.90, name: "Shur", steps: [0, 3, 6, 10, 14, 16, 20] },
 ];
-export const persianStation = (f) => {
-  let st = PERSIAN_PATH[0];
-  for (const s of PERSIAN_PATH) if (f >= s.at) st = s;
+/* ── Shur journey: inside one dastgah, the way a performance moves ──
+   Shur's pitch set stays put (on G: G A½♭ B♭ C D E♭ F) and the finalis
+   (home note) moves, per Encyclopaedia Iranica: Bayat-e Tork on B♭ (3rd),
+   Afshari on C (4th, with D lowered to D½♭), Dashti on D (5th, with its A½♭).
+   shift = semitones from Shur's tonic to the station's finalis; Chloe moves
+   its key there so the notes themselves stay the same. Each station's steps
+   are the pitch set seen from its own finalis. The finalis climbs G → B♭ → C
+   → D, then the forud brings it home to G with Shur's lowered 5th (D½♭).
+   Abu Ata is left out: its finalis is A½♭, and Chloe's key can't sit on a
+   quarter tone yet. */
+export const SHUR_PATH = [
+  { at: 0.00, name: "Shur", shift: 0, steps: [0, 3, 6, 10, 14, 16, 20] },
+  { at: 0.20, name: "Bayat-e Tork", shift: 3, steps: [0, 4, 8, 10, 14, 18, 21] },
+  { at: 0.40, name: "Afshari", shift: 5, steps: [0, 3, 6, 10, 14, 17, 20] },
+  { at: 0.60, name: "Dashti", shift: 7, steps: [0, 2, 6, 10, 13, 16, 20] },
+  { at: 0.82, name: "Shur", shift: 0, steps: [0, 3, 6, 10, 13, 16, 20] },
+];
+
+export const persianStation = (f, path = PERSIAN_PATH) => {
+  let st = path[0];
+  for (const s of path) if (f >= s.at) st = s;
   return { ...st, pat: fromSteps(st.steps) };
 };

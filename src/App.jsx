@@ -2249,11 +2249,20 @@ JOURNEYS.wake = { label: "wake", home: up12(2773), wake: true, bpm: 120, pts: WA
 // b here only draws the climb to the owj (Mahur) and the forud home.
 // Santur (dulcimer) and kamancheh (fiddle) take turns; slow and spacious.
 JOURNEYS.persia = { label: "persia", home: S24.fromSteps(S24.PERSIAN_PATH[0].steps), persian: true, bpm: 72,
-  tip: "A tour of the Persian dastgahs: opens on Shur, climbs through Afshari, Homayun, Segah and Chahargah to a bright peak on Mahur, then comes back down home to Shur. Quarter tones (koron) throughout; santur and kamancheh take turns.",
+  tip: "A tour of the Persian dastgahs: opens on Shur, climbs through Homayun, Segah and Chahargah to a bright peak on Mahur, then comes back down home to Shur. Quarter tones (koron) throughout; santur and kamancheh take turns.",
   pts: S24.PERSIAN_PATH.map(st => {
-    const b = { Shur: 0.32, Afshari: 0.28, Homayun: 0.45, Segah: 0.55, Chahargah: 0.62, Mahur: 0.74 }[st.name];
+    const b = { Shur: 0.28, Homayun: 0.45, Segah: 0.55, Chahargah: 0.62, Mahur: 0.74 }[st.name];
     return { at: st.at, b, t: 0.8 + 0.25 * (b - 0.28) / 0.46, rv: 0.8 - 0.2 * (b - 0.28) / 0.46, su: 1.3 };
-  }).concat([{ at: 1, b: 0.32, t: 0.8, rv: 0.8, su: 1.4 }]) };
+  }).concat([{ at: 1, b: 0.28, t: 0.8, rv: 0.8, su: 1.4 }]) };
+// Shur: one dastgah, the way a performance moves. The notes stay the same and the
+// home note climbs (Shur on the tonic → Bayat-e Tork on the 3rd → Afshari on the 4th →
+// Dashti on the 5th), then the forud brings it back. Chloe's key follows the home note.
+JOURNEYS.shur = { label: "shur", home: S24.fromSteps(S24.SHUR_PATH[0].steps), persian: true, path: S24.SHUR_PATH, bpm: 66,
+  tip: "Inside one Persian dastgah, Shur: the notes never change, but the home note climbs from Shur to Bayat-e Tork, Afshari and Dashti (the plaintive peak), then the forud brings it back down to Shur. Santur and kamancheh take turns.",
+  pts: S24.SHUR_PATH.map(st => {
+    const b = { 0: 0.3, 3: 0.45, 5: 0.56, 7: 0.68 }[st.shift];
+    return { at: st.at, b, t: 0.85 + 0.2 * (b - 0.3) / 0.38, rv: 0.8 - 0.15 * (b - 0.3) / 0.38, su: 1.3 };
+  }).concat([{ at: 1, b: 0.3, t: 0.85, rv: 0.85, su: 1.4 }]) };
 // Draw: a journey whose shape you draw on the Listen stage. The line lives here so the
 // journey clock, the cards and the stage all read the same one; it can change mid-journey.
 let drawnLine = defaultLine();
@@ -6708,7 +6717,13 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       const persianRun = JOURNEYS[journeyRef.current?.id]?.persian ? journeyRef.current : null;
       if (persianRun) {
         const f = Math.min(1, (Date.now() - persianRun.startMs) / ((persianRun.mins ?? 15) * 60000));
-        const st = S24.persianStation(f);
+        const st = S24.persianStation(f, JOURNEYS[persianRun.id].path);
+        // Stations with a shift move the key to their home note, so the notes themselves stay put
+        if (st.shift !== undefined) {
+          persianRun.base ??= stRef.current.rootIdx;
+          const key = (persianRun.base + st.shift) % 12;
+          if (key !== stRef.current.rootIdx) setRootIdx(key);
+        }
         const fam = FAMILIES.find(fm => fm.modes.includes(st.pat));
         if (fam) entry = { fam, modeIdx: fam.modes.indexOf(st.pat), pat: st.pat };
         setSusTour(null);

@@ -203,3 +203,26 @@ Chloe gains finer pitch, or as an openly labelled 24-step approximation.
   checked against a source.
 - Checked headless: the journey starts on Shur, plays, no console errors.
   Not yet listened to.
+
+## Shur journey — built 2026-11-08
+
+- Journey **shur** (`JOURNEYS.shur`, path `SHUR_PATH` in `scale24.js`): one
+  dastgah, the way a performance moves. Shur's notes stay the same and the
+  finalis (home note) climbs, with Chloe's key following it: Shur on the
+  tonic → Bayat-e Tork on the 3rd (20%) → Afshari on the 4th, with the 5th
+  lowered (40%) → Dashti on the 5th (60%) → forud home to Shur with the
+  lowered 5th (82%). 66 BPM, santur/kamancheh, no outside scales, no random
+  key changes.
+- Sources: Encyclopaedia Iranica via microtonaltheory.com (Shur pitch set
+  G A½♭ B♭ C D E♭ F, finalis per avaz); fis-iran.org (avaz spellings, D(p)
+  in Afshari/Dashti). Sources disagree on some finales (Abu Ata, Tork);
+  Iranica's were used.
+- **Abu Ata left out:** its finalis is A½♭, and Chloe's key can't sit on a
+  quarter tone. Adding a quarter-tone key offset would allow it.
+- Fix to the persia tour: its "Afshari" station (Shur with a lowered 5th on
+  the same tonic) was mislabelled, since Afshari's home is the 4th. Removed from the
+  tour; that pattern is now named "Shur (lowered 5th)".
+- Checked headless with the clock fast-forwarded (Shur on C): C D½♭ E♭ F G
+  A♭ B♭ → key E♭ Bayat-e Tork → key F Afshari (G½♭) → key G Dashti → key C
+  Shur with G½♭. Same notes throughout, as intended. No console errors. Not yet
+  listened to.
