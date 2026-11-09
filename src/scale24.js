@@ -242,13 +242,15 @@ export const persianStation = (f, path = PERSIAN_PATH) => {
    Dügah (A): Hüseynî (Rast's own notes seen from A), Uşşak (the 6th drops to
    F), Hicaz (the augmented second, the peak), back through Uşşak, then home to
    Rast. Chloe's key moves exactly 2 semitones (200 cents) for the A stations;
-   a Turkish whole tone is 9 commas (204 cents), 4 cents wider: too small to hear. */
+   a Turkish whole tone is 9 commas (204 cents), 4 cents wider: too small to hear.
+   usul = the darbuka cycle for that section (the "makam" beat): Düyek at home,
+   Sofyan, Semai, then Aksak (9/8) for the Hicaz peak, Curcuna (10/8) on the way down. */
 const tp = (iv) => turkPattern(cum(iv));
 export const TURK_PATH = [
-  { at: 0.00, name: "Rast", shift: 0, pat: tp([9, 8, 5, 9, 9, 8, 5]) },
-  { at: 0.20, name: "Hüseynî", shift: 2, pat: tp([8, 5, 9, 9, 8, 5, 9]) },
-  { at: 0.38, name: "Uşşak", shift: 2, pat: tp([8, 5, 9, 9, 4, 9, 9]) },
-  { at: 0.56, name: "Hicaz", shift: 2, pat: tp([5, 12, 5, 9, 8, 5, 9]) },
-  { at: 0.76, name: "Uşşak", shift: 2, pat: tp([8, 5, 9, 9, 4, 9, 9]) },
-  { at: 0.88, name: "Rast", shift: 0, pat: tp([9, 8, 5, 9, 9, 8, 5]) },
+  { at: 0.00, name: "Rast", shift: 0, usul: "duyek", pat: tp([9, 8, 5, 9, 9, 8, 5]) },
+  { at: 0.20, name: "Hüseynî", shift: 2, usul: "sofyan", pat: tp([8, 5, 9, 9, 8, 5, 9]) },
+  { at: 0.38, name: "Uşşak", shift: 2, usul: "semai", pat: tp([8, 5, 9, 9, 4, 9, 9]) },
+  { at: 0.56, name: "Hicaz", shift: 2, usul: "aksak", pat: tp([5, 12, 5, 9, 8, 5, 9]) },
+  { at: 0.76, name: "Uşşak", shift: 2, usul: "curcuna", pat: tp([8, 5, 9, 9, 4, 9, 9]) },
+  { at: 0.88, name: "Rast", shift: 0, usul: "duyek", pat: tp([9, 8, 5, 9, 9, 8, 5]) },
 ];

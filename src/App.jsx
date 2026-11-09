@@ -1050,6 +1050,11 @@ const HAND_DRUMS = {
   "frame-edge": { f: 140, decay: 0.35, slap: 0.35, pan: 0.2, g: 0.45 },
   // Daf / bendir "tek": a crisp strike at the rim
   "tek":      { f: 380, decay: 0.12, slap: 0.6,  pan: 0.25, g: 0.5 },
+  // Darbuka (Turkish goblet drum): the deep open "düm" in the centre, the bright
+  // ringing "tek" at the rim (strong hand), the softer "ka" (other hand)
+  "darb-dum": { f: 92,  decay: 0.38, slap: 0.18, pan: 0,    g: 1 },
+  "darb-tek": { f: 560, decay: 0.09, slap: 0.95, pan: 0.2,  g: 0.55 },
+  "darb-ka":  { f: 500, decay: 0.06, slap: 0.75, pan: -0.2, g: 0.38 },
   // Samba: the big surdo (primeira, on the 2), the higher one answering on
   // the 1, the tamborim's high crack, the repique
   "surdo":    { f: 58,  decay: 0.7,  slap: 0.15, pan: -0.1, g: 1.1 },
@@ -1172,7 +1177,7 @@ const TARANG = [
   [0, 0, 1, 2, 4, 4, 2, 1, 0, 1, 2, 4, 5, 4, 2, 0],
 ];
 
-const BEAT_FAMILY = { break: "kit", drive: "kit", heavy: "kit", downtempo: "world", hand: "world", fusion: "fusion", brushes: "brushes", shaman: "shaman", newwave: "neon", desert: "desert", jungle: "jungle", temple: "temple", samba: "carnival", jig: "celtic", synthwave: "nightdrive", circle: "fire", tabla: "tabla" };
+const BEAT_FAMILY = { break: "kit", drive: "kit", heavy: "kit", downtempo: "world", hand: "world", fusion: "fusion", brushes: "brushes", shaman: "shaman", newwave: "neon", desert: "desert", jungle: "jungle", temple: "temple", samba: "carnival", jig: "celtic", synthwave: "nightdrive", circle: "fire", tabla: "tabla", makam: "makam" };
 
 // Linear fills for fusion: one drum per 16th. Short = the last beat of every
 // 4th bar; long = the last two beats of every 8th, phrased in 3s across the beat.
@@ -2869,7 +2874,7 @@ export default function Chloe() {
         beatWander: p.get("bw") === "1",
         worldWander: p.get("ww") === "1",
         weatherBrain: ["calm", "ride"].includes(p.get("wb")) ? p.get("wb") : undefined,
-        beatStyle:  ["break", "drive", "heavy", "fusion", "downtempo", "hand", "brushes", "shaman", "newwave", "desert", "jungle", "temple", "samba", "jig", "synthwave", "circle", "tabla"].includes(p.get("bt")) ? p.get("bt") : "off",
+        beatStyle:  ["break", "drive", "heavy", "fusion", "downtempo", "hand", "brushes", "shaman", "newwave", "desert", "jungle", "temple", "samba", "jig", "synthwave", "circle", "tabla", "makam"].includes(p.get("bt")) ? p.get("bt") : "off",
         // Links from before the World row: the beat or drone that used to bring a world in still does
         world: Object.hasOwn(WORLDS, p.get("wo") ?? "") ? p.get("wo") : p.has("wo") ? "off"
           : { shaman: "steppe", desert: "desert", newwave: "neon", ocean: "ocean", jungle: "jungle" }[p.get("bt")]
@@ -3409,6 +3414,8 @@ export default function Chloe() {
       // Journeys play a line that wanders, not an arpeggio going round. Not Endless
       // (it's for sleep, and already right) or Map (it's measuring, and comparable with past runs)
       if (!j.endless && !j.survey && autoLocksRef.current.melMode) setMelMode(true);
+      // Makam wants its darbuka: the makam beat, cycling the usuls with the sections
+      if (j.turkish && autoLocksRef.current.beat && stRef.current.beatStyle === "off") { setBeatStyle("makam"); getKit(getCtx()); }
       if (j.wait) {
         // When the 3rd arrives and which one: a surprise each run
         journeyRef.current.drop = WAIT_DROP_MIN + Math.random() * (WAIT_DROP_MAX - WAIT_DROP_MIN);
@@ -4974,6 +4981,44 @@ export default function Chloe() {
       else if (!(calm && i % 3 === 1)) hd("bodhran-hi", i % 3 === 2 ? 64 : 50);
       if (tense && i % 3 === 2 && Math.random() < 0.4) handDrum(K0, ac, "bodhran-hi", 40, t + 0.5 * (60 / ((tg.cur ?? stRef.current.bpm)) / 3), false);
     };
+    // Makam (Turkish): darbuka playing an usul (rhythmic cycle), one 16th per step.
+    // D = düm, T = tek, k = ka; positions in 16ths. Odd cycles (Aksak 9/8 =
+    // 2+2+2+3, Curcuna 10/8 = 3+2+2+3) are what make it sound Turkish. A daf
+    // marks the start of each cycle. Tension fills the gaps with "ka" (and
+    // tek-ka pairs), calm thins to the dums and main teks; every 4th cycle
+    // ends in a roll. In the makam journey each section has its own usul;
+    // otherwise the usul changes every 8 cycles. Velocities ±10, timing ±4 ms.
+    const USUL = {
+      sofyan:  { len: 16, D: [0], T: [8, 12], k: [14] },                       // 4/4: Düm – Te-ke
+      duyek:   { len: 16, D: [0, 8], T: [2, 6, 12], k: [10, 14] },            // 8/8: Düm tek – tek düm – tek –
+      semai:   { len: 12, D: [0], T: [4, 8], k: [10] },                        // 3/4: Düm – tek tek
+      aksak:   { len: 18, D: [0, 8], T: [4, 12, 14], k: [6, 16] },            // 9/8: 2+2+2+3
+      curcuna: { len: 20, D: [0, 10], T: [6, 14], k: [4, 18] },               // 10/8: 3+2+2+3
+    };
+    const USUL_ROT = ["duyek", "aksak", "sofyan", "curcuna", "semai"];
+    const mk = { usul: "duyek", i: 0, cycles: 0 };
+    const makamStep = (K0, ac, t) => {
+      if (mk.i === 0) {   // a new cycle: maybe a new usul
+        const J = journeyRef.current, jt = JOURNEYS[J?.id];
+        if (jt?.turkish) {
+          const f = Math.min(1, (Date.now() - J.startMs) / ((J.mins ?? 15) * 60000));
+          mk.usul = S24.persianStation(f, jt.path).usul ?? "duyek";
+        } else if (mk.cycles > 0 && mk.cycles % 8 === 0) mk.usul = USUL_ROT[(USUL_ROT.indexOf(mk.usul) + 1) % USUL_ROT.length];
+      }
+      const u = USUL[mk.usul], i = mk.i;
+      const vv = v => v + (Math.random() - 0.5) * 20, tt = () => t + (Math.random() - 0.5) * 0.008, calm = energy < 0.25, tense = energy > 0.6;
+      const hd = (note, v) => handDrum(K0, ac, note, vv(v), tt(), false);
+      const roll = mk.cycles % 4 === 3 && i >= u.len - 4;
+      if (i === 0) handDrum(K0, ac, "frame", vv(70), tt(), false);   // the daf on the one
+      if (roll) hd(i % 2 ? "darb-ka" : "darb-tek", 58 + (i - (u.len - 4)) * 14);
+      else if (u.D.includes(i)) hd("darb-dum", i === 0 ? 112 : 96);
+      else if (u.T.includes(i)) hd("darb-tek", 84);
+      else if (u.k.includes(i)) { if (!calm) hd("darb-ka", 58); }
+      else if (tense && i % 2 === 1 && Math.random() < 0.55) hd("darb-ka", 36 + Math.random() * 16);
+      else if (!calm && i % 2 === 1 && Math.random() < 0.15) hd("darb-ka", 32);
+      mk.i = (i + 1) % u.len;
+      if (mk.i === 0) mk.cycles++;
+    };
     // Fire circle, one 16th (lightly swung): a circle of hand drums, each player
     // with their own part: the dunun holding the 1, two djembes interlocking
     // (bass, tone, slap), an udu's bloops on the root and fifth, clap sticks on
@@ -6319,6 +6364,14 @@ export default function Chloe() {
               if (beatStep === 0) beatBar++;
               continue;
             }
+            if (beatStyleNow === "makam") {
+              makamStep(K0, ac, beatNext);
+              if (beatStep === 0 && beatBar > 0) beatNoCrash = false;
+              beatNext += 60 / bb / 4;
+              beatStep = (beatStep + 1) % 16;
+              if (beatStep === 0) beatBar++;
+              continue;
+            }
             if (beatStyleNow === "jig") {
               jigStep(K0, ac, beatStep % 12, beatBar, beatNext);
               if (beatStep === 0 && beatBar > 0) beatNoCrash = false;
@@ -6900,7 +6953,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
         const w = stRef.current.beatWander
           ? (sleepJ ? { brushes: 1, hand: 0.7, shaman: 0.8, desert: 0.8 }
             : epicJ ? { break: 0.6, drive: 1, heavy: 0.6, shaman: 0.5, newwave: 0.7, circle: 0.7 }
-            : { brushes: 0.8 * (1 - e) ** 2, downtempo: 0.9, hand: 1 - 0.6 * e, shaman: 1, desert: 0.9 * (1 - 0.5 * e), jungle: 0.8, tabla: 0.7,
+            : { brushes: 0.8 * (1 - e) ** 2, downtempo: 0.9, hand: 1 - 0.6 * e, shaman: 1, desert: 0.9 * (1 - 0.5 * e), makam: 0.6, jungle: 0.8, tabla: 0.7,
                 break: 0.3 + 0.8 * e, drive: 0.1 + 1.2 * e, heavy: 0.6 * e, fusion: 0.35, newwave: 0.5 + 0.6 * e, circle: 0.3 + 0.7 * e })
           : fam === "world" ? { downtempo: 0.4 + e, hand: 1.1 - e }
                 : fam === "kit" ? { break: 1.2 - e, drive: 0.3 + 1.2 * e, heavy: 0.6 } : null;
@@ -7549,7 +7602,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
         {beatStyle !== "off" && (
           <div style={{ width: "100%", maxWidth: 720, display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "flex-end", marginTop: 10 }}>
             <button onClick={() => setBeatWander(w => !w)} title="Wander: the drums roam across every style as the music goes, from brushes to breakbeats (the world, if one is on, keeps its lead)" style={{ ...chip(beatWander), fontSize: 10, padding: "4px 11px" }}>wander</button>
-            {[["brushes", "brushes"], ["downtempo", "downtempo"], ["hand", "hand drums"], ["tabla", "tabla"], ["shaman", "shaman"], ["desert", "desert"], ["jungle", "jungle"], ["temple", "temple"], ["samba", "samba"], ["jig", "jig"], ["circle", "fire circle"], ["newwave", "new wave"], ["synthwave", "synthwave"], ["break", "breakbeat"], ["drive", "drive"]].map(([v, l]) => (
+            {[["brushes", "brushes"], ["downtempo", "downtempo"], ["hand", "hand drums"], ["tabla", "tabla"], ["shaman", "shaman"], ["desert", "desert"], ["makam", "makam (darbuka)"], ["jungle", "jungle"], ["temple", "temple"], ["samba", "samba"], ["jig", "jig"], ["circle", "fire circle"], ["newwave", "new wave"], ["synthwave", "synthwave"], ["break", "breakbeat"], ["drive", "drive"]].map(([v, l]) => (
               <button key={v} onClick={() => { setBeatStyle(v); setBeatWander(false); }} style={{ ...chip(beatStyle === v && !beatWander), fontSize: 10, padding: "4px 11px", ...(beatWander && beatStyle === v ? { borderStyle: "dashed" } : {}) }}>{l}</button>
             ))}
           </div>
@@ -8917,7 +8970,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <span title="A sampled drum beat (LinnDrum) under the music, compressed for punch, snare in the reverb. Break = big-beat breakbeat with ghost notes. Drive = busier kick, 16th hats. Heavy = half-time slam. Fusion = a session-player groove in the Shrapnel-era fusion style: syncopated kick, ghost notes, ride instead of hats, linear tom fills, accents that follow GROUPS across the bar line, cross-stick when it's calm. Downtempo = a laid-back, swung '90s downtempo groove (think Enigma, Deep Forest): big room snare, clap, shaker, tambourine, congas, no crash. Hand = no kit: congas, shaker and tambourine over a low tom pulse. Brushes = very soft: a shaker swirl, cross-stick taps on 2 and 4, a feathered kick; made for sleep (in Endless, the beat comes and goes on its own). New wave = 1980s LinnDrum: kick on 1 and 3, a huge gated-reverb snare with clap on 2 and 4, 16th hats, a tom run every 8th bar, and a pulsing 8th-note synth bass on the chord roots (I-vi-IV-V and friends). Desert = a sparse daf/bendir: a deep dum, crisp rim teks, barely-there jingles. Jungle = log drums tuned to the scale in a 3-3-2, shaker, deep congas. Temple = the wooden fish on the beat, a small bowl every 8 bars. Samba = surdos, caixa, tamborim, agogô bells tuned to the scale, ganzá, the whistle and repique every 8 bars. Jig = a bodhrán in 6/8. Synthwave = four on the floor, gated snare, 16th hats, 16th arpeggios and pumping bass on the chords. Fire circle = hand drums in a circle (dunun, djembes, udu, clap sticks, shaker, claps), players joining as tension rises. Tabla = teental, one stroke per 16th (8 a second at 120 BPM, the alpha-rate tabla from Jean Millay's story), the dayan tuned to the scale's root, a tihai into every 8th bar, and tarang bars where the dayan plays the scale. (New wave, desert, jungle and shaman are the beats of their WORLDs, but play under anything.) Shaman = a deep frame drum's steady pulse with a heartbeat lead-in and softly jingling pendants, doubling to 8ths as tension rises, a roll into every 4th bar. Downtempo and hand play half-time above 120 BPM, and Auto only switches between styles of the same kind, unless WANDER is on: then it roams every style (calm leans to brushes, hand and shaman, tension to the kit grooves); the WORLD, if one is on, keeps its lead. Fill every 4th bar, crash every 16. Plays half-time above 160 BPM. With the orchestra on, tension doubles the hats and adds kicks." style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>BEAT</span>
               <div style={{ display: "flex", gap: 3, marginLeft: "auto", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                {["off", "break", "drive", "heavy", "fusion", "downtempo", "hand", "tabla", "brushes", "shaman", "desert", "jungle", "temple", "samba", "jig", "circle", "newwave", "synthwave"].map(v => (
+                {["off", "break", "drive", "heavy", "fusion", "downtempo", "hand", "tabla", "brushes", "shaman", "desert", "makam", "jungle", "temple", "samba", "jig", "circle", "newwave", "synthwave"].map(v => (
                   <button key={v} onClick={() => { setBeatStyle(v); if (v !== "off") getKit(getCtx()); }} style={{
                     background: beatStyle === v ? K.a : K.bg3,
                     color: beatStyle === v ? "#000" : K.txt,

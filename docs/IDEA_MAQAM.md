@@ -342,3 +342,23 @@ brightness = sum of note positions) carries over unchanged:
 - Not yet: Saba, Segah, Hüzzam, Nihavend, Karcığar, Suzinak (check each
   against a source); seyir direction (ascending vs descending makams);
   makam-specific çeşni (flavour) phrases.
+
+## Makam beat (darbuka + usul) — built 2026-11-08
+
+- Beat style **makam**: a synthesized darbuka (`darb-dum` ~92 Hz open
+  centre stroke, `darb-tek` bright rim, `darb-ka` softer other-hand rim) plus
+  the daf (`frame`) on each cycle's one. One 16th per step.
+- Usuls (positions in 16ths): Sofyan 4/4 (Düm – Te-ke), Düyek 8/8 (Düm tek –
+  tek düm – tek –), Semai 3/4, **Aksak 9/8 (2+2+2+3)**, **Curcuna 10/8
+  (3+2+2+3)**. Tension fills gaps with ka strokes, calm thins to düm/tek,
+  every 4th cycle ends in a roll.
+- In the makam journey each section has its usul (`usul` in `TURK_PATH`):
+  Rast Düyek → Hüseynî Sofyan → Uşşak Semai → Hicaz Aksak → Uşşak Curcuna →
+  Rast Düyek; the journey turns the beat on if drums are off. Elsewhere the
+  usul rotates every 8 cycles. Also in the beat-wander mix.
+- Usul strokes are simplified common darbuka renderings, not the full
+  classical (kudüm) forms; check against a source and Ronnie's ear. Ideas:
+  more usuls (Ağır Aksak, Devr-i Hindî 7/8, Türk Aksağı 5/8, Çiftetelli),
+  a kudüm voice for classical pieces, a davul for folk.
+- Checked headless (played aloud): the journey switches the beat on, reaches
+  Hicaz/Aksak, no console errors.
