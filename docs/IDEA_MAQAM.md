@@ -490,3 +490,7 @@ weighing more, not only on the root.
   switch that sets a new amount every 30–90 s (20% chance each of exactly 0 or
   1). Listen page: "felt" (on/off) and "felt ~" (random). Saved
   (`chloe-felt-amt`, `chloe-felt-random`); links carry `bf=<amount>`, `bfr=1`.
+- Then: **random → wander** (Ronnie): the amount now drifts smoothly on two
+  overlapping slow sine waves (4.1 and 1.7 min, random phase), updated every
+  2 s, reaching both ends now and then, instead of jumping every 30–90 s.
+  Button labelled "wander" (Listen: "felt ~"); same storage/link keys.
