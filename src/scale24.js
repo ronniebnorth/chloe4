@@ -391,6 +391,8 @@ export const BYZ_SEEDS = [
   { name: "Diatonic (from Ni)", iv: [12, 10, 8, 12, 12, 10, 8] },
   { name: "Soft chromatic (from Di)", iv: [8, 14, 8, 12, 8, 14, 8] },
   { name: "Hard chromatic (from Pa)", iv: [6, 20, 4, 12, 6, 20, 4] },
+  // Zo lowered 4 moria (an attraction toward Ke on the way down), for moving within the mode
+  { name: "Diatonic, Zo lowered (from Ni)", iv: [12, 10, 8, 12, 12, 6, 12] },
 ].map(sd => ({ ...sd, pos: cum(sd.iv) }));
 const bp = (iv) => byzPattern(cum(iv));
 export const BYZ_NAMES = [
@@ -401,6 +403,8 @@ export const BYZ_NAMES = [
   [bp([12, 10, 8, 12, 10, 8, 12]), "Fourth mode (diatonic, on Di)"],
   [bp([8, 14, 8, 12, 8, 14, 8]), "Second mode (soft chromatic, on Di)"],
   [bp([6, 20, 4, 12, 6, 20, 4]), "Plagal 2nd (hard chromatic, on Pa)"],
+  [bp([12, 10, 8, 12, 12, 6, 12]), "Plagal 4th, Zo lowered"],
+  [bp([10, 8, 12, 12, 6, 12, 12]), "First mode, Zo lowered"],
 ];
 /* Byzantine journey: around the modes of the Octoechos, the home note moving as
    the modes' bases do (shift = semitones above Ni; Pa = 12 moria = 200¢ exactly,
@@ -408,11 +412,19 @@ export const BYZ_NAMES = [
    Plagal 4th on Ni → First mode on Pa → Second mode (soft chromatic) on Di →
    Plagal 2nd (hard chromatic) on Pa, the peak → First mode → home to Ni.
    Chant is a solo voice over the ison (a held drone on the base note). */
+// related (moving within the mode, on the same base note): First mode ↔ Plagal 2nd
+// (the hard-chromatic phthora nenano on Pa) and ↔ Zo lowered (attraction);
+// Plagal 2nd → First mode; Second mode ↔ Fourth mode (both on Di); Plagal 4th ↔ Zo lowered.
+const B = {
+  pl4: bp([12, 10, 8, 12, 12, 10, 8]), pl4zo: bp([12, 10, 8, 12, 12, 6, 12]),
+  first: bp([10, 8, 12, 12, 10, 8, 12]), firstzo: bp([10, 8, 12, 12, 6, 12, 12]),
+  second: bp([8, 14, 8, 12, 8, 14, 8]), fourth: bp([12, 10, 8, 12, 10, 8, 12]), pl2: bp([6, 20, 4, 12, 6, 20, 4]),
+};
 export const BYZ_PATH = [
-  { at: 0.00, name: "Plagal 4th", shift: 0, pat: bp([12, 10, 8, 12, 12, 10, 8]) },
-  { at: 0.18, name: "First mode", shift: 2, pat: bp([10, 8, 12, 12, 10, 8, 12]) },
-  { at: 0.38, name: "Second mode", shift: 7, pat: bp([8, 14, 8, 12, 8, 14, 8]) },
-  { at: 0.58, name: "Plagal 2nd", shift: 2, pat: bp([6, 20, 4, 12, 6, 20, 4]) },
-  { at: 0.78, name: "First mode", shift: 2, pat: bp([10, 8, 12, 12, 10, 8, 12]) },
-  { at: 0.90, name: "Plagal 4th", shift: 0, pat: bp([12, 10, 8, 12, 12, 10, 8]) },
+  { at: 0.00, name: "Plagal 4th", shift: 0, pat: B.pl4, related: [B.pl4zo] },
+  { at: 0.18, name: "First mode", shift: 2, pat: B.first, related: [B.pl2, B.firstzo] },
+  { at: 0.38, name: "Second mode", shift: 7, pat: B.second, related: [B.fourth] },
+  { at: 0.58, name: "Plagal 2nd", shift: 2, pat: B.pl2, related: [B.first] },
+  { at: 0.78, name: "First mode", shift: 2, pat: B.first, related: [B.pl2, B.firstzo] },
+  { at: 0.90, name: "Plagal 4th", shift: 0, pat: B.pl4, related: [B.pl4zo] },
 ];

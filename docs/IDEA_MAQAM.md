@@ -604,3 +604,9 @@ transitions sound (fade lengths) by ear.
 - Not yet: the enharmonic genus (third mode, grave mode), attractions (notes
   bending toward their neighbours, a real feature of chant), moving within
   each mode. Checked headless: 53 → 72, all four modes, drone on, duduk.
+- Byzantine moves within each mode too (same visit timing, same base note):
+  First mode ↔ Plagal 2nd (hard-chromatic phthora nenano on Pa, mentioned on
+  Wikipedia "Neobyzantine Octoechos") and ↔ Zo lowered; Plagal 2nd → First mode;
+  Second mode ↔ Fourth mode (both on Di); Plagal 4th ↔ Zo lowered. Zo lowered by
+  4 moria = commonly taught attraction, not verified here (new seed "Diatonic,
+  Zo lowered"). Headless: Plagal 4th → Zo lowered → back → First mode → Zo lowered.
