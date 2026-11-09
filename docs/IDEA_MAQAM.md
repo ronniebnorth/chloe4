@@ -79,3 +79,34 @@ has going up; going down it's often a flat 7th, which gives 36.5.)
 - **Sources** to check before building: maqamworld.com (Sami Abu Shumays &
   Johnny Farraj, *Inside Arabic Music*, 2019) for the ajnas/maqam catalogue
   and sayr.
+
+## Decision — 2026-11-08: Chloe4 = skeleton + flags, Chloe5 = full 24-step
+
+Chloe3's 12-note assumption runs through ~260 places (playback, just-intonation
+tables, colour wheel, search, Claude's catalogue, saved favourites, helper
+modules). Ronnie's call: the full 24-step rewrite is the right long-term design,
+but it becomes **Chloe5**. **Chloe4** (`~/rbn-projects/chloe4`, a local copy of
+Chloe3, no GitHub repo yet) adds maqam the smaller way:
+
+- A maqam = a normal 12-bit pattern (its skeleton) + a 12-bit **qt mask** of
+  the degrees that drop a quarter tone. Rast = Ionian (2741) with E and B
+  half-flat. Bayati = Aeolian-like skeleton with the 2nd half-flat.
+- Existing 12-note scales and code stay as they are (qt = 0).
+- What learns the qt mask: the notes played (fractional semitones, so
+  `2 ** (semi / 12)` frequency maths works unchanged), brightness (subtract
+  0.5 per flagged degree), display (24-digit root-first code), search, and a
+  maqam catalogue group in the sidebar.
+- Spots that index arrays by pitch class (just-intonation table, clash table,
+  colour wheel, note names) need a fallback for half-steps (equal temperament,
+  nearest neighbour, "E𝄳"-style labels).
+- Saved favourites/localStorage: check key collisions with Chloe3 if both run
+  on the same localhost port.
+
+### Build steps
+1. Catalogue + helpers (`semisOf(sel)`, `brightQ`, `toBinQ`) with tests
+   against the brightness table above.
+2. Thread `qt` through `sel` and the ~10 `toSemis(sel.pattern)` call sites.
+3. Fallbacks at the pitch-class-indexed spots; tuning = equal temperament
+   for flagged notes.
+4. Sidebar group, display, search; Claude prompt catalogue.
+5. Listen test: Rast, Bayati, Hijaz, Saba against a reference recording.
