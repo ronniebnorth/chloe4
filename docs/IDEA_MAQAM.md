@@ -610,3 +610,33 @@ transitions sound (fade lengths) by ear.
   Second mode ↔ Fourth mode (both on Di); Plagal 4th ↔ Zo lowered. Zo lowered by
   4 moria = commonly taught attraction, not verified here (new seed "Diatonic,
   Zo lowered"). Headless: Plagal 4th → Zo lowered → back → First mode → Zo lowered.
+
+## 2026-11-09: voices, key in cents, and the spiral journey
+
+- **Voices.** choir (sampled GM choir_aahs) and oohs (voice_oohs) are loaded on
+  first use, and chant stands in until they arrive. chant is a formant synth. The
+  ison drone is four low men breathing at different times. Byzantine sings chant ↔
+  choir over the ison, and the orchestra adds the choir toward epic MOOD.
+- **Key in cents** (done). `keyCents` is folded into the effective concert
+  pitch (`aRef = aRefRaw · 2^(keyCents/1200)`), so every voice, drone, sample
+  and tuned drum follows with no per-voice changes. Path stations' `shift` may be
+  fractional (semitones), and journeys set the key; stopping a journey resets it.
+  It's used by:
+  - Abu Ata in the Shur journey (finalis A½♭ for Shur on G = shift 1.5; order
+    Shur → Abu Ata → Bayat-e Tork → Afshari → Dashti → Shur);
+  - the makam journey's Dügah stations, now exactly 9 commas (203.8¢) above Rast
+    rather than 200¢;
+  - the spiral journey.
+  Segah on its own koron tonic is still to do (Persia tour has no key moves).
+- **Spiral journey (Qian Lezhi / Jing Fang).** The Chinese pentatonic in pure
+  fifths (1, 9/8, 81/64, 3/2, 27/16) has its gong moving up a pure fifth per move
+  (xuangong). That's 53 moves over the journey's length (Jing Fang's near-closure,
+  3.62¢), then on along Qian Lezhi's chain to 360 until stopped. The key drifts
+  (12 moves = +23.46¢, the Pythagorean comma). Brief visits go to the old
+  heptatonic with bianzhi and biangong (1, 9/8, 81/64, 729/512, 3/2, 27/16,
+  243/128). Gaps in Qian's 360-chain: 1.77, 1.84 and 3.62¢, too close to hear as
+  separate notes, which is why the journey walks the chain instead of playing it
+  as a scale. Historical figures (Jing Fang 60, Qian Lezhi 360) are from
+  general sources (Needham-era histories via Wikipedia), not checked against a
+  primary text. Possible next: Jing Fang's 60 as an option.
+

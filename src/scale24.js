@@ -227,6 +227,7 @@ const NAME_LIST = [
   [[0, 3, 6, 10, 14, 17, 20], "Afshari"],
   [[0, 2, 6, 10, 13, 16, 20], "Dashti"],
   [[0, 4, 8, 10, 14, 18, 21], "Bayat-e Tork"],
+  [[0, 3, 7, 11, 13, 17, 21], "Abu Ata"],                // Shur's notes from its 2nd, A½♭ (Shur on G)
   // 12-note maqamat and dastgah, named on their existing patterns
   [[0, 2, 8, 10, 14, 16, 20], "Hijaz"],
   [[0, 4, 6, 10, 14, 16, 22], "Nahawand"],
@@ -264,13 +265,14 @@ export const PERSIAN_PATH = [
    its key there so the notes themselves stay the same. Each station's steps
    are the pitch set seen from its own finalis. The finalis climbs G → B♭ → C
    → D, then the forud brings it home to G with Shur's lowered 5th (D½♭).
-   Abu Ata is left out: its finalis is A½♭, and Chloe's key can't sit on a
-   quarter tone yet. */
+   Abu Ata (finalis A½♭, shift 1.5) comes first, as in the radif's order:
+   Chloe's key sits on the quarter tone (key in cents). */
 export const SHUR_PATH = [
   { at: 0.00, name: "Shur", shift: 0, steps: [0, 3, 6, 10, 14, 16, 20] },
-  { at: 0.20, name: "Bayat-e Tork", shift: 3, steps: [0, 4, 8, 10, 14, 18, 21] },
-  { at: 0.40, name: "Afshari", shift: 5, steps: [0, 3, 6, 10, 14, 17, 20] },
-  { at: 0.60, name: "Dashti", shift: 7, steps: [0, 2, 6, 10, 13, 16, 20] },
+  { at: 0.16, name: "Abu Ata", shift: 1.5, steps: [0, 3, 7, 11, 13, 17, 21] },
+  { at: 0.32, name: "Bayat-e Tork", shift: 3, steps: [0, 4, 8, 10, 14, 18, 21] },
+  { at: 0.48, name: "Afshari", shift: 5, steps: [0, 3, 6, 10, 14, 17, 20] },
+  { at: 0.64, name: "Dashti", shift: 7, steps: [0, 2, 6, 10, 13, 16, 20] },
   { at: 0.82, name: "Shur", shift: 0, steps: [0, 3, 6, 10, 13, 16, 20] },
 ];
 
@@ -317,16 +319,19 @@ const tp = (iv) => turkPattern(cum(iv));
 // doesn't): Rast ↔ Rast descending (leading tone drops 4 commas to F), Hüseynî ↔
 // Uşşak (the 6th), Uşşak ↔ Hüseynî / Kürdî (the 6th / the 2nd down a bakiye),
 // Hicaz ↔ Uşşak.
+// Dügah is 9 commas above Rast (203.8¢, not the piano's 200), and with the key
+// in cents the home note moves exactly there, so Rast's own pitches stay put
+const DUGAH = 9 * COMMA;
 const T = {
   rast: tp([9, 8, 5, 9, 9, 8, 5]), rastDesc: tp([9, 8, 5, 9, 9, 4, 9]), huseyni: tp([8, 5, 9, 9, 8, 5, 9]),
   ussak: tp([8, 5, 9, 9, 4, 9, 9]), hicaz: tp([5, 12, 5, 9, 8, 5, 9]), kurdi: tp([4, 9, 9, 9, 4, 9, 9]),
 };
 export const TURK_PATH = [
   { at: 0.00, name: "Rast", shift: 0, usul: "duyek", pat: T.rast, related: [T.rastDesc] },
-  { at: 0.20, name: "Hüseynî", shift: 2, usul: "sofyan", pat: T.huseyni, related: [T.ussak] },
-  { at: 0.38, name: "Uşşak", shift: 2, usul: "semai", pat: T.ussak, related: [T.huseyni, T.kurdi] },
-  { at: 0.56, name: "Hicaz", shift: 2, usul: "aksak", pat: T.hicaz, related: [T.ussak] },
-  { at: 0.76, name: "Uşşak", shift: 2, usul: "curcuna", pat: T.ussak, related: [T.huseyni, T.kurdi] },
+  { at: 0.20, name: "Hüseynî", shift: DUGAH, usul: "sofyan", pat: T.huseyni, related: [T.ussak] },
+  { at: 0.38, name: "Uşşak", shift: DUGAH, usul: "semai", pat: T.ussak, related: [T.huseyni, T.kurdi] },
+  { at: 0.56, name: "Hicaz", shift: DUGAH, usul: "aksak", pat: T.hicaz, related: [T.ussak] },
+  { at: 0.76, name: "Uşşak", shift: DUGAH, usul: "curcuna", pat: T.ussak, related: [T.huseyni, T.kurdi] },
   { at: 0.88, name: "Rast", shift: 0, usul: "duyek", pat: T.rast, related: [T.rastDesc] },
 ];
 
@@ -347,6 +352,13 @@ export const REAL_SEEDS = [
     cents: [8, 9, 10, 11, 12, 13, 14].map(h => rc(h, 8)) },
   { name: "Shur, as played (Abdoli)", tag: "Shur", modes: null,
     cents: [0, 149, 300, 500, 702, 783, 985] },
+  // Chinese, from a chain of pure fifths (the sanfen sunyi method): the five
+  // notes gong shang jue zhi yu are 5 neighbouring fifths; the old heptatonic
+  // adds bianzhi (the raised 4th) and biangong (the 7th), 7 neighbouring fifths
+  { name: "Chinese pentatonic (Pythagorean, gong)", tag: "Chinese pentatonic", modes: ["gong", "shang", "jue", "zhi", "yu"],
+    cents: [[1, 1], [9, 8], [81, 64], [3, 2], [27, 16]].map(([n, d]) => rc(n, d)) },
+  { name: "Chinese heptatonic, old (gong with bianzhi and biangong)", tag: "Chinese heptatonic", modes: null,
+    cents: [[1, 1], [9, 8], [81, 64], [729, 512], [3, 2], [27, 16], [243, 128]].map(([n, d]) => rc(n, d)) },
 ].map(sd => ({ ...sd, id: fromCents(sd.cents, "cents") }));
 // Names for every mode of the real-intonation seeds
 export const REAL_NAMES = [];
@@ -358,6 +370,18 @@ for (const sd of REAL_SEEDS) {
     if (name) REAL_NAMES.push([id, name]);
   });
 }
+export const CHINESE_PENTA = REAL_SEEDS.find(sd => sd.tag === "Chinese pentatonic").id;
+export const CHINESE_HEPTA = REAL_SEEDS.find(sd => sd.tag === "Chinese heptatonic").id;
+// A pure fifth in cents. Stacked fifths never close the octave: 12 miss by
+// 23.46¢ (the Pythagorean comma), 53 by only 3.62¢ (Jing Fang, 1st century BC),
+// and Qian Lezhi (5th century AD) carried the chain on to 360, one per day of
+// the year, his neighbouring pitches only 1.8-3.6¢ apart.
+export const FIFTH = 1200 * Math.log2(3 / 2);
+export const SPIRAL_MOVES = 53, SPIRAL_MAX = 360;
+// The spiral journey's station: move k (0-based), the key k pure fifths above
+// home (shift in semitones, never folded, so the drift stays), the pentatonic
+// on it, leaning now and then into the heptatonic with its two changing tones
+export const spiralStation = (k) => ({ k, pat: CHINESE_PENTA, shift: k * FIFTH / 100, related: [CHINESE_HEPTA] });
 export const realRotations = (id) => { const c = centsOf(id); return c.map((_, k) => fromCents(rotCents(c, k), "cents")); };
 
 /* ── Resolution: how finely the octave is divided when notes are played ──
