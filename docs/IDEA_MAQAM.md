@@ -151,3 +151,33 @@ Still to do:
    MIDI notes, so notes are floored and the extra 50 cents rides on detune.
    The synth voices use frequencies directly and need no change. Listen to
    confirm.
+
+## Idea — 2026-11-08: Persian and Turkish journeys
+
+Ronnie's idea: *a journey for Persian and Turkish would be cool.* Both
+traditions are already shaped like journeys, which fits Chloe's journey engine:
+
+- **Persian dastgah.** A performance follows the *radif*: it opens on the
+  *darāmad* (home), moves through *gushe*s (short melodic stations) that climb
+  in register and shift notes, then comes back down to the home with a
+  *forud* (return). Seven dastgahs (Shur, Homayun, Segah, Chahargah, Mahur,
+  Rast-Panjgah, Nava) plus derived *āvāz*es (Abu Ata, Dashti, Bayat-e Tork,
+  Afshari, Bayat-e Esfahan). Altered notes: *koron* (lowered) and *sori*
+  (raised).
+  **24 steps fits:** Ali-Naqi Vaziri proposed a 24-quarter-tone system for
+  Persian music in the 1920s, so Chloe4's grid has real precedent here. Real
+  koron intervals vary by player, but quarter tones are the standard
+  teaching approximation.
+- **Turkish makam.** A *seyir* (melodic path: ascending, descending, or
+  both) plus *taksim* improvisation that visits related makams and returns.
+  **24 steps is a poor fit:** Turkish theory (Arel-Ezgi-Uzdilek) divides the
+  whole tone into 9 commas (53 per octave). Turkish Rast's 3rd is about one
+  comma flat of a natural E, not a quarter tone, and Uşşak's 2nd sits lower
+  than Arabic Bayati's. Quarter tones would make Turkish makams sound
+  Arabic. Doing Turkish right needs pitches in cents (or 53 steps), which
+  is the Chloe5 direction.
+
+Suggested order: **Persian journey first** (works on the current 24-step
+grid: add the dastgah scales as catalogue seeds, then a journey that starts
+on the darāmad, climbs through gushes and does a forud home). Turkish after
+Chloe gains finer pitch, or as an openly labelled 24-step approximation.
