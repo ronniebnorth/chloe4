@@ -576,3 +576,10 @@ transitions sound (fade lengths) by ear.
   scales. Rotations now happen in whole commas (`rotPos`). Verified: every
   journey makam and every named makam is in a family; real-intonation names
   all match too. Headless: Rast → Rast (descending) → Rast → Hüseynî.
+- Persia and Shur move within too (same visit timing). Shur journey: each
+  station alternates Shur's variable 5th (moteghayyer D ↔ D½♭, Iranica), except
+  Dashti whose home note it is; Dashti alternates its A½♭ ↔ A (microtonaltheory
+  .com). Persia: Shur stations the same variable 5th; Homayun, Segah, Chahargah,
+  Mahur lean toward the previous/next stop (Chloe's own touch, no sourced variants).
+  All visit scales verified to exist in a family. Headless: Shur → Shur (lowered
+  5th) → Shur → Dashti, no errors.

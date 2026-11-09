@@ -274,6 +274,29 @@ export const SHUR_PATH = [
   { at: 0.82, name: "Shur", shift: 0, steps: [0, 3, 6, 10, 13, 16, 20] },
 ];
 
+/* Moving within the dastgah. In Shur's family the 5th of Shur (D, with Shur on G)
+   is a variable note (moteghayyer) that alternates with a lowered D½♭ (Iranica);
+   Dashti also alternates its A½♭ with A (microtonaltheory.com, "D Eb F G (A | Ad)
+   Bb C D"). Each Shur-journey station leans briefly into the other version. Shur's
+   5th sits at quarter-step 14 (D) / 13 (D½♭) above Shur's tonic; seen from a
+   station whose home note is `shift` semitones up, that's 14 − 2·shift (mod 24). */
+const toggleStep = (steps, a, b) => {
+  const m = x => ((x % 24) + 24) % 24, A = m(a), B = m(b);
+  return steps.map(x => x === A ? B : x === B ? A : x).sort((u, v) => u - v);
+};
+const shurVariant = (st) => toggleStep(st.steps, 14 - 2 * st.shift, 13 - 2 * st.shift);
+for (const st of SHUR_PATH) {
+  // (not where Shur's 5th IS the home note, as in Dashti: that would move the home note itself)
+  st.related = ((14 - 2 * st.shift) % 24 + 24) % 24 === 0 ? [] : [fromSteps(shurVariant(st))];
+  if (st.name === "Dashti") st.related.push(fromSteps(toggleStep(st.steps, 13, 14)));   // its A½♭ ↔ A
+}
+// Persia tour: Shur stations alternate the same variable 5th; the others lean briefly
+// toward the stop before or after them on the tour (Chloe's own touch, like the tour itself)
+PERSIAN_PATH.forEach((st, i) => {
+  if (st.name === "Shur") st.related = [fromSteps(toggleStep(st.steps, 14, 13))];
+  else st.related = [PERSIAN_PATH[i - 1], PERSIAN_PATH[i + 1]].filter(x => x && x.name !== st.name).map(x => fromSteps(x.steps));
+});
+
 export const persianStation = (f, path = PERSIAN_PATH) => {
   let st = path[0];
   for (const s of path) if (f >= s.at) st = s;
