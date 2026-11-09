@@ -208,6 +208,56 @@ function synthChant(ac, freq) {
   };
 }
 
+// Ison: the low voices of a Byzantine choir holding the mode's base note
+// under the chant, an open "o" warming toward "a" and back. Four men a few
+// cents apart, each drifting on his own, each breathing on his own (a dip of
+// about a second every 8-14 s), so the ison never stops.
+const ISON_VOWELS = [[450, 800, 2600], [600, 1000, 2550], [700, 1100, 2450]];
+function synthIson(ac, freq) {
+  let F = fold(freq, 82, 165);
+  const master = ac.createGain(); master.gain.value = 0.16;
+  const sum = ac.createGain(); sum.gain.value = 0.5;
+  const vs = [-9, -3, 4, 10].map(c => {
+    const o = ac.createOscillator(); o.setPeriodicWave(harmWave(ac, 1.0)); o.frequency.value = F; o.detune.value = c;
+    const dr = ac.createOscillator(), drg = ac.createGain(); dr.frequency.value = 0.1 + Math.random() * 0.15; drg.gain.value = 3 + Math.random() * 3; dr.connect(drg); drg.connect(o.detune);
+    const g = ac.createGain(); g.gain.value = 0.85 + Math.random() * 0.3; o.connect(g); g.connect(sum);
+    return { o, dr, g };
+  });
+  const fs = [[1, 80], [0.5, 100], [0.18, 140]].map(([gain, bw], i) => {
+    const b = ac.createBiquadFilter(); b.type = "bandpass"; b.frequency.value = ISON_VOWELS[0][i]; b.Q.value = ISON_VOWELS[0][i] / bw;
+    const bg = ac.createGain(); bg.gain.value = gain * 3; sum.connect(b); b.connect(bg); bg.connect(master); return b;
+  });
+  const body = ac.createBiquadFilter(), bodyG = ac.createGain(); body.type = "lowpass"; body.frequency.value = 300; bodyG.gain.value = 0.35;
+  sum.connect(body); body.connect(bodyG); bodyG.connect(master);
+  let alive = true; const timers = [];
+  const vowel = () => {   // the mouth opening and closing over 10-20 s
+    if (!alive) return;
+    const t = ac.currentTime, L = 10 + Math.random() * 10, v = ISON_VOWELS[Math.floor(Math.random() * 3)];
+    fs.forEach((b, i) => { b.frequency.cancelScheduledValues(t); b.frequency.setValueAtTime(b.frequency.value, t); b.frequency.linearRampToValueAtTime(v[i], t + L * 0.6); b.Q.setValueAtTime(b.Q.value, t); });
+    timers[0] = setTimeout(vowel, L * 1000);
+  };
+  vs.forEach((v, i) => {
+    const breathe = () => {
+      if (!alive) return;
+      const t = ac.currentTime, lvl = 0.85 + Math.random() * 0.3, g = v.g.gain;
+      g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
+      g.linearRampToValueAtTime(0, t + 0.25); g.setValueAtTime(0, t + 0.6 + Math.random() * 0.5); g.linearRampToValueAtTime(lvl, t + 1.4 + Math.random() * 0.4);
+      timers[i + 1] = setTimeout(breathe, (8 + Math.random() * 6) * 1000);
+    };
+    timers[i + 1] = setTimeout(breathe, (2 + i * 2.5 + Math.random() * 2) * 1000);   // staggered from the start
+  });
+  vs.forEach(v => { v.o.start(); v.dr.start(); });
+  vowel();
+  return {
+    node: master, oscs: vs.map(v => v.o), baseFreq: freq,
+    setFreq: (ratio, glide) => {
+      const now = ac.currentTime; F *= ratio;
+      vs.forEach(({ o }) => { o.frequency.cancelScheduledValues(now); o.frequency.setValueAtTime(o.frequency.value, now); o.frequency.exponentialRampToValueAtTime(F, now + glide); });
+    },
+    stop: () => { alive = false; timers.forEach(clearTimeout); vs.forEach(v => { try { v.o.stop(); v.dr.stop(); } catch {} }); setTimeout(() => { try { master.disconnect(); } catch {} }, 150); },
+  };
+}
+
 // Didgeridoo: the lips buzzing on a low root, the mouth shaping it: two
 // formants the tongue keeps moving in a loose rhythm (wah, oo, ee), a push of
 // breath on the accents, and every 8-14 s the quick sniff of circular
@@ -491,7 +541,7 @@ function synthJawHarp(ac, freq, opts) {
 
 // Noise as a drone: no pitch, so it stays put through a change of key
 const NOISE_LEVEL = { white: 0.1, pink: 0.16, brown: 0.3 };   // about equally loud to the ear, which hears hiss first
-const DRONE_TYPES = ["sine", "organ", "pad", "strings", "tanpura", "throat", "jawharp", "juno", "dam", "chant", "didge", ...NOISE_TYPES];
+const DRONE_TYPES = ["sine", "organ", "pad", "strings", "tanpura", "throat", "jawharp", "juno", "dam", "chant", "ison", "didge", ...NOISE_TYPES];
 // The tone control's low-pass, opened well up for noise: at the usual 1.3 kHz, white wouldn't be white
 const droneToneHz = (tone, type) => Math.min(20000, 200 * Math.pow(40, tone) * (NOISE_TYPES.includes(type) ? 8 : 1));
 function synthDrone(ac, freq, type, opts) {
@@ -506,6 +556,7 @@ function synthDrone(ac, freq, type, opts) {
   if (type === "juno") return synthJuno(ac, freq, opts);
   if (type === "dam") return synthDam(ac, freq);
   if (type === "chant") return synthChant(ac, freq);
+  if (type === "ison") return synthIson(ac, freq);
   if (type === "didge") return synthDidge(ac, freq);
   const oscs = [];
   const mk = (f, wt, detune = 0) => {
@@ -1267,7 +1318,7 @@ const tunedRatio = (semi, tuning) => {
 
 // Per-sound gain so every instrument/wave plays at about the same loudness
 // (measured K-weighted, eighth-note runs C3-C5, levelled to -28 LUFS).
-const SOUND_GAIN = { synlead: 1, whistle: 0.4, pan: 0.8, dulcimer: 1, glass: 0.4, shaku: 0.56, hang: 0.5, felt: 0.44, kalimba: 0.33, piano: 0.55, guitar: 5.37, xylo: 3.05, space: 0.8, lute: 1.88, fiddle: 0.78, dx7: 0.52, duduk: 0.36, whale: 0.8, sine: 1.4, triangle: 1.72, square: 1.14, sawtooth: 1.93 };
+const SOUND_GAIN = { synlead: 1, choir: 1.05, oohs: 1.86, chant: 0.68, whistle: 0.4, pan: 0.8, dulcimer: 1, glass: 0.4, shaku: 0.56, hang: 0.5, felt: 0.44, kalimba: 0.33, piano: 0.55, guitar: 5.37, xylo: 3.05, space: 0.8, lute: 1.88, fiddle: 0.78, dx7: 0.52, duduk: 0.36, whale: 0.8, sine: 1.4, triangle: 1.72, square: 1.14, sawtooth: 1.93 };
 
 // Steppe strings slide into a note from the one before (within a 4th, not
 // across a rest, not between the notes of one chord)
@@ -1316,6 +1367,27 @@ function luteBuffer(ac, freq) {
   if (luteCache.size > 400) luteCache.delete(luteCache.keys().next().value);
   return buf;
 }
+
+// Sampled voices: the General MIDI choir "aah" and voice "ooh", with loop
+// points so held notes sustain. Loaded on first use per audio context; until
+// they arrive the chant voice sings in their place, on their vowel. Whole MIDI
+// notes plus detune in cents, so microtones land exactly.
+const VOICE_SF = { choir: "choir_aahs", oohs: "voice_oohs" };
+const voiceSfs = new WeakMap();
+function voiceSf(ac, inst) {
+  let m = voiceSfs.get(ac); if (!m) voiceSfs.set(ac, m = {});
+  if (!m[inst]) {
+    const out = ac.createGain(); out.gain.value = 10;   // the samples are quiet: ~20 dB under the synths
+    const sf = Soundfont(ac, { instrument: VOICE_SF[inst], destination: out, loadLoopData: true });
+    const v = m[inst] = { sf, out, ready: false, to: [] };
+    Promise.resolve(sf.ready ?? sf.load).then(() => { v.ready = true; }).catch(() => {});
+  }
+  return m[inst];
+}
+// Male vowel formants (Hz) from "oo" (0) through "o" (1) to "ah" (2): F1, F2, F3
+const VOICE_VOWELS = [[300, 870, 2240], [450, 800, 2600], [730, 1090, 2440]];
+const vowelAt = x => { const i = Math.min(1, Math.floor(x)), f = Math.min(1, x - i); return VOICE_VOWELS[i].map((v, k) => v + (VOICE_VOWELS[i + 1][k] - v) * f); };
+let lastVoice = { freq: 0, t: -9 };   // the voices glide from their last note
 
 function synthNote(ac, freq, vel, instrument, timbre, beatDur, reverbSend, delaySend, analyserSend, out, when = 0) {
   vel *= SOUND_GAIN[instrument || timbre] ?? 1;
@@ -1446,6 +1518,72 @@ function synthNote(ac, freq, vel, instrument, timbre, beatDur, reverbSend, delay
     g.gain.linearRampToValueAtTime(0, now + dur);
     body.connect(g); connectOut(g);
     for (const x of [o, vib, nb]) { x.start(now); x.stop(now + dur + 0.02); }
+    cleanup(dur);
+    return { start: now, stop: now + dur };
+  }
+
+  if ((instrument === "choir" || instrument === "oohs") && voiceSf(ac, instrument).ready) {
+    const v = voiceSf(ac, instrument);
+    // One shared output per voice: re-routed when the lead bus changes (orchestra, Endless)
+    const to = [dest, reverbSend, delaySend, analyserSend].filter(Boolean);
+    if (to.length !== v.to.length || to.some((d, i) => d !== v.to[i])) { try { v.out.disconnect(); } catch {} to.forEach(d => v.out.connect(d)); v.to = to; }
+    const dur = Math.max(0.45, Math.min(beatDur * 1.8, 5));
+    const m = 69 + 12 * Math.log2(freq / 440), note = Math.round(m);
+    // smplr's gain is (velocity/127)², so this keeps vel as a linear level
+    v.sf.start({ note, detune: 100 * (m - note), velocity: Math.max(1, Math.min(127, Math.round(127 * Math.sqrt(Math.min(1, vel))))), time: now, duration: dur, ampRelease: 0.45, loop: true });
+    lastVoice = { freq, t: now };
+    return { start: now, stop: now + dur };
+  }
+
+  if (instrument === "chant" || instrument === "choir" || instrument === "oohs") {
+    // Chant: a few men singing the line together (the choir and oohs sing this
+    // way too, on their own vowel, while their samples load). Each voice a few
+    // cents apart with its own vibrato, blooming after the onset, through the
+    // formants of a vowel: "oo" when MOOD is chill, "ah" when epic, opening a
+    // little through long notes. Notes scoop up into pitch or glide from the last.
+    if (instrument !== "chant") vel *= (SOUND_GAIN.chant ?? 1) / (SOUND_GAIN[instrument] ?? 1);
+    const nV = instrument === "chant" ? 3 : 5;
+    const vx = instrument === "choir" ? 2 : instrument === "oohs" ? 0 : Math.max(0, Math.min(2, 1.1 + 0.8 * MOOD + (Math.random() - 0.5) * 0.5));
+    const dur = Math.max(0.45, Math.min(beatDur * 1.8, 5));
+    const p = lastVoice, iv = p.freq ? Math.abs(12 * Math.log2(freq / p.freq)) : 99;
+    const glide = p.freq && now - p.t > 0.03 && now - p.t < 1 && iv <= 5 && iv > 0.3 && Math.random() < 0.5 ? p.freq : 0;
+    if (now - p.t > 0.03) lastVoice = { freq, t: now };
+    const scoop = !glide && Math.random() < 0.5 ? freq * 2 ** (-(25 + Math.random() * 35) / 1200) : 0;
+    const sum = mkG(); sum.gain.value = 1 / Math.sqrt(nV);
+    const oscs = [];
+    for (let i = 0; i < nV; i++) {
+      const o = mkO("sine"); o.setPeriodicWave(harmWave(ac, 1.0));
+      o.detune.value = (i - (nV - 1) / 2) * (nV > 3 ? 5 : 7) + (Math.random() - 0.5) * 4;
+      const start = glide || scoop;
+      if (start) { o.frequency.setValueAtTime(start, now); o.frequency.exponentialRampToValueAtTime(freq, now + 0.09 + Math.random() * 0.08); }
+      else o.frequency.value = freq;
+      const vib = mkO("sine"), vg = mkG(); vib.frequency.value = 4.8 + Math.random();
+      vg.gain.setValueAtTime(0, now); vg.gain.setValueAtTime(0, now + Math.min(0.25, dur * 0.3));
+      vg.gain.linearRampToValueAtTime(10 + Math.random() * 10, now + Math.min(0.8, dur * 0.7));
+      vib.connect(vg); vg.connect(o.detune);
+      const og = mkG(); og.gain.value = 0.8 + Math.random() * 0.4; o.connect(og); og.connect(sum);
+      oscs.push(o, vib);
+    }
+    // A little breath at the start of the note
+    const nb = mkB(); nb.buffer = noiseBuffer(ac, "white"); nb.loop = true;
+    const nf = mkF("bandpass", 1800); nf.Q.value = 0.7;
+    const ng = mkG(); ng.gain.setValueAtTime(0.05, now); ng.gain.setTargetAtTime(0.008, now + 0.04, 0.08);
+    nb.connect(nf); nf.connect(ng); ng.connect(sum); oscs.push(nb);
+    const voc = mkG(), v0 = vowelAt(vx), v1 = vowelAt(Math.min(2, vx + 0.3));
+    [[1, 80], [0.55, 100], [0.2, 140]].forEach(([gain, bw], k) => {
+      const b = mkF("bandpass", v0[k]); b.Q.value = v0[k] / bw;
+      if (dur > 1) b.frequency.linearRampToValueAtTime(v1[k], now + dur);
+      const bg = mkG(); bg.gain.value = gain * 3; sum.connect(b); b.connect(bg); bg.connect(voc);
+    });
+    const body = mkF("lowpass", 320), bodyG = mkG(); bodyG.gain.value = 0.3; sum.connect(body); body.connect(bodyG); bodyG.connect(voc);
+    const lp = mkF("lowpass", 4200); voc.connect(lp);
+    const g = mkG(), atk = Math.min(0.15, dur * 0.3), rel = Math.min(0.3, dur * 0.35);
+    g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(vel * 0.8, now + atk);
+    g.gain.linearRampToValueAtTime(vel * (dur > 1 ? 1 : 0.85), now + Math.max(atk + 0.01, dur * 0.6));
+    g.gain.setValueAtTime(vel * (dur > 1 ? 1 : 0.85), now + dur - rel);
+    g.gain.linearRampToValueAtTime(0, now + dur);
+    lp.connect(g); connectOut(g);
+    for (const x of oscs) { x.start(now); x.stop(now + dur + 0.02); }
     cleanup(dur);
     return { start: now, stop: now + dur };
   }
@@ -1922,7 +2060,7 @@ function Piano({ active, playing, K }) {
 const ROOTS = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
 const OFFS  = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const TIMBRES = ["sine", "triangle", "square", "sawtooth"];
-const INSTRUMENTS = ["piano", "guitar", "xylo", "space", "lute", "fiddle", "dx7", "duduk", "whale", "kalimba", "felt", "hang", "shaku", "glass", "dulcimer", "pan", "whistle", "synlead"];
+const INSTRUMENTS = ["piano", "guitar", "xylo", "space", "lute", "fiddle", "dx7", "duduk", "whale", "kalimba", "felt", "hang", "shaku", "glass", "dulcimer", "pan", "whistle", "synlead", "choir", "oohs", "chant"];
 // Worlds: a lead, a rhythm, a drone and leanings (scales, tempo, reverb) that
 // belong together, picked on the World row. Picking one brings in its beat and
 // drone (both can be changed after); while it's on, it owns the lead.
@@ -2361,9 +2499,9 @@ JOURNEYS.makam = { label: "makam", home: S24.TURK_PATH[0].pat, persian: true, tu
     return { at: st.at, b, t: 0.85 + 0.2 * (b - 0.35) / 0.35, rv: 0.75 - 0.15 * (b - 0.35) / 0.35, su: 1.3 };
   }).concat([{ at: 1, b: 0.35, t: 0.85, rv: 0.8, su: 1.4 }]) };
 // Byzantine: around the modes of the Octoechos in 72 moria (BYZ_PATH in scale24.js),
-// the home note moving with each mode's base; a voice-like duduk over the ison (drone).
+// the home note moving with each mode's base; chant and choir taking turns over the ison (drone).
 JOURNEYS.byzantine = { label: "byzantine", home: S24.BYZ_PATH[0].pat, persian: true, byzantine: true, path: S24.BYZ_PATH, bpm: 60,
-  tip: "Byzantine chant, in its own 72 moria per octave: from Plagal 4th on Ni through the First mode on Pa and the Second mode's soft chromatic on Di to the Plagal 2nd's hard chromatic, the peak, then back home. A voice-like duduk over the ison, the drone held on each mode's base note.",
+  tip: "Byzantine chant, in its own 72 moria per octave: from Plagal 4th on Ni through the First mode on Pa and the Second mode's soft chromatic on Di to the Plagal 2nd's hard chromatic, the peak, then back home. Sung by the chant voice and the choir taking turns, as the two choirs of a Byzantine church alternate, over the ison: low voices holding each mode's base note.",
   pts: S24.BYZ_PATH.map(st => {
     const b = { "Plagal 4th": 0.32, "First mode": 0.45, "Second mode": 0.58, "Plagal 2nd": 0.7 }[st.name];
     return { at: st.at, b, t: 0.9 + 0.15 * (b - 0.32) / 0.38, rv: 0.9 - 0.1 * (b - 0.32) / 0.38, su: 1.5 };
@@ -2479,14 +2617,14 @@ const HELP_SECTIONS = [
   { title: "SEARCH & FILTER", body: "The left sidebar has a search box that filters scales by name as you type — results narrow to only matching modes within each family (e.g. searching 'dorian' shows just the Dorian row, not all 7 modes). The NOTES buttons below it (3 to 12) pick how many notes per scale: click a number for only that size (5 = pentatonics), click a second number for everything between (5 then 7 = pentatonic to heptatonic), click all (or the single number again) to reset. The range also limits what Auto and the journeys pick (the Persia, Shur and Makam paths keep their own scales), so it sets how many corners the polygon has. Scales with 9 to 12 notes all contain a cluster of semitones, so they are outside scales (Nonatonic, Decatonic, Hendecatonic, Chromatic): switch on outside to see and hear them; with a 9–12 range Auto then picks only those. The sus chip (or searching 'sus' or 'suspended') shows suspended scales: no 3rd, so neither major nor minor, with a 5th and a 2nd or 4th. These compose with each other and with the header filter bar. The header filter accepts comma-separated terms: family ID (hep-6), group prefix (pen, hep, hex), scale name, binary fragment, decimal value, or interval pattern (2-2-1). The star button on any row marks a favourite; the favs button in the header shows starred scales only. Custom names are searchable too." },
   { title: "A/B SCALE COMPARISON", body: "Pin any scale as a reference point using the ⊿ pin button next to its name in the info panel. An A/B panel appears below showing both the pinned scale (B) and your current selection (A). Click either side to jump between them instantly — both play at the same root, tempo, and settings so you can hear the contrast directly. The A side automatically tracks whatever you're playing when you're not on the pinned scale, so browsing the list always updates A. The × button clears the comparison." },
   { title: "NAMING SCALES", body: "Any scale without a built-in name shows a pencil icon (✎) in its row. Click it to open an inline text field and type your own name. Press Enter or click away to save; Escape to cancel. To edit or clear a name, click the pencil next to it. Custom names appear in the info panel, show up in saved moments, and are fully searchable. They persist in your browser across sessions." },
-  { title: "PLAYBACK", body: "Drone sustains the root note. DRONE OCT drops it 1–3 octaves. DRONE VOL sets its level independently. DRONE TONE darkens or opens it. DRONE TYPE sets the drone sound: sine (clean + sub-octave), organ (additive harmonics), pad (detuned shimmer), strings (bowed saws with tremolo), tanpura (Indian root/fifth/octave pulsing), throat (Mongolian throat singing with a whistled overtone melody), jaw harp (a plucked reed in a rhythm), juno (an 80s polysynth pad), dam (a second duduk holding the home note), chant (monks on a low om), didge (a didgeridoo), and white, pink and brown (noise with no pitch, from hissy to a soft low rumble). Play steps through the scale in Arpeggio or Melody mode. OCTAVES (1–3) expands playback across multiple octaves. Click the direction button to cycle: ascending, descending, or random. RHYTHM sets the note-spacing pattern: even, swing, gallop, waltz, or clave. Melody uses a weighted random walk with octave leaps. CHORD layers multiple scale tones per step: power (root+5th), sus2 (root+2nd+5th), sus4 (root+4th+5th), triad, 7th, or all notes at once. Sus chords use real intervals and leave out any note the scale doesn't have. BEAT adds drums, from soft brushes and hand drums to breakbeats and the worlds' own styles (hold the pointer on the BEAT label for the full list). GROUPS plays the line in repeating groups of notes that run against the 4-count. If a heart rate sensor is connected, a ♥ button appears showing live BPM — click it to instantly set tempo to your heart rate." },
-  { title: "SOUND", body: "When a journey or world plays its own sound (Makam: oud and ney; Persia and Shur: santur and kamancheh; Ocean: whale…), that instrument gets a dashed outline in the row, while your own choice stays solid. All instruments are synthesised in the browser using Web Audio. piano = detuned triangle oscillators with harmonic decay. guitar = Karplus-Strong style noise burst. xylo = marimba-ratio harmonic partials. space = detuned sines with LFO vibrato. lute and fiddle = Mongolian strings. dx7 = an FM electric piano. duduk = an Armenian reed. whale = low, gliding whale song. kalimba = a thumb piano. felt = a felt piano. hang = a handpan. shaku = a shakuhachi-style bamboo flute. glass = a glass harmonica. dulcimer = a hammered dulcimer. pan = a steel pan. whistle = a tin whistle. synlead = a big saw lead. Or choose a raw wave: sine, triangle, square or sawtooth. VOL sets note volume. REV adds convolution reverb. DEL sets delay wet level. D.T sets delay time in seconds (try 0.125, 0.25, 0.375, 0.5 for rhythmic values). A= sets concert pitch (432–440 Hz). BPM sets tempo." },
+  { title: "PLAYBACK", body: "Drone sustains the root note. DRONE OCT drops it 1–3 octaves. DRONE VOL sets its level independently. DRONE TONE darkens or opens it. DRONE TYPE sets the drone sound: sine (clean + sub-octave), organ (additive harmonics), pad (detuned shimmer), strings (bowed saws with tremolo), tanpura (Indian root/fifth/octave pulsing), throat (Mongolian throat singing with a whistled overtone melody), jaw harp (a plucked reed in a rhythm), juno (an 80s polysynth pad), dam (a second duduk holding the home note), chant (monks on a low om), ison (the low voices of a Byzantine choir holding the home note, each breathing on his own so it never stops), didge (a didgeridoo), and white, pink and brown (noise with no pitch, from hissy to a soft low rumble). Play steps through the scale in Arpeggio or Melody mode. OCTAVES (1–3) expands playback across multiple octaves. Click the direction button to cycle: ascending, descending, or random. RHYTHM sets the note-spacing pattern: even, swing, gallop, waltz, or clave. Melody uses a weighted random walk with octave leaps. CHORD layers multiple scale tones per step: power (root+5th), sus2 (root+2nd+5th), sus4 (root+4th+5th), triad, 7th, or all notes at once. Sus chords use real intervals and leave out any note the scale doesn't have. BEAT adds drums, from soft brushes and hand drums to breakbeats and the worlds' own styles (hold the pointer on the BEAT label for the full list). GROUPS plays the line in repeating groups of notes that run against the 4-count. If a heart rate sensor is connected, a ♥ button appears showing live BPM — click it to instantly set tempo to your heart rate." },
+  { title: "SOUND", body: "When a journey or world plays its own sound (Makam: oud and ney; Persia and Shur: santur and kamancheh; Byzantine: chant and choir; Ocean: whale…), that instrument gets a dashed outline in the row, while your own choice stays solid. The instruments are synthesised in the browser using Web Audio, except choir and oohs, which are sampled. piano = detuned triangle oscillators with harmonic decay. guitar = Karplus-Strong style noise burst. xylo = marimba-ratio harmonic partials. space = detuned sines with LFO vibrato. lute and fiddle = Mongolian strings. dx7 = an FM electric piano. duduk = an Armenian reed. whale = low, gliding whale song. kalimba = a thumb piano. felt = a felt piano. hang = a handpan. shaku = a shakuhachi-style bamboo flute. glass = a glass harmonica. dulcimer = a hammered dulcimer. pan = a steel pan. whistle = a tin whistle. synlead = a big saw lead. choir = a sampled choir singing “ah” (the chant voice stands in for it for the few seconds it takes to load). oohs = sampled voices on a soft “oo”. chant = a few men singing the line together, each with his own vibrato, the vowel following MOOD (“oo” when chill, “ah” when epic) and opening through long notes, scooping up into notes or gliding from the last; synthesised, so every microtone lands exactly. Or choose a raw wave: sine, triangle, square or sawtooth. VOL sets note volume. REV adds convolution reverb. DEL sets delay wet level. D.T sets delay time in seconds (try 0.125, 0.25, 0.375, 0.5 for rhythmic values). A= sets concert pitch (432–440 Hz). BPM sets tempo." },
   { title: "SHARE / URL", body: "The share button encodes all settings into the URL and copies it to clipboard. Paste or bookmark to restore the exact session: scale, root, instrument, BPM, tuning, chord mode, and more." },
   { title: "⟲ AUTO MODE", body: "Auto mode explores scales automatically without needing an API key. It randomly picks from the pool you choose (named scales, all scales, or suspended, which travels through every suspended scale before repeating any), with a new pick every 12–16 seconds. A pick can change the arpeggio direction, chord voicing, sound, BPM, reverb, delay level and delay time. Rhythm and groups can't blend, so they change on only about 1 pick in 4. The key changes on about 1 pick in 8, mostly up a 4th or a 5th, but not in The Wait, Endless, Map or Rise (Celtic has its own lift of a whole step). AUTO TEMPO sets how the tempo moves: drift wanders in small steps, and bursts holds your BPM with a short push or pull now and then. The ⚙ menu has a tick for each thing Auto may change. Each choice is logged in the demo log panel; click any entry to jump back to that scale. Use Loop to freeze on a scale you like, and Save to capture it." },
-  { title: "◇ JOURNEYS", body: "JOURNEY in the playback controls gives Auto a destination instead of wandering. Dawn = dark to bright; Dusk = bright to dark, slowing, with longer notes and deeper reverb; Descent = bright, down into the dark and back up; Storm = calm, a storm of clashing scales and faster tempo peaking about 60% of the way in (the orchestra at full energy if it's on), then calm; Rise = epic and energizing, a build to a big bright peak with one breath on the way, starting at its own 116 BPM, bold sounds, the orchestra driving and marching (choosing it in Listen turns on the orchestra and a drive beat); Wait = a steady pulse through suspended scales, then the drums fall away and one suspended scale holds with no 3rd, slowing and widening, until late in the journey the 3rd arrives, major or minor, and the pulse returns (it turns on a drone and, if there's no beat, a downtempo one. The drone travels too: a didgeridoo under the pulse, slowly becoming an airy pad over a low root, then blooming into strings at the drop, with the same 3rd. Untick Drone Type in ⚙ to keep your own drone instead. A very faint jet crosses during the pulse, and a high, distant one approaches through the last minute of the wait and passes overhead at the drop; untick Jet in ⚙ to leave them out). Wake = built to keep you awake: it climbs fast from 102 toward 162 BPM, never dips, and keeps breaking its own pattern at uneven times, every minute or so at first and every 15 to 35 seconds by the end, with sudden stops, drums dropping out and slamming back, tempo lurches, key jumps, flips between line and arpeggio, and new drum styles. It turns Smooth off and, if there's no beat, brings in a drive beat. On arrival it holds at the top and keeps surprising you until you stop it; Draw = your own journey: draw a line on the Listen stage, high for bright, faster and drier, low for dark, slower and deeper; a gentle slope changes scales a note at a time and a steep cliff jumps; copy link shares it; Endless = no destination, a slow, calm wander that leans dark, with soft sounds, long notes, deep reverb and slow echoes, no tempo surprises or key changes, and percussion coming and going on its own. It never arrives, so it plays until you stop it (or the sleep timer does); Map = for measuring with a headband: brightness, tempo, energy and tension each move around their whole range on clocks of their own, the drums come and go and the worlds take turn about, so everything gets heard early and late in the session and ◇ patterns can compare them fairly. Best at 30 or 60 minutes, sitting still; it keeps shuffling until you stop it; Persia = a tour of the Persian dastgahs: opens on Shur, climbs through Homayun, Segah and Chahargah to a bright peak on Mahur, then comes back down to Shur, santur and kamancheh taking turns, no key changes; Shur = inside one dastgah, as a performance moves: the notes stay the same while the home note climbs (Shur → Bayat-e Tork on the 3rd → Afshari on the 4th → Dashti on the 5th) and the forud brings it home; the key follows the home note; Makam = Turkish, in true 53-comma pitches: Rast, then Hüseynî and Uşşak on Dügah, Hicaz at the peak, back down to Rast, oud and ney taking turns; it turns on the makam darbuka beat, whose usul changes with each section (Düyek, Sofyan, Semai, Aksak 9/8 at the peak, Curcuna 10/8); Byzantine = chant in 72 moria: Plagal 4th on Ni, the First mode on Pa, the Second mode's soft chromatic on Di, the Plagal 2nd's hard chromatic at the peak, then home, a voice-like duduk over the ison (it turns the drone on). Persia, Shur, Makam and Byzantine lean briefly into related scales about once a minute and come back. In Draw, a scales row on the Listen page picks which scales your line may use: all scales, western, maqam · dastgah, turkish or real intonation (the link carries it). LENGTH sets 5, 15, 30 or 60 minutes. Choosing a journey starts Auto, and all but Endless and Map switch to Melody (untick Melody Mode in ⚙ to choose your own). Near the target, scales change one note at a time (a note moves, or one is added or dropped), and tempo, reverb and note length follow the shape; everything else ticked in ⚙ still changes. Progress shows next to BRIGHT. On arrival it holds at the destination and keeps playing, unless ⏺ rec is running: then it settles on a home scale, fades out over 10 seconds and saves the WAV. Share links carry jo= and jm=." },
+  { title: "◇ JOURNEYS", body: "JOURNEY in the playback controls gives Auto a destination instead of wandering. Dawn = dark to bright; Dusk = bright to dark, slowing, with longer notes and deeper reverb; Descent = bright, down into the dark and back up; Storm = calm, a storm of clashing scales and faster tempo peaking about 60% of the way in (the orchestra at full energy if it's on), then calm; Rise = epic and energizing, a build to a big bright peak with one breath on the way, starting at its own 116 BPM, bold sounds, the orchestra driving and marching (choosing it in Listen turns on the orchestra and a drive beat); Wait = a steady pulse through suspended scales, then the drums fall away and one suspended scale holds with no 3rd, slowing and widening, until late in the journey the 3rd arrives, major or minor, and the pulse returns (it turns on a drone and, if there's no beat, a downtempo one. The drone travels too: a didgeridoo under the pulse, slowly becoming an airy pad over a low root, then blooming into strings at the drop, with the same 3rd. Untick Drone Type in ⚙ to keep your own drone instead. A very faint jet crosses during the pulse, and a high, distant one approaches through the last minute of the wait and passes overhead at the drop; untick Jet in ⚙ to leave them out). Wake = built to keep you awake: it climbs fast from 102 toward 162 BPM, never dips, and keeps breaking its own pattern at uneven times, every minute or so at first and every 15 to 35 seconds by the end, with sudden stops, drums dropping out and slamming back, tempo lurches, key jumps, flips between line and arpeggio, and new drum styles. It turns Smooth off and, if there's no beat, brings in a drive beat. On arrival it holds at the top and keeps surprising you until you stop it; Draw = your own journey: draw a line on the Listen stage, high for bright, faster and drier, low for dark, slower and deeper; a gentle slope changes scales a note at a time and a steep cliff jumps; copy link shares it; Endless = no destination, a slow, calm wander that leans dark, with soft sounds, long notes, deep reverb and slow echoes, no tempo surprises or key changes, and percussion coming and going on its own. It never arrives, so it plays until you stop it (or the sleep timer does); Map = for measuring with a headband: brightness, tempo, energy and tension each move around their whole range on clocks of their own, the drums come and go and the worlds take turn about, so everything gets heard early and late in the session and ◇ patterns can compare them fairly. Best at 30 or 60 minutes, sitting still; it keeps shuffling until you stop it; Persia = a tour of the Persian dastgahs: opens on Shur, climbs through Homayun, Segah and Chahargah to a bright peak on Mahur, then comes back down to Shur, santur and kamancheh taking turns, no key changes; Shur = inside one dastgah, as a performance moves: the notes stay the same while the home note climbs (Shur → Bayat-e Tork on the 3rd → Afshari on the 4th → Dashti on the 5th) and the forud brings it home; the key follows the home note; Makam = Turkish, in true 53-comma pitches: Rast, then Hüseynî and Uşşak on Dügah, Hicaz at the peak, back down to Rast, oud and ney taking turns; it turns on the makam darbuka beat, whose usul changes with each section (Düyek, Sofyan, Semai, Aksak 9/8 at the peak, Curcuna 10/8); Byzantine = chant in 72 moria: Plagal 4th on Ni, the First mode on Pa, the Second mode's soft chromatic on Di, the Plagal 2nd's hard chromatic at the peak, then home, sung by the chant voice and the choir taking turns over the ison, low voices holding the mode's base note (it turns the drone on and sets it to ison; untick Drone Type in ⚙ to keep your own). Persia, Shur, Makam and Byzantine lean briefly into related scales about once a minute and come back. In Draw, a scales row on the Listen page picks which scales your line may use: all scales, western, maqam · dastgah, turkish or real intonation (the link carries it). LENGTH sets 5, 15, 30 or 60 minutes. Choosing a journey starts Auto, and all but Endless and Map switch to Melody (untick Melody Mode in ⚙ to choose your own). Near the target, scales change one note at a time (a note moves, or one is added or dropped), and tempo, reverb and note length follow the shape; everything else ticked in ⚙ still changes. Progress shows next to BRIGHT. On arrival it holds at the destination and keeps playing, unless ⏺ rec is running: then it settles on a home scale, fades out over 10 seconds and saves the WAV. Share links carry jo= and jm=." },
   { title: "SMOOTH", body: "The SMOOTH slider in Auto's ⚙ menu hides where Auto's changes happen. At 0 every setting changes together on each pick. Turned up, each setting changes at its own moment between picks, fewer change each time (about 4 in 10 at 100%), reverb, delay and drone levels glide, the sound crossfade stretches to 12 seconds, scales morph note by note at up to half speed, the drone fades in and out, and the beat fades instead of cutting. Now and then Auto rests the beat: it fades out and comes back in a little later, or with the tabla, thins out to a few soft strokes and fills back in (untick Beat Style in ⚙ to stop that). Links carry it as sm= (0-100)." },
   { title: "WORLDS", body: "A world brings a lead, a rhythm, a drone and its own leanings (scales, tempo, reverb) that belong together, and many add their own surroundings. Steppe: Mongolian fiddle and lute, shaman drums, throat singing or jaw harp. Desert: the duduk, a daf, the dam drone, Hijaz and friends. Ocean: whale song over waves, gulls and a buoy bell, no drums. Jungle: a kalimba over tuned log drums, insects, monkeys, gibbon songs, birds and frogs. Thunderstorm: a felt piano indoors while it rains; the storm builds with the music's tension, or with your mind through WEATHER if a headband is on (see EEG HEADBAND). Cave: a handpan, water drips tuned to the scale, the wind's breath, no drums. Temple: a bamboo flute, the wooden fish, monks chanting, singing bowls, the great bell. Arctic: a glass harmonica, wind over the ice, singing ice, wolves now and then. Mountain: a hammered dulcimer, birds, leaves, a brook, cowbells, an alphorn. Carnival: a steel pan over a samba drum section, the whistle, the crowd. Celtic: tin whistle and fiddle reels over a bodhrán in 6/8. Night drive: synthwave, a big saw lead, arpeggios, four on the floor. Fire circle: kalimba and wooden flute, a circle of hand drums, the didgeridoo, the fire, crickets. New wave: a DX7 electric piano, 1980s drums and synth bass, the Juno pad. Picking one sets its beat and drone; change them afterwards and the world stays, keeping its lead. WANDER drifts from world to world. WORLD is in the Studio's controls and on the Listen page." },
-  { title: "ORCHESTRA", body: "WANDER (Studio, beside off / orchestra; orchestra ~ on the Listen page) lets the orchestra come and go on its own: in for 1½ to 4 minutes, out for 1 to 3, staying longer when MOOD leans epic; when it leaves, the chords sounding ring out, and it swells back in. SYMPHONIC in the Studio, orchestra on the Listen page, adds an orchestra under the line: a string section swells on chords built from the current scale, cellos drive a low pulse, a double bass holds the roots, timpani and taiko hit the changes, and violin and flute weave fast runs through it, all in a cathedral reverb. It uses real recorded samples, a one-time download of about 30 MB in all the first time you switch it on. It follows the music's energy, so it's at its fullest at the peak of Storm, and choosing Rise on the Listen page turns it on and marches it." },
+  { title: "ORCHESTRA", body: "WANDER (Studio, beside off / orchestra; orchestra ~ on the Listen page) lets the orchestra come and go on its own: in for 1½ to 4 minutes, out for 1 to 3, staying longer when MOOD leans epic; when it leaves, the chords sounding ring out, and it swells back in. SYMPHONIC in the Studio, orchestra on the Listen page, adds an orchestra under the line: a string section swells on chords built from the current scale, cellos drive a low pulse, a double bass holds the roots, timpani and taiko hit the changes, violin and flute weave fast runs through it, and toward the epic end of MOOD (and at the big resolutions) a choir sings the chords with the strings, all in a cathedral reverb. It uses real recorded samples, a one-time download of about 30 MB in all the first time you switch it on. It follows the music's energy, so it's at its fullest at the peak of Storm, and choosing Rise on the Listen page turns it on and marches it." },
   { title: "★ DEMO MODE", body: "Demo mode uses the Claude AI API to autonomously explore scales with live commentary. Claude controls root, rhythm, direction, chord voicing, BPM, reverb, delay level, and delay time — choosing musically varied combinations and explaining its thinking. Commentary and feature requests (✦) appear in the Claude Chat panel, not the banner — the banner shows a one-line parameter summary only. If an EEG headband is connected (see EEG MODE), the scale is pre-selected algorithmically by brightness matching before Claude is called — Claude then articulates the selection rather than picking freely, and can override with justification. Without EEG, Claude picks scales freely. A chat box appears while Demo is running: type anything to direct the music — e.g. 'play something dark and slow', 'go to Lydian', or 'sync BPM to my heart rate'. Claude can lock BPM to your live heart rate and track it each cycle until you ask it to stop. Enter your Anthropic API key when prompted (console.anthropic.com → API Keys). Your key is stored in your browser only." },
   { title: "EEG HEADBAND", body: "Chloe reads a headband through BERM Bridge (berm.live), which works with a Muse 2 or Muse S and serves the brain data on this computer (localhost:8520). When it's coming in, the World row says 'headband on'. What it drives: the thunderstorm's WEATHER. Calm it = a busy mind (beta + gamma against alpha + theta) brings the storm on and settling clears it; Ride it = the reverse. It learns your own range over ~20 s and the storm follows over ~20 s. Journeys keep their own shape (the headband doesn't steer them). In the Studio, the brightness bar shows the EEG target, and the session log records your brain alongside the scales. A heart rate from the headband shows as a ♥ BPM button in the playback controls." },
   { title: "LOOP & SAVE", body: "While Demo or Auto is running, a Loop button appears. Click it to freeze playback on the current scale — Claude or Auto keeps repeating it instead of moving on. While looping, a Save button appears. Clicking Save captures a full snapshot: scale, root, BPM, rhythm, arpeggio direction, chord voicing, instrument, reverb, delay, and drone settings. Saved moments persist in your browser and appear in a collapsible panel. Click the play button on any saved moment to instantly restore all its settings and start playback. Delete a moment with the × button." },
@@ -2969,7 +3107,7 @@ export default function Chloe() {
       return {
         rootIdx:    parseInt(p.get("r") ?? "0"),
         timbre:     ["sine","triangle","square","sawtooth"].includes(p.get("t")) ? p.get("t") : "sine",
-        instrument: ["piano","guitar","xylo","space","lute","fiddle","dx7","duduk","whale","kalimba","felt","hang","shaku","glass","dulcimer","pan","whistle","synlead"].includes(p.get("i")) ? p.get("i") : null,
+        instrument: ["piano","guitar","xylo","space","lute","fiddle","dx7","duduk","whale","kalimba","felt","hang","shaku","glass","dulcimer","pan","whistle","synlead","choir","oohs","chant"].includes(p.get("i")) ? p.get("i") : null,
         noteVol:    Number.isFinite(parseFloat(p.get("v"))) ? parseFloat(p.get("v")) : 0.7,
         reverbAmt:  parseFloat(p.get("rv") ?? "0.75"),
         delayAmt:   parseFloat(p.get("dl") ?? "0.15"),
@@ -3562,6 +3700,8 @@ export default function Chloe() {
       }
       // Byzantine chant sings over the ison: a drone on the mode's base note
       if (j.byzantine && autoLocksRef.current.droneOn) setDroneOn(true);
+      if (j.byzantine && autoLocksRef.current.droneWave && !NOISE_TYPES.includes(stRef.current.droneWave)) setDroneWave("ison");
+      if (j.byzantine) { const ac = getCtx(); voiceSf(ac, "choir"); }   // start loading the choir now
       // Makam wants its darbuka: the makam beat, cycling the usuls with the sections
       if (j.turkish && autoLocksRef.current.beat && stRef.current.beatStyle === "off") { setBeatStyle("makam"); getKit(getCtx()); }
       if (j.wait) {
@@ -4042,10 +4182,14 @@ export default function Chloe() {
       const brass = Soundfont(ac, { instrument: "brass_section", destination: bus });
       const tuba = Soundfont(ac, { instrument: "tuba", destination: bus });
       const hit = Soundfont(ac, { instrument: "orchestra_hit", destination: drums });
+      // Choir: sings with the strings toward the epic end of MOOD
+      const choirG = ac.createGain(); choirG.gain.value = 0.35;   // level with the strings at full epic choirG.connect(bus);
+      const choir = Soundfont(ac, { instrument: "choir_aahs", destination: choirG, loadLoopData: true });
       Promise.all([brass.ready, tuba.ready, hit.ready]).then(() => {
         Object.assign(o, { brass, tuba, hit });
         o.all.push(brass, tuba, hit);
       });
+      choir.ready.then(() => { o.choir = choir; o.all.push(choir); }).catch(() => {});
     });
     // Lead bus: with the orchestra on, Chloe's own line is softened (low-pass,
     // a little quieter) and sent into the same cathedral so it sits in the room
@@ -4621,6 +4765,16 @@ export default function Chloe() {
               o.strings.start({ note: Math.floor(rootMidi + semi), velocity: tb === t0 ? 70 : 62, time: tb, duration: dur, ampRelease: 0.5, detune: tune(semi) });
             });
           }
+          // Choir: comes in toward the epic end of MOOD, when the energy runs
+          // high and on the big resolutions, singing the chord an octave above
+          // the strings, held on its loop through the whole chord
+          if (o.choir) {
+            const cw = Math.max(0, Math.min(1, (MOOD - 0.15) / 0.7)) + (resolve ? 0.35 : 0) + Math.max(0, energy - 0.6);
+            if (cw > 0.05 && Math.random() < 0.35 + cw) [0, 2, 4].forEach(k => {
+              const semi = semiOf(orchDeg + k);
+              o.choir.start({ note: Math.floor(rootMidi + semi), velocity: Math.round(45 + 55 * Math.min(1, cw)), time: t0 + 0.08, duration: hold, ampRelease: 0.9, loop: true, detune: tune(semi) });
+            });
+          }
           const bassSemi = semiOf(orchDeg) - 24;
           // Double bass an octave deeper wherever it stays above its low E (28)
           const bassNote = rootMidi + bassSemi - 12 >= 28 ? rootMidi + bassSemi - 12 : rootMidi + bassSemi;
@@ -4718,7 +4872,7 @@ export default function Chloe() {
       const b = moodTempo(tg.cur ?? stRef.current.bpm);
       let inst = stRef.current.instrument;
       if (JOURNEYS[journeyRef.current?.id]?.persian) {   // santur & kamancheh (Persian) or oud & ney (Turkish) take turns, 24-48 notes each
-        const jj = JOURNEYS[journeyRef.current.id], pair = jj.byzantine ? ["duduk", "duduk"] : jj.turkish ? ["lute", "shaku"] : ["dulcimer", "fiddle"];
+        const jj = JOURNEYS[journeyRef.current.id], pair = jj.byzantine ? ["chant", "choir"] : jj.turkish ? ["lute", "shaku"] : ["dulcimer", "fiddle"];
         if (!pair.includes(persiaInst)) persiaInst = pair[0];
         if (--persiaLeft < 0) { persiaInst = persiaInst === pair[0] ? pair[1] : pair[0]; persiaLeft = 24 + Math.floor(Math.random() * 24); }
         inst = persiaInst;
@@ -6848,7 +7002,7 @@ export default function Chloe() {
 Respond ONLY with valid JSON matching this schema exactly:
 {"scaleId":"string","rootNote":number,"rhythm":"even"|"swing"|"gallop"|"waltz"|"clave","arpDir":"asc"|"desc"|"rand","chordVoice":"off"|"power"|"sus2"|"sus4"|"triad"|"7th"|"all","bpm":number,"reverbAmt":number,"delayAmt":number,"delayTime":number,"sustainMult":number,"droneOn":boolean,"droneVol":number,"droneOct":number,"droneWave":"sine"|"organ"|"pad"|"strings"|"tanpura"|"throat"|"jawharp","commentary":"string","reply":"string","request":"string","brightnessOverride":number|null,"bpmOverride":"heart_rate"|number|null}
 scaleId is the exact ID from the scale list (e.g. "hep-6.5"). rootNote is 0=C 1=C# 2=D 3=D# 4=E 5=F 6=F# 7=G 8=G# 9=A 10=A# 11=B. bpm between 60-160. reverbAmt 0.0-1.0 (reverb wet level). delayAmt 0.0-1.0 (delay wet level). delayTime 0.05-1.5 (delay time in seconds — try rhythmic values like 0.125, 0.25, 0.375, 0.5, 0.75). sustainMult 0.1-3.0 (note duration multiplier: 0.1 = very staccato, 1.0 = default, 2.0 = legato, 3.0 = long overlapping notes — particularly effective with sparse scales and slow BPM). droneOn: whether to enable the drone. droneVol 0.0-2.0 (drone volume). droneOct: semitone drop for drone — 0 (same octave), -12 (1 oct down), -24 (2 oct down), -36 (3 oct down). droneWave: drone timbre — sine (clean), organ (harmonic series), pad (shimmer), strings (bowed), tanpura (Indian pulsing), throat (Mongolian throat singing, whistled overtones), jawharp (plucked jaw harp, rhythmic). commentary is 1-2 sentences about this scale's character. reply is a brief conversational response to the user's message if they sent one — omit if no user message. request is optional — if there is a genuinely missing capability you wish the app had, describe it briefly. Omit if you have no request.
-The app already has: drone (sustained root note, independently volume-controlled, up to 3 octaves down, 14 types including noise, though you choose only among those in droneWave), beat (17 styles, from brushes and hand drums to breakbeats), reverb (with wet level control), delay (with wet level and time controls), 18 instruments and 4 raw waves (chosen by the user or by Auto, not by you), 14 worlds, 10 journeys including one the user draws, a sampled orchestra, chord voicing (power/sus2/sus4/triad/7th/all), melody mode, arpeggio with direction and rhythm patterns, concert pitch tuning, URL sharing, and favourites. Only request things not on this list.
+The app already has: drone (sustained root note, independently volume-controlled, up to 3 octaves down, 15 types including noise, though you choose only among those in droneWave), beat (17 styles, from brushes and hand drums to breakbeats), reverb (with wet level control), delay (with wet level and time controls), 21 instruments (three of them voices) and 4 raw waves (chosen by the user or by Auto, not by you), 14 worlds, 10 journeys including one the user draws, a sampled orchestra, chord voicing (power/sus2/sus4/triad/7th/all), melody mode, arpeggio with direction and rhythm patterns, concert pitch tuning, URL sharing, and favourites. Only request things not on this list.
 ${activeFamiliesRef.current.some(f => f.outside) ? "IMPORTANT: The catalogue includes \"outside\" scales (IDs starting with x-) that contain 3 consecutive semitones — chromatic clusters with a tense, crowded sound. Treat them like passing tones: a brief moment of chromatic confusion or human imperfection between normal scales. Use one fairly often — about 1 turn in 3 — but only for a single turn before returning to a normal scale. Strongly prefer ones with short semitone runs (3 in a row); runs of 6-8 consecutive semitones should be rare. They have no brightness position." : "IMPORTANT: All scales in this app exclude any scale containing 3 or more consecutive semitones. This means common scales like the blues scale, chromatic scale, and others with clustered half-steps are NOT available."} Only reference scales that are actually in the available scale list — do not mention or promise scales by name unless they appear in the catalogue provided.
 currentState.currentBrightnessNorm is the normalized brightness of the active scale (0.0 = darkest possible for this note count, 1.0 = brightest, 0.5 = Dorian-equivalent neutral). currentState.brightnessSource tells you what is driving scale selection: 'eeg' = EEG headband is active and has pre-selected a scale; 'slider' = user has manually set a brightness target with the slider; 'locked' = user has locked the current brightness zone; 'claude' = you have set a brightnessOverride and are actively driving toward a goal; 'free' = no EEG, no override — you choose freely. When brightnessSource is 'eeg': a brightness-matching algorithm has pre-selected a scale (currentState.brightnessSelected) — your role is to choose BPM, rhythm, voicing, and effects to complement it; only override the scale if you have a strong musical reason. When brightnessSource is 'slider' or 'locked': the user has taken manual control of brightness — describe the musical character of the scale rather than brain state. When brightnessSource is 'free': choose scales autonomously.
 brightnessOverride: you may set this field (0.0–1.0) to lock a brightness target toward a goal state. When set, it overrides EEG-driven selection until you explicitly clear it (set to null) or the user takes manual control. OMIT this field entirely when you are not changing the current override state — omitting it preserves whatever is currently set. Set to null only when explicitly releasing a goal you've been holding. Target ranges: gamma/alertness/focus → 0.80–0.95; alpha/calm/balance → 0.45–0.55; theta/deep meditation → 0.15–0.30. When the user asks you to target a brain state: set brightnessOverride, choose BPM/rhythm/voicing to reinforce the goal, and HOLD the override across subsequent cycles. Report EEG as progress feedback, not as a state to mirror: "Gamma still at 4% — holding bright scales to keep pushing" not "Your gamma suggests high cognition." Ease or clear the override when the goal is clearly achieved or the user changes direction.
@@ -7230,7 +7384,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
         const s = only[Math.floor(Math.random() * only.length)];
         if (INSTRUMENTS.includes(s)) setInstrument(s); else { setTimbre(s); setInstrument(null); }
       } else if (_al.sound && Math.random() < 0.4 && maybe()) {
-        const pool = only || (MOOD < -0.3 ? [...SOFT, "felt", "glass", "kalimba"] : MOOD > 0.3 ? [...BOLD, "synlead", "fiddle"] : ["piano","piano","guitar","guitar","xylo","space","space","sine","triangle","sawtooth","duduk"]);
+        const pool = only || (MOOD < -0.3 ? [...SOFT, "felt", "glass", "kalimba", "oohs"] : MOOD > 0.3 ? [...BOLD, "synlead", "fiddle", "choir"] : ["piano","piano","guitar","guitar","xylo","space","space","sine","triangle","sawtooth","duduk","chant"]);
         const s = likedPick(likes, "snd", pool) ?? pool[Math.floor(Math.random() * pool.length)];
         later(() => { if (INSTRUMENTS.includes(s)) setInstrument(s); else { setTimbre(s); setInstrument(null); } });
       }
@@ -7328,13 +7482,15 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       if (delayRef.current) { const fb = J?.vals?.fb ?? 0.4; later(() => glideParam(delayRef.current?.feedbackGain.gain, fb)); }
       if (_al.sustain && J?.vals) { const su = parseFloat((J.vals.su * (0.85 + Math.random() * 0.3)).toFixed(2)); later(() => setSustainMult(su)); }
       else if (_al.sustain && maybe()) { const su = [0.5, 0.7, 0.8, 1.0, 1.0, 1.0, 1.2, 1.5, 2.0][Math.floor(Math.random() * 9)]; later(() => setSustainMult(su)); }
-      if (_al.droneOn && !waitRun && maybe())   { const on = likedPick(likes, "droneOn") ?? Math.random() > (epicJ ? 0.15 : 0.35); later(() => setDroneOn(on)); }
+      const byzRun = !!JOURNEYS[J0?.id]?.byzantine;   // Byzantine keeps its ison
+      if (_al.droneOn && !waitRun && !byzRun && maybe())   { const on = likedPick(likes, "droneOn") ?? Math.random() > (epicJ ? 0.15 : 0.35); later(() => setDroneOn(on)); }
       // In a world, Auto picks among the world's own drones
       const drones0 = sleepJ ? ["sine", "pad", "dam"] : epicJ ? ["organ", "strings"] : ["sine", "organ", "pad", "strings", "tanpura", "throat", "jawharp", "juno", "dam"];
-      const drones = WORLDS[stRef.current.world]?.drones ?? drones0;
+      const drones = byzRun ? ["ison"] : WORLDS[stRef.current.world]?.drones ?? drones0;
       // Noise is only ever chosen by you, so Auto leaves it alone
       const droneNoise = NOISE_TYPES.includes(stRef.current.droneWave);
       if (droneNoise) { /* stays */ }
+      else if (_al.droneWave && byzRun) { if (stRef.current.droneWave !== "ison") later(() => setDroneWave("ison")); }
       else if (_al.droneWave && (sleepJ || epicJ) && !drones0.includes(stRef.current.droneWave)) later(() => setDroneWave(sleepJ ? "pad" : "organ"));
       else if (_al.droneWave && maybe()) { const w = likedPick(likes, "drone", drones) ?? drones[Math.floor(Math.random() * drones.length)]; later(() => setDroneWave(w)); }
       if (_al.droneOct && maybe())  { const o = [-12, -24, -36][Math.floor(Math.random() * 3)]; later(() => setDroneOct(o)); }
@@ -8183,7 +8339,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       <div style={{ background: K.bg2, borderBottom: `1px solid ${K.br}`, padding: "8px 18px", display: "flex", alignItems: "center", gap: 16, flexShrink: 0, flexWrap: "wrap" }}>
 
         {/* Instruments */}
-        <div style={{ display: "flex", gap: 3 }}>
+        <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
           {INSTRUMENTS.map(inst => (
             <button key={inst} onClick={() => setInstrument(p => p === inst ? null : inst)}
               title={leadNow === inst && instrument !== inst ? "Playing now: the journey or world chose this sound (your own choice stays highlighted solid)" : undefined} style={{
@@ -8898,7 +9054,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
             </div>
             {/* Drone type */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-              <span title="Drone sound type — white, pink, brown: noise, with no pitch, from hissy to a soft low rumble (DRONE TONE darkens it; Auto leaves it alone). sine: clean + sub-octave. organ: additive harmonic series. pad: detuned shimmer. strings: bowed saws with tremolo. tanpura: root/fifth/octaves with pulsing amplitude. throat: Mongolian throat singing, a buzzing voice with a whistled overtone melody on the root's own harmonics (only those in the scale), a growl an octave under, breathing every 15-25 s. jaw harp: a plucked reed in a gallop or straight rhythm, the mouth jumping between its harmonics; plucks on the beat when drums play. dam: a second duduk holding the home note, as under Armenian duduk melodies, breathing and swelling. juno: an 80s polysynth pad, root/fifth/octave (+9th) detuned saws through a stereo chorus. chant: monks on a low om. didge: a didgeridoo, the tongue shaping the drone in a loose rhythm, a breath now and then." style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>DRONE TYPE</span>
+              <span title="Drone sound type — white, pink, brown: noise, with no pitch, from hissy to a soft low rumble (DRONE TONE darkens it; Auto leaves it alone). sine: clean + sub-octave. organ: additive harmonic series. pad: detuned shimmer. strings: bowed saws with tremolo. tanpura: root/fifth/octaves with pulsing amplitude. throat: Mongolian throat singing, a buzzing voice with a whistled overtone melody on the root's own harmonics (only those in the scale), a growl an octave under, breathing every 15-25 s. jaw harp: a plucked reed in a gallop or straight rhythm, the mouth jumping between its harmonics; plucks on the beat when drums play. dam: a second duduk holding the home note, as under Armenian duduk melodies, breathing and swelling. juno: an 80s polysynth pad, root/fifth/octave (+9th) detuned saws through a stereo chorus. chant: monks on a low om. ison: the low voices of a Byzantine choir holding the home note on an open “o” that warms toward “ah”, four men breathing at different times so it never stops. didge: a didgeridoo, the tongue shaping the drone in a loose rhythm, a breath now and then." style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>DRONE TYPE</span>
               <select value={droneWave} onChange={e => setDroneWave(e.target.value)} style={{
                 marginLeft: "auto", background: K.bg3, color: K.txt, border: `1px solid ${K.br}`,
                 borderRadius: 3, padding: "3px 6px", fontSize: 9, fontFamily: "inherit",
