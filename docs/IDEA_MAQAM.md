@@ -520,3 +520,13 @@ Wander like bright feel (waves 4.7 / 1.9 min at 1×, speed ¼–4×, range
 `mood=`, `mw=`, `mws=`, `mwr=`. Checked headless: labels, wander drift, Rise
 journey with wander, no console errors. To tune by ear: the 0.18 tempo and
 0.35 energy factors.
+
+## Studio matches the journeys — 2026-11-09
+
+- Instrument row: the sound actually playing (`leadNow`, from playNote) gets
+  a dashed accent outline when a journey or world overrides your choice
+  (Makam oud/ney, Persia santur/kamancheh, worlds); your own choice stays solid.
+- Journeys raise RESOLUTION on start if it's too coarse: Makam ≥ 53,
+  Persia/Shur ≥ 24 (never lowered), with a note beside the slider for 10 s.
+- Checked headless: resolution 12 → Makam start → 53 with the note; lute
+  dashed while the journey plays.
