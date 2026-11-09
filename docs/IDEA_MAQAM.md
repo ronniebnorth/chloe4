@@ -413,7 +413,7 @@ Unlocked next (backlog):
 
 - New sidebar group **REAL INTONATION · CENTS**: scales that exist only in
   cents (`REAL_SEEDS` in `scale24.js`), each rotated into its modes:
-  - **Just major (5-limit)**: 1/1 9/8 5/4 4/3 3/2 5/3 15/8 (0 204 386 498 702
+  - **Just major (= Ionian, tuning just)** (renamed 2026-11-09; identical to Ionian with the TUNING switch on just, which tunes any scale from its own root, while these modes keep one fixed C-major tuning): 1/1 9/8 5/4 4/3 3/2 5/3 15/8 (0 204 386 498 702
     884 1088); modes named Just Dorian… Just Locrian. Some modes carry the
     syntonic-comma "wolf" (Just Dorian's D–A fifth is 680¢), which is how
     just intonation really behaves.

@@ -304,7 +304,7 @@ export const TURK_PATH = [
 const rc = (n, d) => 1200 * Math.log2(n / d);
 const MODE_NAMES = ["Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"];
 export const REAL_SEEDS = [
-  { name: "Just major (5-limit)", tag: "Just", modes: MODE_NAMES,
+  { name: "Just major (= Ionian, tuning just)", tag: "Just", modes: MODE_NAMES,   // note for note the TUNING switch on Ionian; its modes keep C-major tuning (wolf 5ths)
     cents: [[1, 1], [9, 8], [5, 4], [4, 3], [3, 2], [5, 3], [15, 8]].map(([n, d]) => rc(n, d)) },
   { name: "Pythagorean major", tag: "Pythagorean", modes: MODE_NAMES,
     cents: [[1, 1], [9, 8], [81, 64], [4, 3], [3, 2], [27, 16], [243, 128]].map(([n, d]) => rc(n, d)) },
