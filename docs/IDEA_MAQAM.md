@@ -447,3 +447,19 @@ Ronnie: a slider "from 12 to 1200" for how finely Chloe divides the octave.
   at 24 rounds to major (its 385¢ 3rd is nearer 400 than 350, which is why
   Turkish Rast sounds brighter than Arabic), at 53 exact; Just major at 53
   within 1¢. Headless: plays at 31 with no console errors.
+
+## Notes-per-scale range — built 2026-11-09
+
+- Sidebar **NOTES** from–to sliders (3–12) replace the 3–8 chips. They
+  filter the list and limit Auto and journey picks (Persia/Shur/Makam paths
+  keep their own scales; if nothing regular fits, the limit is ignored for
+  regular picks). Saved (`chloe-note-range`), share links carry `nr=`.
+- **9–12 note scales generated** as outside families (Nonatonic 9,
+  Decatonic 10, Hendecatonic 11, Chromatic 12; ids `x-non-…` etc.): 8 is the
+  most notes Chloe's no-3-semitones rule allows, so every denser scale has a
+  cluster. With a range of only 9+ notes and outside on, Auto picks outside
+  scales every time instead of one pick in three.
+- World scales (maqam, Turkish, real intonation) are curated 7-note lists;
+  the range just includes or excludes them.
+- Checked headless: 9–12 shows the four new groups; Auto at 5–5 picks only
+  5-note scales; no console errors.

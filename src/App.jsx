@@ -745,7 +745,9 @@ function buildFamilySet(outside) {
   const seen = new Map();
   for (let p = 1; p < 4096; p += 2) {
     const n = bitCt(p);
-    if (n < 3 || n > 8 || triple12(p) !== outside) continue;
+    // Chloe's main rule (no 3 semitones in a row) allows at most 8 notes; every
+    // 9-12 note scale has a cluster, so those exist only as outside scales
+    if (n < 3 || n > (outside ? 12 : 8) || triple12(p) !== outside) continue;
     let canon = p;
     for (let s = 1; s < 12; s++) {
       const r = rot12(p, s);
@@ -760,7 +762,7 @@ function buildFamilySet(outside) {
       seen.set(canon, { n, modes: [...ms].sort((a, b) => bright(b) - bright(a)) });
     }
   }
-  const pfx = { 3: "tri", 4: "tet", 5: "pen", 6: "hex", 7: "hep", 8: "oct" };
+  const pfx = { 3: "tri", 4: "tet", 5: "pen", 6: "hex", 7: "hep", 8: "oct", 9: "non", 10: "dec", 11: "hen", 12: "dod" };
   const cnt = {};
   return [...seen.entries()]
     .sort(([a, { n: na }], [b, { n: nb }]) => na - nb || a - b)
@@ -1993,8 +1995,11 @@ const NIGHT_SCALES = lift([[1453, 3], [1709, 2], [1193, 2], [1717, 1], [2477, 1]
 const FIRE_SCALES = lift([[1193, 3], [661, 2], [1709, 2], [1717, 2], [1453, 1]]);
 // Jungle: the pentatonics mostly, then Dorian, Mixolydian, Ionian
 const JUNGLE_SCALES = lift([[661, 3], [1193, 3], [1709, 1], [1717, 1], [2741, 1]]);
-const GRP_NAME = { 3: "Tritonic", 4: "Tetratonic", 5: "Pentatonic", 6: "Hexatonic", 7: "Heptatonic", 8: "Octatonic" };
-const GRP_PFX  = { 3: "tri", 4: "tet", 5: "pen", 6: "hex", 7: "hep", 8: "oct" };
+const GRP_NAME = { 3: "Tritonic", 4: "Tetratonic", 5: "Pentatonic", 6: "Hexatonic", 7: "Heptatonic", 8: "Octatonic", 9: "Nonatonic", 10: "Decatonic", 11: "Hendecatonic", 12: "Chromatic" };
+const GRP_PFX  = { 3: "tri", 4: "tet", 5: "pen", 6: "hex", 7: "hep", 8: "oct", 9: "non", 10: "dec", 11: "hen", 12: "dod" };
+// Notes per scale: the sidebar's NOTES range filters the list, Auto and journeys
+const NOTES_MIN = 3, NOTES_MAX = 12;
+const inNoteRange = (n, [lo, hi]) => n >= lo && n <= hi;
 // Sidebar group key — outside families get their own groups below the main ones
 const grpKey = (fam) => fam.real ? "rel" : fam.turkish ? "trk" : fam.maqam ? "maq" : (fam.outside ? "x-" : "") + GRP_PFX[fam.n];
 const grpRank = (fam) => fam.real ? 3 : fam.turkish ? 2 : fam.maqam ? 1 : 0;
@@ -2407,14 +2412,14 @@ function Lbl({ children, K }) {
 
 // Help modal
 const HELP_SECTIONS = [
-  { title: "WHAT IS CHLOE?", body: "Chloe generates every possible scale from 3 to 8 notes. Scales with 3 or more notes in a row a semitone apart are kept apart as outside scales: they're hidden unless you switch on outside, under the scale search, and then Auto uses them about one pick in three, like passing tones. Chloe4 goes beyond the piano's 12 notes: quarter tones for Arabic maqam and Persian dastgah, exact Turkish makam pitches (53 commas per octave), and real intonations stored in cents (just, Pythagorean, the overtone series, Shur as played); see WORLD SCALES & TUNINGS. Use it to hear how different scales sound over a drone note and develop your ear for modal colour. It has two doors: Listen, where you pick a journey and press play, and the Studio, with every scale and setting. This help covers both." },
+  { title: "WHAT IS CHLOE?", body: "Chloe generates every possible scale from 3 to 8 notes, and with outside on, the denser 9 to 12 note ones too. Scales with 3 or more notes in a row a semitone apart are kept apart as outside scales: they're hidden unless you switch on outside, under the scale search, and then Auto uses them about one pick in three, like passing tones. Chloe4 goes beyond the piano's 12 notes: quarter tones for Arabic maqam and Persian dastgah, exact Turkish makam pitches (53 commas per octave), and real intonations stored in cents (just, Pythagorean, the overtone series, Shur as played); see WORLD SCALES & TUNINGS. Use it to hear how different scales sound over a drone note and develop your ear for modal colour. It has two doors: Listen, where you pick a journey and press play, and the Studio, with every scale and setting. This help covers both." },
   { title: "LISTEN", body: "The simple page: pick a journey, press ▶, and Chloe plays it. The stage at the top shows the light show, the journey's path and a dot for where you are on it. Under the journey cards: LENGTH (5, 15, 30 or 60 minutes; Endless has none), and orchestra, drums and drone switches. The world row sets the surroundings (see WORLDS). While drums are on, a row picks their feel; wander lets them roam across every style. The sleep timer (15 to 90 minutes) stops the music, fading out over the last 90 seconds. While it plays, ♥ more of this steers Chloe toward what you're hearing; in Map it only marks the moment. ⏺ record this journey saves a WAV. copy link, under record, copies a link to the journey with your current sound; whoever opens it presses ▶, and Auto makes its own picks, so the shape is the same but not every note. On the DRAW card, draw your line straight on the stage; clear appears beside LENGTH with a scales row (all scales, western, maqam · dastgah, turkish, real intonation), and the link carries your line and that choice. STUDIO → goes to the full app, and LISTEN in the Studio's top bar comes back." },
   { title: "BINARY NOTATION", body: "Each scale is a binary string written root-first (leftmost digit = root), so it reads like the scale. 1 = active, 0 = inactive. Ordinary scales show 12 digits, one per semitone, with their familiar number (Ionian = 2741). Scales with quarter tones show 24 digits, one per quarter tone, and a 24-step number. Search takes either form. The MAQAM group holds Arabic maqamat with quarter tones (Rast, Bayati, Saba, Huzam and their modes, such as Sikah and Iraq); quarter-tone notes are named half-flat, e.g. E½♭. Scales are grouped into families sharing the same interval structure - e.g. hep-6 contains all 7 standard modes." },
   { title: "WORLD SCALES & TUNINGS", body: "Every scale is stored as its pitches in cents above the root (100 cents = a semitone). Four groups sit below the Western ones in the sidebar. MAQAM · DASTGAH · QUARTER TONES: Arabic maqamat (Rast, Bayati, Saba, Huzam and their modes, such as Sikah and Iraq) and Persian dastgahs (Chahargah, Homayun; Shur, Segah and Mahur share notes with Bayati, Sikah and Ionian and show both names), on a 24-step grid, half-flat notes written E½♭. TURKISH MAKAM · 53 COMMAS: Rast, Uşşak, Hicaz, Bûselik and their modes (Hüseynî, Kürdî) in true Turkish pitches; a whole tone is 9 commas, codes show the steps in commas (Rast = 9·8·5·9·9·8·5), and B⁻¹ means B one comma flat. REAL INTONATION · CENTS: Just major and its modes (pure ratios, 3rds 14¢ low). Just major is note for note Ionian with TUNING set to just; the difference is in its modes, which keep that one C-major tuning like a fixed just keyboard, so some have a sour 'wolf' 5th (Just Dorian's is 680¢). For pure intervals on any scale, from its own root, use the TUNING switch (equal / just / pyth) instead., Pythagorean major and its modes, the overtone scale (harmonics 8–14) and Shur as played (measured, Abdoli); notes show their offset, e.g. E−14¢. Search maqam, makam or real to find each group. Sources and details: docs/IDEA_MAQAM.md in the Chloe4 repo." },
   { title: "RESOLUTION", body: "The RESOLUTION slider (Studio, under TUNING) sets how finely the octave is divided when notes are played: every pitch is rounded to the nearest of that many equal steps, from 12 to 1200. 12 = piano: quarter tones, Turkish and cents scales collapse onto it. 24 = quarter tones: maqam and dastgah come alive. 53 = Turkish commas, and just intervals within about a cent. 1200 = cents: exact, every scale as stored. Buttons jump to 12, 24, 31 (Huygens), 41, 53, 72 (Byzantine chant) and 1200. Slide slowly up with Rast or Just major playing to hear the music sharpen into its true shape; in-between values like 64 put some intervals noticeably off, which is why those numbers matter. The wheel shows a tick per step (a fine ring past 150), and the note names follow what you hear. Brightness, the scale list and journeys stay on the exact cents. Saved, and carried in share links (edo=)." },
   { title: "BRIGHTNESS SORTING", body: "Within each family, modes are sorted bright to dark by summing their active semitone positions (raw brightness). Lydian scores highest (raised 4th), Locrian lowest (flatted 2nd and 5th). This mirrors the circle-of-fifths: Lydian → Ionian → Mixolydian → Dorian → Aeolian → Phrygian → Locrian. Positions count in semitones, so quarter tones and cents scales score in between: Rast 37 (beside Mixolydian), Bayati 34.5 (between Aeolian and Phrygian), Just major 37.6. The sidebar and scale list show the raw brightness score (e.g. Dorian = 36). The EEG system uses a separate normalized brightness (0.0–1.0) that adjusts for note count, so pentatonics and tetratonics are comparable to heptatonics — Dorian normalizes to exactly 0.5 as the neutral midpoint." },
   { title: "SCALE WHEEL", body: "The circle shows the 12 chromatic notes, with a small dot for each quarter tone between them (24 positions). Active tones are highlighted and connected by a polygon; a quarter-tone note gets its own labelled dot (E½♭), and a Turkish or cents note lights the nearest dot with its exact name (B⁻¹, E−14¢), drawn at its true angle. Wide polygons = sparse scales. Compact polygons = denser chromatic scales. A perfect regular polygon = equal temperament." },
-  { title: "SEARCH & FILTER", body: "The left sidebar has a search box that filters scales by name as you type — results narrow to only matching modes within each family (e.g. searching 'dorian' shows just the Dorian row, not all 7 modes). The number chips (3–8) below it filter by note count — click any to isolate tritonic, pentatonic, heptatonic, etc. The sus chip (or searching 'sus' or 'suspended') shows suspended scales: no 3rd, so neither major nor minor, with a 5th and a 2nd or 4th. These compose with each other and with the header filter bar. The header filter accepts comma-separated terms: family ID (hep-6), group prefix (pen, hep, hex), scale name, binary fragment, decimal value, or interval pattern (2-2-1). The star button on any row marks a favourite; the favs button in the header shows starred scales only. Custom names are searchable too." },
+  { title: "SEARCH & FILTER", body: "The left sidebar has a search box that filters scales by name as you type — results narrow to only matching modes within each family (e.g. searching 'dorian' shows just the Dorian row, not all 7 modes). The NOTES sliders below it set a from–to range of notes per scale (3 to 12): 5–7 shows pentatonic to heptatonic, 5–5 only pentatonics. The range also limits what Auto and the journeys pick (the Persia, Shur and Makam paths keep their own scales), so it sets how many corners the polygon has. Scales with 9 to 12 notes all contain a cluster of semitones, so they are outside scales (Nonatonic, Decatonic, Hendecatonic, Chromatic): switch on outside to see and hear them; with a 9–12 range Auto then picks only those. The sus chip (or searching 'sus' or 'suspended') shows suspended scales: no 3rd, so neither major nor minor, with a 5th and a 2nd or 4th. These compose with each other and with the header filter bar. The header filter accepts comma-separated terms: family ID (hep-6), group prefix (pen, hep, hex), scale name, binary fragment, decimal value, or interval pattern (2-2-1). The star button on any row marks a favourite; the favs button in the header shows starred scales only. Custom names are searchable too." },
   { title: "A/B SCALE COMPARISON", body: "Pin any scale as a reference point using the ⊿ pin button next to its name in the info panel. An A/B panel appears below showing both the pinned scale (B) and your current selection (A). Click either side to jump between them instantly — both play at the same root, tempo, and settings so you can hear the contrast directly. The A side automatically tracks whatever you're playing when you're not on the pinned scale, so browsing the list always updates A. The × button clears the comparison." },
   { title: "NAMING SCALES", body: "Any scale without a built-in name shows a pencil icon (✎) in its row. Click it to open an inline text field and type your own name. Press Enter or click away to save; Escape to cancel. To edit or clear a name, click the pencil next to it. Custom names appear in the info panel, show up in saved moments, and are fully searchable. They persist in your browser across sessions." },
   { title: "PLAYBACK", body: "Drone sustains the root note. DRONE OCT drops it 1–3 octaves. DRONE VOL sets its level independently. DRONE TONE darkens or opens it. DRONE TYPE sets the drone sound: sine (clean + sub-octave), organ (additive harmonics), pad (detuned shimmer), strings (bowed saws with tremolo), tanpura (Indian root/fifth/octave pulsing), throat (Mongolian throat singing with a whistled overtone melody), jaw harp (a plucked reed in a rhythm), juno (an 80s polysynth pad), dam (a second duduk holding the home note), chant (monks on a low om), didge (a didgeridoo), and white, pink and brown (noise with no pitch, from hissy to a soft low rumble). Play steps through the scale in Arpeggio or Melody mode. OCTAVES (1–3) expands playback across multiple octaves. Click the direction button to cycle: ascending, descending, or random. RHYTHM sets the note-spacing pattern: even, swing, gallop, waltz, or clave. Melody uses a weighted random walk with octave leaps. CHORD layers multiple scale tones per step: power (root+5th), sus2 (root+2nd+5th), sus4 (root+4th+5th), triad, 7th, or all notes at once. Sus chords use real intervals and leave out any note the scale doesn't have. BEAT adds drums, from soft brushes and hand drums to breakbeats and the worlds' own styles (hold the pointer on the BEAT label for the full list). GROUPS plays the line in repeating groups of notes that run against the 4-count. If a heart rate sensor is connected, a ♥ button appears showing live BPM — click it to instantly set tempo to your heart rate." },
@@ -3697,7 +3702,15 @@ export default function Chloe() {
   const [pinnedScale,   setPinnedScale]   = useState(null); // { id, pattern } — A/B comparison B side
   const [prePinSel,     setPrePinSel]     = useState(null); // { id, pattern } — A/B comparison A side
   const [listSearch,    setListSearch]    = useState("");   // sidebar name search
-  const [noteCountFilter, setNoteCountFilter] = useState(null); // null | 3-8
+  // Notes-per-scale range [lo, hi]; [3, 12] = any
+  const [noteRange, setNoteRange] = useState(() => {
+    const m = (new URLSearchParams(window.location.search).get("nr") ?? localStorage.getItem("chloe-note-range") ?? "").match(/^(\d+)-(\d+)$/);
+    const lo = m ? Math.max(NOTES_MIN, Math.min(NOTES_MAX, +m[1])) : NOTES_MIN, hi = m ? Math.max(lo, Math.min(NOTES_MAX, +m[2])) : NOTES_MAX;
+    return [lo, hi];
+  });
+  const noteRangeOn = noteRange[0] !== NOTES_MIN || noteRange[1] !== NOTES_MAX;
+  const noteRangeRef = useRef(noteRange);
+  useEffect(() => { noteRangeRef.current = noteRange; localStorage.setItem("chloe-note-range", noteRange.join("-")); }, [noteRange]);
   const [susOnly,       setSusOnly]       = useState(false);  // suspended scales only (no 3rd, a 5th, a 2nd or 4th)
   const [showDiatonic,  setShowDiatonic]  = useState(false); // show diatonic neighborhood annotations
   const showDiatonicRef = useRef(false);
@@ -6831,8 +6844,13 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       const all = buildCatalogue();
       // A drawn journey can be limited to one tradition (all / western / maqam / turkish)
       const pool = JOURNEYS[journeyRef.current?.id]?.drawn ? drawPoolRef.current : "all";
-      const outsideOpts = all.filter(e => e.fam.outside && !e.fam.test && (pool === "all" || pool === "western") && (!cur || e.pat !== cur.pattern));
-      const catalogue = all.filter(e => !e.fam.outside && inDrawPool(e.fam, pool));
+      const nr = noteRangeRef.current;
+      const outsideOpts = all.filter(e => e.fam.outside && !e.fam.test && (pool === "all" || pool === "western") && inNoteRange(e.fam.n, nr) && (!cur || e.pat !== cur.pattern));
+      const catalogue0 = all.filter(e => !e.fam.outside && inDrawPool(e.fam, pool));
+      // The NOTES range limits picks too (if nothing fits, e.g. 9+ notes with no outside scales, ignore it)
+      const catalogue = catalogue0.some(e => inNoteRange(e.fam.n, nr)) ? catalogue0.filter(e => inNoteRange(e.fam.n, nr)) : catalogue0;
+      // Only outside scales fit the range (9-12 notes): pick them every time, not one in three
+      const onlyOutside = outsideOpts.length > 0 && !catalogue0.some(e => inNoteRange(e.fam.n, nr));
 
       // Now and then, a passing outside scale (only when the outside toggle is on)
       // The Wait picks its own scales, whatever the pool, and holds still once the pulse is over
@@ -6841,7 +6859,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       const waitPh = waitRun ? waitPhase(Math.min(1, waitEl / ((waitRun.mins ?? 15) * 60000)), waitRun.drop) : null;
 
       let entry = null;
-      if (outsideOpts.length && !susPoolRef.current && !waitRun && !JOURNEYS[journeyRef.current?.id]?.persian && Math.random() < OUTSIDE_CHANCE)
+      if (outsideOpts.length && !susPoolRef.current && !waitRun && !JOURNEYS[journeyRef.current?.id]?.persian && (onlyOutside || Math.random() < OUTSIDE_CHANCE))
         entry = pickOutside(outsideOpts);
 
       // Journey: walk toward its brightness target one note at a time (a one-note
@@ -7159,8 +7177,8 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     }).filter(Boolean);
 
     // Note count chip filter
-    if (noteCountFilter !== null) {
-      base = base.filter(f => f.n === noteCountFilter);
+    if (noteRangeOn) {
+      base = base.filter(f => inNoteRange(f.n, noteRange));
     }
 
     // Sus chip: just the suspended modes of each family
@@ -7191,7 +7209,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (!filter.trim()) return base;
     const terms = filter.split(",").map(t => t.trim().toLowerCase()).filter(Boolean);
     // A full id like "tet-5.0" (as patterns shows it) is one mode of one family: just that mode
-    const isId = t => /^(x-)?(tri|tet|pen|hex|hep|oct|maq|trk|rel)-\d+\.\d+$/.test(t);
+    const isId = t => /^(x-)?(tri|tet|pen|hex|hep|oct|non|dec|hen|dod|maq|trk|rel)-\d+\.\d+$/.test(t);
     const ids = terms.filter(isId), loose = terms.filter(t => !isId(t));
     return base.map(f => {
       if (loose.some(t =>
@@ -7206,7 +7224,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       const keep = f.origIdxs.map((_, k) => k).filter(k => ids.includes(`${f.id}.${f.origIdxs[k]}`));
       return keep.length ? { ...f, modes: keep.map(k => f.modes[k]), origIdxs: keep.map(k => f.origIdxs[k]) } : null;
     }).filter(Boolean);
-  }, [ACTIVE_FAMILIES, FAMILIES, filter, favs, favsOnly, customNames, listSearch, noteCountFilter, susOnly]);
+  }, [ACTIVE_FAMILIES, FAMILIES, filter, favs, favsOnly, customNames, listSearch, noteRange, noteRangeOn, susOnly]);
 
   const grouped = useMemo(() => {
     const g = {};
@@ -7339,7 +7357,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
   const selName = sel ? (KNOWN[sel.pattern] || customNames[sel.pattern] || null) : null;
 
   const toggleGrp = k => setExpanded(p => { const s = new Set(p); s.has(k) ? s.delete(k) : s.add(k); return s; });
-  const isExp = k => (filter.trim() || listSearch.trim() || noteCountFilter !== null || susOnly) ? true : expanded.has(k);
+  const isExp = k => (filter.trim() || listSearch.trim() || noteRangeOn || susOnly) ? true : expanded.has(k);
   const wake = () => getCtx();
 
   const buildURL = useCallback(() => {
@@ -7357,6 +7375,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (susPool)     p.set("pool", "sus");
     if (aRef !== 440) p.set("a", aRef);
     if (resolution !== S24.RES_MAX) p.set("edo", resolution);
+    if (noteRangeOn) p.set("nr", noteRange.join("-"));
     if (droneOct)    p.set("do", droneOct);
     if (droneOn)     p.set("dr", "1");
     if (droneWave !== "tanpura") p.set("dw", droneWave);
@@ -7384,7 +7403,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (sidebarW !== 520) p.set("sw", sidebarW);
     const qs = p.toString();
     return window.location.origin + window.location.pathname + (qs ? "?" + qs : "");
-  }, [resolution, drawLine, susPool, rootIdx, timbre, instrument, noteVol, reverbAmt, delayAmt, sustainMult, bpm, filter, sel, aRef, droneOct, droneOn, droneWave, melMode, grouping, blend, tempoGlide, soundBlend, tuning, autoTempo, symphonic, beatStyle, beatWander, world, worldWander, weatherBrain, journey, journeyMins, sleepMins, smooth, autoLocks, sidebarW]);
+  }, [resolution, noteRange, noteRangeOn, drawLine, susPool, rootIdx, timbre, instrument, noteVol, reverbAmt, delayAmt, sustainMult, bpm, filter, sel, aRef, droneOct, droneOn, droneWave, melMode, grouping, blend, tempoGlide, soundBlend, tuning, autoTempo, symphonic, beatStyle, beatWander, world, worldWander, weatherBrain, journey, journeyMins, sleepMins, smooth, autoLocks, sidebarW]);
 
   // Record button: start tapping the master output; stop → download the WAV
   const toggleRec = useCallback(async () => {
@@ -8335,15 +8354,15 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
             )}
           </div>
           <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
-            {[3, 4, 5, 6, 7, 8].map(n => (
-              <button key={n} onClick={() => setNoteCountFilter(p => p === n ? null : n)} style={{
-                background: noteCountFilter === n ? K.a : K.bg3,
-                color: noteCountFilter === n ? "#000" : K.txt,
-                border: `1px solid ${noteCountFilter === n ? K.a : K.br}`,
-                borderRadius: 3, padding: "2px 7px", fontSize: 9,
-                cursor: "pointer", fontFamily: "inherit", letterSpacing: 0.5,
-              }}>{n}</button>
-            ))}
+            {/* Notes per scale: a from–to range; filters this list, Auto and journeys */}
+            <div title="Notes per scale (the polygon's corners). Filters this list and what Auto and the journeys pick. Scales with 9 to 12 notes all contain a cluster of semitones, so they are outside scales: switch on outside to see them." style={{ display: "flex", alignItems: "center", gap: 4, width: "100%", marginBottom: 3 }}>
+              <span style={{ color: K.lbl, fontSize: 9, letterSpacing: 2 }}>NOTES</span>
+              <input type="range" min={NOTES_MIN} max={NOTES_MAX} step={1} value={noteRange[0]} aria-label="fewest notes"
+                onChange={e => { const lo = +e.target.value; setNoteRange(([, hi]) => [lo, Math.max(lo, hi)]); }} style={{ flex: 1, minWidth: 0, accentColor: K.a }} />
+              <input type="range" min={NOTES_MIN} max={NOTES_MAX} step={1} value={noteRange[1]} aria-label="most notes"
+                onChange={e => { const hi = +e.target.value; setNoteRange(([lo]) => [Math.min(lo, hi), hi]); }} style={{ flex: 1, minWidth: 0, accentColor: K.a }} />
+              <span style={{ color: noteRangeOn ? K.a : K.t2, fontSize: 10, minWidth: 38, textAlign: "right" }}>{noteRange[0] === noteRange[1] ? noteRange[0] : `${noteRange[0]}–${noteRange[1]}`}</span>
+            </div>
             <button onClick={() => setSusOnly(p => !p)}
               title="Suspended scales only: no 3rd, so neither major nor minor, with a 5th and a 2nd or 4th"
               style={{
@@ -8353,8 +8372,8 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                 borderRadius: 3, padding: "2px 7px", fontSize: 9,
                 cursor: "pointer", fontFamily: "inherit", letterSpacing: 0.5,
               }}>sus</button>
-            {(listSearch || noteCountFilter !== null || susOnly) && (
-              <button onClick={() => { setListSearch(""); setNoteCountFilter(null); setSusOnly(false); }} style={{
+            {(listSearch || noteRangeOn || susOnly) && (
+              <button onClick={() => { setListSearch(""); setNoteRange([NOTES_MIN, NOTES_MAX]); setSusOnly(false); }} style={{
                 background: "none", border: `1px solid ${K.br}`, color: K.t2,
                 borderRadius: 3, padding: "2px 6px", fontSize: 9,
                 cursor: "pointer", fontFamily: "inherit", marginLeft: 2,
@@ -8500,7 +8519,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
           })}
           {filtered.length === 0 && (
             <div style={{ padding: 32, color: K.t2, textAlign: "center", fontSize: 11 }}>
-              No results{filter ? ` for "${filter}"` : listSearch ? ` for "${listSearch}"` : noteCountFilter ? ` for ${noteCountFilter}-note scales` : ""}
+              No results{filter ? ` for "${filter}"` : listSearch ? ` for "${listSearch}"` : noteRangeOn ? ` for ${noteRange[0]}–${noteRange[1]}-note scales${noteRange[1] > 8 && !showOutside ? " (9+ notes are outside scales: switch on outside)" : ""}` : ""}
             </div>
           )}
         </div>
