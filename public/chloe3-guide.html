@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chloe3 — Scale Explorer Guide</title>
+<title>Chloe4 — Scale Explorer Guide</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
@@ -372,37 +372,35 @@
 </style>
 </head>
 <body>
-<div style="max-width:760px;margin:16px auto;padding:10px 16px;border:1px solid #c9a227;border-radius:6px;font:14px/1.5 system-ui,sans-serif;color:#c9a227;background:rgba(201,162,39,0.08)">
-  This guide covers Chloe's 12-note core, which Chloe4 keeps. Chloe4's additions are explained in the app's own help (the ? button): maqam, makam, Byzantine and other world scales in cents, key in cents, RESOLUTION, BRIGHT FEEL, MOOD, WORLD SCALES, the voices, and the persia, shur, makam, byzantine and spiral journeys.
-</div>
 
 <!-- ═══════════════════════════════════════════
      COVER
 ════════════════════════════════════════════ -->
 <div class="cover">
   <div class="cover-eyebrow">A guide to</div>
-  <div class="cover-title">Chloe3</div>
-  <div class="cover-sub">Scale Explorer</div>
+  <div class="cover-title">Chloe4</div>
+  <div class="cover-sub">Scale Explorer, beyond 12 notes</div>
   <div class="cover-desc">
     A browser-based tool for exploring the full universe of musical scales —
     hearing them, comparing them, and understanding what makes each one
-    sound the way it does.
+    sound the way it does: the 12 notes of the piano, and the notes
+    between them, from maqam and makam to Byzantine chant.
   </div>
   <div class="cover-grid">
-    <div class="cover-pill">piano</div>
-    <div class="cover-pill">guitar</div>
-    <div class="cover-pill">xylo</div>
-    <div class="cover-pill">space</div>
-    <div class="cover-pill">beat</div>
+    <div class="cover-pill">maqam</div>
+    <div class="cover-pill">makam</div>
+    <div class="cover-pill">byzantine</div>
+    <div class="cover-pill">cents</div>
+    <div class="cover-pill">journeys</div>
+    <div class="cover-pill">worlds</div>
+    <div class="cover-pill">voices</div>
+    <div class="cover-pill">orchestra</div>
+    <div class="cover-pill">mood</div>
     <div class="cover-pill">drone</div>
-    <div class="cover-pill">arpeggio</div>
-    <div class="cover-pill">melody</div>
-    <div class="cover-pill">chords</div>
     <div class="cover-pill">AI demo</div>
     <div class="cover-pill">visualizer</div>
-    <div class="cover-pill">info</div>
   </div>
-  <div class="cover-footer">ronniebnorth.github.io/chloe3</div>
+  <div class="cover-footer">ronniebnorth.github.io/chloe4</div>
 </div>
 
 
@@ -436,8 +434,17 @@
     </div>
 
     <p>
-      All sound is synthesised live in your browser using the Web Audio API — no samples,
-      no downloads, no plugins. Open the page and it just works.
+      <strong>Chloe4 goes past the 12 semitones.</strong> Every scale is stored as its pitches in
+      cents (a semitone is 100 cents), so the catalogue also holds Arabic maqam and Persian dastgah
+      with their quarter tones, Turkish makam in 53 commas per octave, Byzantine chant in 72 moria,
+      and exact tunings such as just intonation and the Chinese pentatonic in pure fifths. All of
+      Chloe3's 12-note scales are still here, unchanged. Chapter 7 covers the world scales.
+    </p>
+
+    <p>
+      Almost all sound is synthesised live in your browser using the Web Audio API, with no plugins.
+      The exceptions are the orchestra and the sampled choir voices, which download real recordings
+      the first time you switch them on.
     </p>
   </div>
 
@@ -465,8 +472,8 @@
     <div class="section-number">1.2</div>
     <div class="section-title">Named scales</div>
     <p>
-      45 scales in the catalogue have recognised names, covering all the families most musicians
-      encounter. The rest are unnamed — valid and playable, just obscure.
+      Hundreds of scales in the catalogue have recognised names, covering the families most musicians
+      encounter and the world traditions below. The rest are unnamed: valid and playable, just obscure.
     </p>
     <div class="scale-grid">
       <div class="scale-item"><span class="scale-cat">Diatonic modes</span>Lydian, Ionian, Mixolydian, Dorian, Aeolian, Phrygian, Locrian</div>
@@ -477,6 +484,10 @@
       <div class="scale-item"><span class="scale-cat">Pentatonics</span>Major, Minor, Ritusen, Egyptian, Man Gong, Insen, Iwato, Hirajoshi, Kumoi, In Scale, Pelog</div>
       <div class="scale-item"><span class="scale-cat">Hexatonics</span>Whole Tone, Augmented, Prometheus, Tritone Scale, Istrian</div>
       <div class="scale-item"><span class="scale-cat">Octatonics</span>Octatonic HW, Octatonic WH</div>
+      <div class="scale-item"><span class="scale-cat">Maqam · dastgah</span>Rast, Bayati, Saba, Huzam, Hijaz, Nahawand, Kurd, Ajam, Shur, Abu Ata, Bayat-e Tork, Afshari, Dashti, Homayun, Segah, Chahargah, Mahur</div>
+      <div class="scale-item"><span class="scale-cat">Turkish makam</span>Rast, Hüseynî, Uşşak, Hicaz, Bûselik, Kürdî (53 commas)</div>
+      <div class="scale-item"><span class="scale-cat">Byzantine</span>The diatonic, soft chromatic and hard chromatic modes (72 moria)</div>
+      <div class="scale-item"><span class="scale-cat">Real intonation</span>Just major and its modes, Pythagorean, the overtone scale, Shur as played, the Chinese pentatonic and old heptatonic</div>
     </div>
   </div>
 </div>
@@ -525,14 +536,21 @@
       This number is a compact, unique fingerprint for each scale — independent of root note or
       key, since it describes the interval pattern, not the specific pitches.
     </p>
+    <div class="callout">
+      <strong>In Chloe4</strong> the 12-bit codes still work exactly as above. Quarter-tone scales
+      use a 24-bit code, one bit per quarter tone, written root-first the same way. Scales in
+      commas, moria or exact cents don't fit any grid, so Chloe stores their pitches in cents and
+      gives each one a stable ID made from those pitches.
+    </div>
   </div>
 
   <div class="section">
     <div class="section-number">2.1</div>
     <div class="section-title">The scale wheel</div>
     <p>
-      Chloe displays each selected scale as a polygon on a chromatic circle — twelve points arranged
-      clockwise, one per semitone. Active scale tones are highlighted in amber and connected by lines.
+      Chloe displays each selected scale as a polygon on a circle: 24 points arranged clockwise, one
+      per quarter tone (every other point is a piano note). A note in commas, moria or cents sits at
+      its true angle between them. Active scale tones are highlighted in amber and connected by lines.
     </p>
     <p>
       The shape of the polygon gives you an immediate visual feel for the scale's character:
@@ -633,6 +651,12 @@
       playing register, giving it weight as a bass foundation. The <strong>DRONE VOL</strong>
       slider sets its level independently of the notes.
     </p>
+    <p>
+      <strong>DRONE TYPE</strong> sets its sound: sine, organ, pad, strings, tanpura, throat
+      singing, jaw harp, juno (an 80s polysynth pad), dam (a second duduk), chant (monks on a low
+      om), ison (the low voices of a Byzantine choir, each breathing at his own time so it never
+      stops), didgeridoo, or white, pink and brown noise.
+    </p>
   </div>
 
   <div class="section">
@@ -718,8 +742,11 @@
 
   <div class="section">
     <p>
-      All audio is synthesised in real time using the Web Audio API. There are no sample files —
-      every sound is built from oscillators, noise, filters, and envelopes in JavaScript.
+      The instruments are synthesised in real time using the Web Audio API, built from
+      oscillators, noise, filters and envelopes in JavaScript. The choir and oohs voices and the
+      orchestra use recorded samples instead. A journey or world can choose its own instrument;
+      the instrument row then shows the one playing with a dashed outline. The four below are
+      the originals; the full list follows.
     </p>
 
     <div class="two-col">
@@ -747,6 +774,22 @@
   </div>
 
   <div class="section">
+    <table>
+      <tr><th>Instrument</th><th>Sound</th></tr>
+      <tr><td>lute, fiddle</td><td>Mongolian lute and horsehead fiddle (the lute also stands in for the oud)</td></tr>
+      <tr><td>dx7</td><td>An FM electric piano</td></tr>
+      <tr><td>duduk</td><td>An Armenian double reed, scooping into its notes</td></tr>
+      <tr><td>whale</td><td>Low, gliding whale song</td></tr>
+      <tr><td>kalimba, felt, hang</td><td>Thumb piano, felt piano, handpan</td></tr>
+      <tr><td>shaku, whistle</td><td>Shakuhachi-style bamboo flute (also the ney), tin whistle</td></tr>
+      <tr><td>glass, dulcimer, pan</td><td>Glass harmonica, hammered dulcimer (also the santur), steel pan</td></tr>
+      <tr><td>synlead</td><td>A big saw lead</td></tr>
+      <tr><td>choir, oohs</td><td>Sampled choir on "ah", sampled voices on "oo"</td></tr>
+      <tr><td>chant</td><td>A few men singing the line, the vowel following MOOD; synthesised, so every microtone lands exactly</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
     <div class="section-number">4.1</div>
     <div class="section-title">Effects</div>
     <table>
@@ -755,9 +798,10 @@
       <tr><td>DRONE VOL</td><td>Drone volume — independent, can go up to 3× for bass-heavy drones</td></tr>
       <tr><td>BEAT VOL</td><td>Percussion volume — independent of notes and drone</td></tr>
       <tr><td>REV</td><td>Convolution reverb wet level — shared by drone and notes</td></tr>
-      <tr><td>DEL</td><td>BPM-synced dotted-eighth delay with feedback</td></tr>
+      <tr><td>DEL / D.T</td><td>Delay wet level and delay time in seconds (0.125, 0.25, 0.375, 0.5 give rhythmic echoes)</td></tr>
       <tr><td>BPM</td><td>Tempo — affects arpeggio, melody, beat, and delay time simultaneously</td></tr>
       <tr><td>A=</td><td>Concert pitch reference — 432 to 440 Hz. Retunes everything live.</td></tr>
+        <tr><td>RESOLUTION</td><td>How finely the octave is divided when notes play, 12 to 1200 steps (see 7.3)</td></tr>
     </table>
 
     <div class="callout">
@@ -793,10 +837,10 @@
     <div class="section-number">5.1</div>
     <div class="section-title">Auto mode</div>
     <p>
-      The <strong>Auto</strong> button makes Chloe explore autonomously — cycling through named
-      scales every 12–16 seconds, randomising root note, rhythm, arpeggio direction, chord
-      voicing, and BPM each time. It covers the full catalogue of 45 named scales, always
-      choosing something different from the current scale.
+      The <strong>Auto</strong> button makes Chloe explore autonomously, moving from scale to
+      scale and changing root note, rhythm, arpeggio direction, chord voicing, BPM, sound and
+      effects as it goes. The ⚙ panel lets you choose which of those Auto may change. A journey
+      (Chapter 6) gives Auto a destination instead of a free wander.
     </p>
     <p>
       This is useful as a background listening mode, or as a way to quickly survey scales you
@@ -856,17 +900,165 @@
 
 
 <!-- ═══════════════════════════════════════════
-     CHAPTER 6 — SHARING AND URL STATE
+     CHAPTER 6 — JOURNEYS AND WORLDS
 ════════════════════════════════════════════ -->
 <div class="page">
   <div class="chapter">
     <div class="chapter-num">Chapter 6</div>
+    <div class="chapter-title">Journeys &amp; Worlds</div>
+  </div>
+
+  <div class="section">
+    <div class="section-number">6.1</div>
+    <div class="section-title">Journeys</div>
+    <p>
+      A journey is a shape over time: 5, 15, 30 or 60 minutes (LENGTH). Choosing one starts Auto,
+      which then moves scales, tempo, reverb and note length along that shape. On the Listen page
+      you can draw your own.
+    </p>
+    <table>
+      <tr><th>Journey</th><th>Shape</th></tr>
+      <tr><td>dawn, dusk, descent</td><td>Dark to bright, bright to dark, and down and back up</td></tr>
+      <tr><td>storm, rise, wake</td><td>A storm of clashing scales; an epic build; a pattern that keeps breaking to keep you awake</td></tr>
+      <tr><td>wait</td><td>A pulse through suspended scales, a long hold without a 3rd, then the 3rd arrives</td></tr>
+      <tr><td>endless, map</td><td>A slow calm wander that never arrives; a shuffle for measuring with a headband</td></tr>
+      <tr><td>draw</td><td>Your own line: high for bright, low for dark; a scales row limits it to one tradition</td></tr>
+      <tr><td>persia</td><td>A tour of the Persian dastgahs, Shur up to Mahur and home</td></tr>
+      <tr><td>shur</td><td>Inside one dastgah: the notes stay, the home note climbs (Abu Ata, Bayat-e Tork, Afshari, Dashti) and comes home</td></tr>
+      <tr><td>makam</td><td>Turkish, in 53 commas: Rast, Hüseynî, Uşşak, the Hicaz peak, with a darbuka playing the usuls</td></tr>
+      <tr><td>byzantine</td><td>Chant in 72 moria, chant voice and choir taking turns over the ison</td></tr>
+      <tr><td>spiral</td><td>The Chinese pentatonic climbing a pure fifth at a time, drifting by the Pythagorean comma (see 7.4)</td></tr>
+    </table>
+    <p>
+      The world journeys lean briefly into related scales about once a minute and come back, the
+      way a taksim or a radif performance moves.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-number">6.2</div>
+    <div class="section-title">Worlds and the orchestra</div>
+    <p>
+      A <strong>world</strong> brings a lead instrument, a rhythm, a drone and surroundings that
+      belong together: steppe, desert, ocean, jungle, thunderstorm, cave, temple, arctic, mountain,
+      carnival, celtic, night drive, fire circle and new wave. WANDER drifts from world to world.
+    </p>
+    <p>
+      <strong>SYMPHONIC</strong> (orchestra on the Listen page) adds a sampled orchestra under the
+      line: strings on chords from the current scale, cellos, double bass, timpani, violin and flute
+      runs, and a choir toward the epic end of MOOD. Its WANDER lets it come and go on its own.
+    </p>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     CHAPTER 7 — BEYOND 12 NOTES
+════════════════════════════════════════════ -->
+<div class="page">
+  <div class="chapter">
+    <div class="chapter-num">Chapter 7</div>
+    <div class="chapter-title">Beyond 12 Notes</div>
+  </div>
+
+  <div class="section">
+    <div class="section-number">7.1</div>
+    <div class="section-title">World scales and how they are written</div>
+    <table>
+      <tr><th>Tradition</th><th>Steps per octave</th><th>Written as</th></tr>
+      <tr><td>Arabic maqam, Persian dastgah</td><td>24 (quarter tones, 50 cents)</td><td>E½♭ (half-flat), C½♯ (half-sharp)</td></tr>
+      <tr><td>Turkish makam</td><td>53 commas (about 22.6 cents)</td><td>B⁻¹ = B one comma flat</td></tr>
+      <tr><td>Byzantine chant</td><td>72 moria (16.7 cents)</td><td>intervals in moria, e.g. 12·10·8</td></tr>
+      <tr><td>Real intonation</td><td>exact cents</td><td>E−14¢ = 14 cents below E</td></tr>
+    </table>
+    <p>
+      These intervals are intended, not out of tune: Rast's 3rd sits between major and minor,
+      Bayati's 2nd between a half and a whole step. Brightness is worked out the same way as for
+      12-note scales, from the exact positions, so world scales fall into place on the same
+      bright-to-dark ladder.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-number">7.2</div>
+    <div class="section-title">Key in cents</div>
+    <p>
+      A journey can move the home note between the piano's notes: Shur's Abu Ata sits on a
+      half-flat, the makam journey's Dügah sits 9 commas (203.8 cents) above Rast, and the spiral
+      drifts by fractions of a cent. The root then shows it (D½♭, F+22¢) and everything follows,
+      drone, orchestra and drums included. Stopping the journey puts the key back on the semitones.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-number">7.3</div>
+    <div class="section-title">Resolution</div>
+    <p>
+      <strong>RESOLUTION</strong> (Studio, under TUNING) rounds every pitch to the nearest of that
+      many equal steps per octave when it plays: 12 is the piano, 24 quarter tones, 53 Turkish
+      commas, 72 Byzantine moria, 1200 exact. The world journeys raise it to what they need.
+      The scale list and brightness always use the exact pitches.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-number">7.4</div>
+    <div class="section-title">The spiral of fifths</div>
+    <p>
+      Stack pure 3:2 fifths and fold them into one octave, and they never quite close the circle:
+      12 fifths miss by 23.5 cents (the Pythagorean comma), 53 miss by only 3.6. Chinese theorists
+      worked through this long ago: Jing Fang carried the chain to 60 fifths in the 1st century BC,
+      and Qian Lezhi to 360, one for each day of the year, in the 5th century AD.
+    </p>
+    <p>
+      The <strong>spiral</strong> journey plays a Chinese pentatonic in pure fifths and moves its
+      home note up a pure fifth at a time, as in <em>xuangong</em> ("rotating the gong"). After 12
+      moves it is back on its first note but 23.5 cents sharp; its 53 moves end 3.6 cents from home.
+      Then it walks on along Qian Lezhi's chain toward 360 until you stop it. Qian's 360 pitches
+      are only 1.8 to 3.6 cents apart, too close to hear as separate notes, which is why the spiral
+      walks the chain instead of playing it as one scale.
+    </p>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     CHAPTER 8 — SHAPING THE MUSIC
+════════════════════════════════════════════ -->
+<div class="page">
+  <div class="chapter">
+    <div class="chapter-num">Chapter 8</div>
+    <div class="chapter-title">Shaping the Music</div>
+  </div>
+
+  <div class="section">
+    <table>
+      <tr><th>Control</th><th>What it does</th></tr>
+      <tr><td>NOTES</td><td>Number buttons 3 to 12, or all: which scale sizes Auto and the journeys may choose</td></tr>
+      <tr><td>BRIGHT FEEL</td><td>Root brightness or felt brightness: how bright a scale sounds given the notes still ringing in your ear, held notes and the drone weighing more</td></tr>
+      <tr><td>MOOD</td><td>Chill to epic: tempo, note length, energy, reverb, which sounds Auto picks, and tension</td></tr>
+      <tr><td>WORLD SCALES</td><td>How often Auto chooses a world scale (maqam, makam, Byzantine, real intonation), from natural to 0–100%</td></tr>
+    </table>
+    <p>
+      Each of these, and the orchestra, has a <strong>wander</strong>: it drifts on its own,
+      with SPEED and RANGE sliders setting how fast and how far.
+    </p>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     CHAPTER 9 — SHARING AND URL STATE
+════════════════════════════════════════════ -->
+<div class="page">
+  <div class="chapter">
+    <div class="chapter-num">Chapter 9</div>
     <div class="chapter-title">Sharing &amp; URL State</div>
   </div>
 
   <div class="section">
     <p>
-      Every setting in Chloe is encoded into the URL. The <strong>Share</strong> button
+      Every setting in Chloe is encoded into the URL. The <strong>⬡ share</strong> button
       (top right) builds a URL encoding the current scale, root note, instrument, BPM, tuning,
       rhythm, chord voicing, arpeggio direction, reverb, delay, and sidebar width — then copies
       it to your clipboard.
@@ -878,23 +1070,25 @@
     </p>
 
     <div class="terminal">
-      <span class="dim">https://ronniebnorth.github.io/chloe3/?</span><br>
-      <span class="blu">sel</span>=hep-6.3&amp;<span class="blu">r</span>=7&amp;<span class="blu">i</span>=piano&amp;<span class="blu">b</span>=112&amp;<span class="blu">rh</span>=swing&amp;<span class="blu">cv</span>=triad&amp;<span class="blu">rv</span>=0.30
+      <span class="dim">https://ronniebnorth.github.io/chloe4/?</span><br>
+      <span class="blu">jo</span>=byzantine&amp;<span class="blu">jm</span>=30&amp;<span class="blu">i</span>=chant&amp;<span class="blu">dr</span>=1&amp;<span class="blu">dw</span>=ison&amp;<span class="blu">edo</span>=72
     </div>
   </div>
 
   <div class="section">
-    <div class="section-number">6.1</div>
+    <div class="section-number">9.1</div>
     <div class="section-title">Quick reference</div>
     <table>
       <tr><th>What you want to do</th><th>How</th></tr>
-      <tr><td>Open Chloe</td><td>ronniebnorth.github.io/chloe3</td></tr>
+      <tr><td>Open Chloe</td><td>ronniebnorth.github.io/chloe4</td></tr>
       <tr><td>Hear a scale</td><td>Click any scale in the list, then click Play</td></tr>
       <tr><td>Change root note</td><td>Click any note in the KEYS row</td></tr>
       <tr><td>Hear modal colour</td><td>Turn on Drone, then Play</td></tr>
       <tr><td>Find a specific scale</td><td>Type its name in the filter bar</td></tr>
       <tr><td>Save a scale for later</td><td>Click ★ on the row, then use Favs filter</td></tr>
-      <tr><td>Share what you're hearing</td><td>Click Share — URL is copied to clipboard</td></tr>
+      <tr><td>Share what you're hearing</td><td>Click ⬡ share (or copy link on the Listen page)</td></tr>
+        <tr><td>Hear world scales</td><td>Start the persia, shur, makam, byzantine or spiral journey, or raise WORLD SCALES</td></tr>
+        <tr><td>Hear exact pitches</td><td>Set RESOLUTION to 1200</td></tr>
       <tr><td>Let AI explore for you</td><td>Click ★ Claude, enter Anthropic API key</td></tr>
       <tr><td>Add a beat</td><td>Click ♩ Beat — follows the current Rhythm setting</td></tr>
       <tr><td>Toggle light/dark theme</td><td>Click ☀/☾ in the top-right corner of the header</td></tr>
