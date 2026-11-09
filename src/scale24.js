@@ -90,11 +90,11 @@ export const toBin = (p) => p > FULL ? exactCode(p) : Array.from({ length: Q }, 
 const exactCode = (p) => {
   const { cents: c, system } = EXACT.get(p);
   const steps = c.map((x, i) => (c[i + 1] ?? 1200) - x);
-  return steps.map(d => system === "53" ? Math.round(d * 53 / 1200) : Math.round(d)).join("·");
+  return steps.map(d => system === "53" ? Math.round(d * 53 / 1200) : system === "72" ? Math.round(d * 72 / 1200) : Math.round(d)).join("·");
 };
 // Interval labels for display: "9k" (commas), "204¢" (cents) or semitones (grid)
 export const intervalLabels = (p) => {
-  if (p > FULL) { const unit = EXACT.get(p).system === "53" ? "k" : "¢"; return exactCode(p).split("·").map(x => x + unit); }
+  if (p > FULL) { const sy = EXACT.get(p).system, unit = sy === "53" ? "k" : sy === "72" ? "m" : "¢"; return exactCode(p).split("·").map(x => x + unit); }
   const s = toSemis(p); return s.slice(1).map((v, i) => v - s[i]).concat(12 - s[s.length - 1]);
 };
 
@@ -373,3 +373,46 @@ export const RES_STOPS = [[12, "piano"], [24, "quarter tones"], [31, "Huygens"],
 // Log-scaled slider position (0..1) ↔ n
 export const resToPos = (n) => Math.log(n / RES_MIN) / Math.log(RES_MAX / RES_MIN);
 export const posToRes = (x) => Math.round(RES_MIN * (RES_MAX / RES_MIN) ** x);
+
+/* ── Byzantine chant: 72 moria per octave ──────────────────────────────────
+   The Patriarchal Music Committee (Constantinople, 1881) divided the octave
+   into 72 moria (1 morion ≈ 16.7¢). Genera as tetrachords in moria:
+   diatonic 12·10·8 (confirmed in sources: "the major, minor and small
+   intervals ... 12, 10 and 8 moria"); soft chromatic 8·14·8 and hard chromatic
+   6·20·4 (the commonly taught Committee values; not yet checked against a
+   primary source). Two tetrachords joined by a 12-moria tone fill the octave.
+   Stored as exact cents (system "72"); codes and intervals show moria.
+   Notes Ni Pa Vou Ga Di Ke Zo ≈ C D E F G A B. */
+export const byzPattern = (pos) => fromCents(pos.map(m => m * 1200 / 72), "72");
+export const isByz = (p) => p > FULL && EXACT.get(p).system === "72";
+const BYZ_ROT = (pos, k) => pos.map(x => ((x - pos[k]) % 72 + 72) % 72).sort((a, b) => a - b);
+export const byzRotations = (pos) => pos.map((_, k) => byzPattern(BYZ_ROT(pos, k)));
+export const BYZ_SEEDS = [
+  { name: "Diatonic (from Ni)", iv: [12, 10, 8, 12, 12, 10, 8] },
+  { name: "Soft chromatic (from Di)", iv: [8, 14, 8, 12, 8, 14, 8] },
+  { name: "Hard chromatic (from Pa)", iv: [6, 20, 4, 12, 6, 20, 4] },
+].map(sd => ({ ...sd, pos: cum(sd.iv) }));
+const bp = (iv) => byzPattern(cum(iv));
+export const BYZ_NAMES = [
+  [bp([12, 10, 8, 12, 12, 10, 8]), "Plagal 4th (diatonic, on Ni)"],
+  [bp([10, 8, 12, 12, 10, 8, 12]), "First mode (diatonic, on Pa)"],
+  [bp([8, 12, 12, 10, 8, 12, 10]), "Diatonic on Vou"],
+  [bp([12, 12, 10, 8, 12, 10, 8]), "Diatonic on Ga"],
+  [bp([12, 10, 8, 12, 10, 8, 12]), "Fourth mode (diatonic, on Di)"],
+  [bp([8, 14, 8, 12, 8, 14, 8]), "Second mode (soft chromatic, on Di)"],
+  [bp([6, 20, 4, 12, 6, 20, 4]), "Plagal 2nd (hard chromatic, on Pa)"],
+];
+/* Byzantine journey: around the modes of the Octoechos, the home note moving as
+   the modes' bases do (shift = semitones above Ni; Pa = 12 moria = 200¢ exactly,
+   Di = 42 moria = 700¢ exactly, so the key moves land on the true pitches).
+   Plagal 4th on Ni → First mode on Pa → Second mode (soft chromatic) on Di →
+   Plagal 2nd (hard chromatic) on Pa, the peak → First mode → home to Ni.
+   Chant is a solo voice over the ison (a held drone on the base note). */
+export const BYZ_PATH = [
+  { at: 0.00, name: "Plagal 4th", shift: 0, pat: bp([12, 10, 8, 12, 12, 10, 8]) },
+  { at: 0.18, name: "First mode", shift: 2, pat: bp([10, 8, 12, 12, 10, 8, 12]) },
+  { at: 0.38, name: "Second mode", shift: 7, pat: bp([8, 14, 8, 12, 8, 14, 8]) },
+  { at: 0.58, name: "Plagal 2nd", shift: 2, pat: bp([6, 20, 4, 12, 6, 20, 4]) },
+  { at: 0.78, name: "First mode", shift: 2, pat: bp([10, 8, 12, 12, 10, 8, 12]) },
+  { at: 0.90, name: "Plagal 4th", shift: 0, pat: bp([12, 10, 8, 12, 12, 10, 8]) },
+];

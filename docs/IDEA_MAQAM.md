@@ -583,3 +583,24 @@ transitions sound (fade lengths) by ear.
   Mahur lean toward the previous/next stop (Chloe's own touch, no sourced variants).
   All visit scales verified to exist in a family. Headless: Shur → Shur (lowered
   5th) → Shur → Dashti, no errors.
+
+## Byzantine journey, 72 moria — built 2026-11-09
+
+- Scales (`BYZ_SEEDS` in `scale24.js`, system "72", exact cents, rotated in
+  whole moria): diatonic 12·10·8 (+12) per tetrachord, **confirmed** ("the
+  major, minor and small intervals of the diatonic scale ... 12, 10 and 8
+  moria", search 2026-11-09); soft chromatic 8·14·8 and hard chromatic 6·20·4,
+  the **commonly taught Patriarchal Committee (1881) values, not yet checked
+  against a primary source**. Lead: Guray & Aydın, "The soft and hard chroma of
+  Chrysanthos and the Patriarchal Committee: a psychoacoustic approach".
+- Named modes: Plagal 4th (Ni), First mode (Pa), Fourth mode (Di), Second mode
+  (soft chromatic, Di), Plagal 2nd (hard chromatic, Pa), diatonic on Vou/Ga.
+  Sidebar group BYZANTINE · 72 MORIA; intervals "12m"; draw pool "byzantine";
+  part of WORLD SCALES.
+- Journey **byzantine**: Plagal 4th (Ni) → First mode (Pa, +2) → Second mode
+  (Di, +7) → Plagal 2nd (Pa) peak → First mode → Plagal 4th. Pa = 12 moria =
+  200¢ and Di = 42 moria = 700¢ exactly, so key moves land on true pitches.
+  60 BPM, duduk (voice-like) over the ison (drone on), raises RESOLUTION to ≥ 72.
+- Not yet: the enharmonic genus (third mode, grave mode), attractions (notes
+  bending toward their neighbours, a real feature of chant), moving within
+  each mode. Checked headless: 53 → 72, all four modes, drone on, duduk.
