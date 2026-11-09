@@ -463,3 +463,25 @@ Ronnie: a slider "from 12 to 1200" for how finely Chloe divides the octave.
   the range just includes or excludes them.
 - Checked headless: 9–12 shows the four new groups; Auto at 5–5 picks only
   5-note scales; no console errors.
+
+## Felt brightness (A/B) — built 2026-11-09
+
+Ronnie: brightness of a move should depend on what was just heard, held notes
+weighing more, not only on the root.
+- **Note memory** (`NOTE_MEM` in App.jsx): every played note adds
+  min(4 s, duration) × velocity to its absolute pitch class (quarter-tone
+  resolution), decaying with τ = 3 s. The drone counts as a held root
+  (weight 1.5).
+- **`feltShift(a, b)`**: for each note of the current scale that moves, its
+  shift in semitones × its memory weight, over the total weight held. Unheard
+  moves count for nothing. Checked: Ionian→Mixolydian with a held B = −0.67
+  (felt darker); Ionian→Lydian with F unheard = 0 (hidden), with F held = +0.4.
+- **Journey walk**: in felt mode the score adds 0.3·|f| near the target
+  (prefer hidden moves) or −0.3·f·sign(gap) further off (prefer moves felt in
+  the right direction). Static brightness still sets the targets and sorting.
+- **A/B**: Studio BRIGHT FEEL root / felt (held notes); Listen chip "felt".
+  Saved (`chloe-bright-feel`), links carry `bf=felt`. In felt mode the wheel
+  glows on held notes.
+- To tune by ear: τ (3 s), drone weight (1.5), the 0.3 factor, the 0.05
+  "near target" threshold. Ideas: let SMOOTH use hidden moves; let EEG/override
+  picks use felt too (now only the journey walk does).
