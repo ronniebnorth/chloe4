@@ -8832,7 +8832,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
             {/* Drone octave */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <span title="Drop the drone 1-3 octaves for a deep bass foundation." style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>DRONE OCT</span>
-              <div style={{ display: "flex", gap: 3, marginLeft: "auto" }}>
+              <div style={{ display: "flex", gap: 3, marginLeft: "auto", flexWrap: "wrap", justifyContent: "flex-end", minWidth: 0 }}>
                 {[0, -12, -24, -36].map(o => (
                   <button key={o} onClick={() => setDroneOct(o)} style={{
                     background: droneOct === o ? K.a : K.bg3,
@@ -9077,7 +9077,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
             {/* Octaves */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <span title="Number of octaves to span when playing. 1 = single octave, 2 = two octaves, 3 = three octaves." style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>OCTAVES</span>
-              <div style={{ display: "flex", gap: 3, marginLeft: "auto" }}>
+              <div style={{ display: "flex", gap: 3, marginLeft: "auto", flexWrap: "wrap", justifyContent: "flex-end", minWidth: 0 }}>
                 {[1, 2, 3].map(o => (
                   <button key={o} onClick={() => setArpOct(o)} style={{
                     background: arpOct === o ? K.a : K.bg3,
@@ -9093,7 +9093,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
             {/* Grouping — overrides rhythm with even notes in groups of N */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <span title="Play the line in repeating groups of N even notes, each group moved one scale step. Groups of 5 or 6 run against the 4-count, Eric Johnson style, so the line sounds faster and more tangled than it is. The first note of each group is accented. mix = group sizes change within the bar (5+5+6, 3+3+5+5, 5+4+5+5+4+5+4…) and always add up to whole bars, so the line lands back on the downbeat. Off = normal rhythm." style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>GROUPS</span>
-              <div style={{ display: "flex", gap: 3, marginLeft: "auto" }}>
+              <div style={{ display: "flex", gap: 3, marginLeft: "auto", flexWrap: "wrap", justifyContent: "flex-end", minWidth: 0 }}>
                 {[0, 3, 5, 6, 7, "mix"].map(g => (
                   <button key={g} onClick={() => setGrouping(g)} style={{
                     background: grouping === g ? K.a : K.bg3,
@@ -9109,7 +9109,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
             {/* Scale change — hard cut, or blend through voice-leading moves */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <span title="How the line moves to a new scale while playing. Cut = switch at once. Blend = swap the notes that differ one at a time, each to its nearest new note, about one per bar; shared notes stay put, so close scales glide and distant ones take a few bars. The wheel shows the in-between shape." style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>SCALE CHANGE</span>
-              <div style={{ display: "flex", gap: 3, marginLeft: "auto" }}>
+              <div style={{ display: "flex", gap: 3, marginLeft: "auto", flexWrap: "wrap", justifyContent: "flex-end", minWidth: 0 }}>
                 {[{ l: "cut", v: false }, { l: "blend", v: true }].map(o => (
                   <button key={o.l} onClick={() => setBlend(o.v)} style={{
                     background: blend === o.v ? K.a : K.bg3,
@@ -9125,7 +9125,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
             {/* Tempo change — jump, or glide between BPMs */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <span title="How the tempo moves when the BPM changes (Auto, Claude or the slider). Cut = jump at once. Glide = ease to the new tempo, about 12 seconds per doubling or halving (4 to 30 seconds, up to twice as long with Smooth), so it never drops from fast straight to very slow." style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>TEMPO CHANGE</span>
-              <div style={{ display: "flex", gap: 3, marginLeft: "auto" }}>
+              <div style={{ display: "flex", gap: 3, marginLeft: "auto", flexWrap: "wrap", justifyContent: "flex-end", minWidth: 0 }}>
                 {[{ l: "cut", v: false }, { l: "glide", v: true }].map(o => (
                   <button key={o.l} onClick={() => setTempoGlide(o.v)} style={{
                     background: tempoGlide === o.v ? K.a : K.bg3,
@@ -9141,7 +9141,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
             {/* Journey — a shape over time that steers Auto (brightness, tempo, reverb, tension) */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: journey === "off" ? 8 : 4 }}>
               <span title="Pick a journey and Auto travels it over the length you choose: Dawn = dark to bright, Dusk = bright to dark, Descent = bright, down into the dark and back up, Storm = calm, a building storm, calm again, Rise = an epic, energizing build to a bright peak, Endless = a slow, calm wander that never ends, built for sleep, Map = for measuring with a headband, everything taking a turn in a shuffled order, Wait = a pulse falls away and the music holds with no 3rd until one note arrives, Draw = your own line, drawn on the Listen stage. Scales move one note at a time so the change is gradual, and the tempo, reverb and note length follow the shape. Choosing one starts Auto, and all but Endless and Map switch to Melody. When it arrives it keeps playing at the destination; if you're recording, it settles on a home scale, fades out and saves the WAV, a finished piece." style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>JOURNEY</span>
-              <div style={{ display: "flex", gap: 3, marginLeft: "auto" }}>
+              <div style={{ display: "flex", gap: 3, marginLeft: "auto", flexWrap: "wrap", justifyContent: "flex-end", minWidth: 0 }}>
                 {["off", ...Object.keys(JOURNEYS)].map(v => (
                   <button key={v} title={JOURNEYS[v]?.tip} onClick={() => {
                     setJourney(v);
@@ -9163,7 +9163,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                 <span style={{ color: JOURNEY_COLOR, fontSize: 9, fontVariantNumeric: "tabular-nums" }}>
                   {journeyNow ? (journeyNow.ending ? "ending…" : journeyNow.arrived ? (journeyNow.survey ? `${mmss(journeyNow.el)} · still shuffling` : "arrived · holding") : `${mmss(journeyNow.el)} / ${journeyMins}:00`) : autoOn ? "" : "starts with Auto"}
                 </span>
-                <div style={{ display: "flex", gap: 3, marginLeft: "auto" }}>
+                <div style={{ display: "flex", gap: 3, marginLeft: "auto", flexWrap: "wrap", justifyContent: "flex-end", minWidth: 0 }}>
                   {JOURNEY_MINS.map(m => (
                     <button key={m} onClick={() => setJourneyMins(m)} style={{
                     background: journeyMins === m ? K.a : K.bg3,
@@ -9185,7 +9185,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
             {/* Auto tempo — wander, or hold steady with short surprise bursts */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <span title="How Auto moves the tempo. Drift = wander in small steps (about ±10%) around the BPM you started at. Bursts = hold your BPM steady, and every 45-120 seconds (longer with Smooth) glide into a 4-8 bar push up or pull back, about 15% either way, then glide home. Rise only pushes up; Endless, The Wait and Draw have no bursts. Untick BPM in Auto's ⚙ to stop all tempo changes." style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>AUTO TEMPO</span>
-              <div style={{ display: "flex", gap: 3, marginLeft: "auto" }}>
+              <div style={{ display: "flex", gap: 3, marginLeft: "auto", flexWrap: "wrap", justifyContent: "flex-end", minWidth: 0 }}>
                 {["drift", "bursts"].map(v => (
                   <button key={v} onClick={() => setAutoTempo(v)} style={{
                     background: autoTempo === v ? K.a : K.bg3,
@@ -9201,7 +9201,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
             {/* Sound change — switch instrument at once, or crossfade */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <span title="How the sound moves when the instrument or wave changes (Auto or a click). Cut = switch at once. Blend = crossfade over about 4 seconds; each note plays on both sounds, the old one fading out as the new one fades in." style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>SOUND CHANGE</span>
-              <div style={{ display: "flex", gap: 3, marginLeft: "auto" }}>
+              <div style={{ display: "flex", gap: 3, marginLeft: "auto", flexWrap: "wrap", justifyContent: "flex-end", minWidth: 0 }}>
                 {[{ l: "cut", v: false }, { l: "blend", v: true }].map(o => (
                   <button key={o.l} onClick={() => setSoundBlend(o.v)} style={{
                     background: soundBlend === o.v ? K.a : K.bg3,
@@ -9217,7 +9217,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
             {/* Tuning — equal temperament, or pure ratios above the root */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <span title="How the notes are tuned. Equal = standard 12-tone equal temperament, like a piano or fretted guitar. Just = pure ratios above the root (5/4 major 3rd, 3/2 fifth): very still against the drone; major 3rds are 14 cents flatter than a guitar's. Pyth = Pythagorean, built only from pure 3/2 fifths: fifths are pure, major 3rds come out 8 cents sharp and bright." style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>TUNING</span>
-              <div style={{ display: "flex", gap: 3, marginLeft: "auto" }}>
+              <div style={{ display: "flex", gap: 3, marginLeft: "auto", flexWrap: "wrap", justifyContent: "flex-end", minWidth: 0 }}>
                 {["equal", "just", "pyth"].map(v => (
                   <button key={v} onClick={() => setTuning(v)} style={{
                     background: tuning === v ? K.a : K.bg3,
@@ -9333,7 +9333,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
             {/* Symphonic — sampled strings + double bass under the line */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <span title="Adds an orchestra under the line: a string section swells on chords built from the current scale, cellos drive a low pulse, a double bass holds the roots, and timpani and taiko drums hit the changes (a big boom on a new scale), violin and flute weave fast runs through it, all in a cathedral reverb. Uses real recorded samples, a one-time download of about 30 MB in all the first time you switch it on." style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>SYMPHONIC{orchLoading ? " · loading…" : ""}</span>
-              <div style={{ display: "flex", gap: 3, marginLeft: "auto" }}>
+              <div style={{ display: "flex", gap: 3, marginLeft: "auto", flexWrap: "wrap", justifyContent: "flex-end", minWidth: 0 }}>
                 {[{ l: "off", v: false }, { l: "orchestra", v: true }].map(o => (
                   <button key={o.l} onClick={() => { setSymWander(false); setSymphonic(o.v); if (o.v) getOrchestra(getCtx()); }} style={{
                     background: symphonic === o.v ? (symWander ? K.bg3 : K.a) : K.bg3,
@@ -9387,7 +9387,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
                 <span title={WEATHER_TIP} style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>WEATHER</span>
                 {weatherBrain !== "off" && <span style={{ color: eegData?.connected ? "#5fd08a" : K.t2, fontSize: 9 }}>{eegData?.connected ? "headband on" : <>no headband (<a href={BERM_URL} target="_blank" rel="noopener" style={{ color: K.a }}>BERM Bridge</a>)</>}</span>}
-                <div style={{ display: "flex", gap: 3, marginLeft: "auto" }}>
+                <div style={{ display: "flex", gap: 3, marginLeft: "auto", flexWrap: "wrap", justifyContent: "flex-end", minWidth: 0 }}>
                   {WEATHER_BRAIN.map(([v, l]) => (
                     <button key={v} onClick={() => setWeatherBrain(v)} title={WEATHER_TIP} style={{
                       background: weatherBrain === v ? K.a : K.bg3, color: weatherBrain === v ? "#000" : K.txt,
