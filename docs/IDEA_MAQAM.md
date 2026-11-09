@@ -551,3 +551,14 @@ played mode, a Turkish makam, Chahargah; no errors.
   range 5–100%; full range sweeps Western-only ↔ world-only). Saved
   (`chloe-world-wander`, `-wspeed`, `-wrange`); links carry `wsw=`, `wss=`,
   `wsr=`. Checked headless: share drifted 0 → 6 → 11% at 4×.
+
+## Orchestra wander — 2026-11-09
+
+Ronnie: "symphonic should have a wander, so it comes and goes." Studio
+SYMPHONIC row gains **wander** (the off/orchestra button for the current state
+goes dashed); Listen gains "orchestra ~" (shows in / out). In for 90–240 s ×
+(1 + 0.5·MOOD), out for 60–180 s × (1 − 0.4·MOOD), min 30 s. Off = no new
+chords, sounding ones ring out; on = strings swell in. Saved
+(`chloe-sym-wander`); links carry `syw=1`. Checked headless: link turns it on,
+Listen shows "orchestra ~ out", no errors. Not yet checked: how the in/out
+transitions sound (fade lengths) by ear.
