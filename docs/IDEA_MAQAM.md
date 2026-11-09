@@ -147,5 +147,7 @@ Still to do:
 4. Claude prompt still describes the catalogue in 12-note terms.
 5. Brightness/EEG picks can now land on maqam scales; check that this feels
    right in a journey before deciding whether maqam should be opt-in.
-6. Sampled instruments (smplr soundfonts) take MIDI note numbers; check
-   whether they play quarter tones or round them.
+6. ~~Sampled instruments~~ fixed in f71cc32: smplr matches samples on whole
+   MIDI notes, so notes are floored and the extra 50 cents rides on detune.
+   The synth voices use frequencies directly and need no change. Listen to
+   confirm.
