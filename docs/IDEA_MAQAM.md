@@ -640,3 +640,12 @@ transitions sound (fade lengths) by ear.
   general sources (Needham-era histories via Wikipedia), not checked against a
   primary text. Possible next: Jing Fang's 60 as an option.
 
+## 2026-11-09: gongs
+
+Ronnie asked for gongs. Order agreed: tuned gong → tam-tam accents → opera gong
+on the spiral → gamelan world (slendro/pelog as cents scales, a gong cycle).
+- **Tuned gong** (done). A synthesised bossed gong: 7 partials (1, 2.02, 2.76,
+  3.52, 4.41, 5.33, 6.62) as detuned pairs for slow beating, the high ones
+  decaying first, a 1.6–6 s ring, landing 7¢ sharp and settling over 0.35 s, with a
+  padded mallet thump. Level measured offline: 0.69. Not yet heard by Ronnie.
+
