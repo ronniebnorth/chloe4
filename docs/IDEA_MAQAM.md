@@ -80,33 +80,72 @@ has going up; going down it's often a flat 7th, which gives 36.5.)
   Johnny Farraj, *Inside Arabic Music*, 2019) for the ajnas/maqam catalogue
   and sayr.
 
-## Decision — 2026-11-08: Chloe4 = skeleton + flags, Chloe5 = full 24-step
+## Decision — 2026-11-08: Chloe4 = full 24-step
 
-Chloe3's 12-note assumption runs through ~260 places (playback, just-intonation
-tables, colour wheel, search, Claude's catalogue, saved favourites, helper
-modules). Ronnie's call: the full 24-step rewrite is the right long-term design,
-but it becomes **Chloe5**. **Chloe4** (`~/rbn-projects/chloe4`, a local copy of
-Chloe3, no GitHub repo yet) adds maqam the smaller way:
+Considered first: a smaller "12-bit skeleton + quarter-tone flags" version
+for Chloe4 with the 24-step rewrite deferred to Chloe5. Ronnie's final call
+the same evening: **do the full 24-step version as Chloe4**, since it's the
+right design and has to be done anyway. Chloe4 lives in `~/rbn-projects/chloe4`
+(a local copy of Chloe3; no GitHub repo yet).
 
-- A maqam = a normal 12-bit pattern (its skeleton) + a 12-bit **qt mask** of
-  the degrees that drop a quarter tone. Rast = Ionian (2741) with E and B
-  half-flat. Bayati = Aeolian-like skeleton with the 2nd half-flat.
-- Existing 12-note scales and code stay as they are (qt = 0).
-- What learns the qt mask: the notes played (fractional semitones, so
-  `2 ** (semi / 12)` frequency maths works unchanged), brightness (subtract
-  0.5 per flagged degree), display (24-digit root-first code), search, and a
-  maqam catalogue group in the sidebar.
-- Spots that index arrays by pitch class (just-intonation table, clash table,
-  colour wheel, note names) need a fallback for half-steps (equal temperament,
-  nearest neighbour, "E𝄳"-style labels).
-- Saved favourites/localStorage: check key collisions with Chloe3 if both run
-  on the same localhost port.
+Scope: Chloe3's 12-note assumption runs through ~260 places (playback,
+just-intonation tables, colour wheel, search, Claude's catalogue, saved
+favourites, helper modules `brightness.js`, `suspended.js`, `wait.js`).
+
+### Design
+- Every pattern is a 24-bit number, root-first: bit *i* = the note *i*
+  quarter tones above the root. A 12-note scale is its Chloe3 pattern with
+  each bit moved to an even position (`up12`).
+- `toSemis` returns semitones, fractional for quarter tones (Rast's 3rd =
+  3.5), so `2 ** (semi / 12)` frequency maths works unchanged.
+- Brightness = sum of quarter-step positions ÷ 2, which keeps Chloe3's
+  numbers (Ionian 38, Lydian 39).
+- Families: 12-note families from the existing generator (lifted to 24 bits),
+  plus maqam families built from a catalogue and rotated over 24 steps.
+  No brute force over 2^23.
+- Display shows the 24-digit code; search accepts 24-digit or Chloe3-style
+  12-digit patterns.
+- Pitch-class-indexed spots (just-intonation table, clash table, colour
+  wheel, note names) get quarter-tone handling: equal temperament for
+  half-steps, neighbour averaging, "E𝄳"-style (half-flat) labels.
+- Saved favourites / localStorage: new key namespace, with a one-time
+  migration of Chloe3 12-bit values.
 
 ### Build steps
-1. Catalogue + helpers (`semisOf(sel)`, `brightQ`, `toBinQ`) with tests
-   against the brightness table above.
-2. Thread `qt` through `sel` and the ~10 `toSemis(sel.pattern)` call sites.
-3. Fallbacks at the pitch-class-indexed spots; tuning = equal temperament
-   for flagged notes.
-4. Sidebar group, display, search; Claude prompt catalogue.
-5. Listen test: Rast, Bayati, Hijaz, Saba against a reference recording.
+1. Core helpers + catalogue, tested against the brightness table above.
+2. Convert `App.jsx` scale core, families, and every pattern consumer.
+3. Helper modules (`brightness.js`, `suspended.js`, `wait.js`).
+4. Pitch-class-indexed spots, display, search, Claude prompt catalogue,
+   storage migration.
+5. Regression: every Chloe3 scale sounds and sorts the same. Then a listen
+   test of Rast, Bayati, Hijaz and Saba.
+
+## Status — 2026-11-08 (first pass done)
+
+Done and checked:
+- `src/scale24.js`: the 24-step core. Matches Chloe3 exactly on all 4,095
+  12-note patterns (brightness, crowding rule, longest run, rotation, 12-digit
+  code). Maqam catalogue: Rast (modes include Sikah, Iraq), Bayati, Saba,
+  Huzam; 12-note maqamat named on existing scales ("Phrygian · Kurd",
+  Hijaz, Nahawand, Ajam, Nikriz).
+- `App.jsx`: families lifted to 24 steps, new MAQAM · QUARTER TONES sidebar
+  group, journey homes and scene scale tables lifted, half-flat note names,
+  quarter tones play in equal temperament inside just-intonation tunings,
+  clash/tension treats a quarter tone as its rougher neighbour, search takes
+  24-digit or 12-digit patterns and "maqam", in-app help updated.
+- `brightness.js`, `suspended.js`, `wait.js` converted.
+- Own port (5174) and base `/chloe4/`, so Chloe3's saved data never mixes in.
+- Headless browser: loads with no console errors; Rast shows
+  C D E½♭ F G A B½♭, intervals 2-1.5-1.5-2-2-1.5-1.5; plays 6 s with no
+  errors (muted, so not yet listened to).
+
+Still to do:
+1. **Listen test** (Ronnie): Rast, Bayati, Saba, Huzam, Sikah.
+2. The 12-cell note strip and the chromatic colour wheel only show semitones;
+   quarter-tone notes don't light up yet.
+3. Interval search with halves ("2-1.5-1.5") untested.
+4. Claude prompt still describes the catalogue in 12-note terms.
+5. Brightness/EEG picks can now land on maqam scales; check that this feels
+   right in a journey before deciding whether maqam should be opt-in.
+6. Sampled instruments (smplr soundfonts) take MIDI note numbers; check
+   whether they play quarter tones or round them.

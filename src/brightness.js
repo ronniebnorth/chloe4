@@ -1,5 +1,7 @@
+import { up12, bright, toSemis, bitCt } from "./scale24.js";
+
 export const BRIGHTNESS_CONFIG = {
-  neutralPattern:       1709,   // Dorian — reference; neutral target in normalized space is 0.5
+  neutralPattern:       up12(1709),   // Dorian — reference; neutral target in normalized space is 0.5
   smoothingWindow:      3,      // polls to average
   transitionThreshold:  0.05,   // min normalized shift to trigger change (5% of 0–1 range)
   alphaNeutralWeight:   0.5,    // how strongly alpha-dominant pulls toward 0.5 neutral
@@ -12,10 +14,9 @@ export const BRIGHTNESS_CONFIG = {
 };
 
 // Raw brightness: sum of active semitone positions. Correct for within-group sorting and display.
+// Patterns are 24-step (quarter tones); positions are in semitones, halves allowed.
 export function brightnessScore(pattern) {
-  let s = 0;
-  for (let i = 0; i < 12; i++) if ((pattern >> i) & 1) s += i;
-  return s;
+  return bright(pattern);
 }
 
 // Precomputed min/max raw brightness per cardinality N (theoretical bounds, root always at 0).
@@ -33,14 +34,13 @@ for (let N = 1; N <= 12; N++) {
 // Normalized brightness: 0.0 (darkest possible for this note count) → 1.0 (brightest possible).
 // Dorian (N=7) normalizes to exactly 0.5, making it the natural cross-cardinality neutral point.
 export function normalizedBrightness(pattern) {
-  const bits = [];
-  for (let i = 0; i < 12; i++) if ((pattern >> i) & 1) bits.push(i);
+  const bits = toSemis(pattern);
   const N = bits.length;
   if (N <= 1) return 0.5;
   const raw = bits.reduce((sum, b) => sum + b, 0);
   const { min, max } = cardinalityBounds[N];
   if (max === min) return 0.5;
-  return (raw - min) / (max - min);
+  return Math.max(0, Math.min(1, (raw - min) / (max - min)));   // quarter tones can sit past a 12-note bound
 }
 
 // Returns a normalized target brightness (0.0–1.0) from EEG state.
@@ -83,20 +83,20 @@ export function targetBrightness(eegState, config) {
   return Math.max(0.0, Math.min(1.0, target));
 }
 
-// Count set bits in a 12-bit pattern (number of notes in scale).
+// Number of notes in a (24-step) pattern.
 export function countBits(pattern) {
-  let n = 0; for (let i = 0; i < 12; i++) if ((pattern >> i) & 1) n++; return n;
+  return bitCt(pattern);
 }
 
 // The seven diatonic modes, bright → dark, for neighborhood computation.
 export const DIATONIC_MODES = [
-  { name: 'Lydian',     pattern: 2773 },
-  { name: 'Ionian',     pattern: 2741 },
-  { name: 'Mixolydian', pattern: 1717 },
-  { name: 'Dorian',     pattern: 1709 },
-  { name: 'Aeolian',    pattern: 1453 },
-  { name: 'Phrygian',   pattern: 1451 },
-  { name: 'Locrian',    pattern: 1387 },
+  { name: 'Lydian',     pattern: up12(2773) },
+  { name: 'Ionian',     pattern: up12(2741) },
+  { name: 'Mixolydian', pattern: up12(1717) },
+  { name: 'Dorian',     pattern: up12(1709) },
+  { name: 'Aeolian',    pattern: up12(1453) },
+  { name: 'Phrygian',   pattern: up12(1451) },
+  { name: 'Locrian',    pattern: up12(1387) },
 ];
 
 // Returns which diatonic modes share the most pitches with the given pattern.
@@ -133,7 +133,7 @@ export function randomAtBrightness(target, tolerance, catalogue, currentPattern,
 // catalogue entries: { familyId, modeIdx, name, notes, pattern }
 export function findClosestScale(normalizedTarget, catalogue, currentPattern, config) {
   const currentNotes = currentPattern
-    ? [...Array(12)].filter((_, i) => (currentPattern >> i) & 1).length
+    ? bitCt(currentPattern)
     : null;
 
   let best = null;
@@ -146,9 +146,7 @@ export function findClosestScale(normalizedTarget, catalogue, currentPattern, co
     if (config.noteCountPreference && currentNotes && entry.notes !== currentNotes) dist += 0.08;
     // Prefer common tones with current scale
     if (config.commonTonePreference && currentPattern) {
-      const shared = [...Array(12)].filter((_, i) =>
-        ((entry.pattern >> i) & 1) && ((currentPattern >> i) & 1)
-      ).length;
+      const shared = bitCt(entry.pattern & currentPattern);
       dist -= shared * 0.01;
     }
     if (dist < bestScore) { bestScore = dist; best = entry; }

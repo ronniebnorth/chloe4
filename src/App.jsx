@@ -5,6 +5,7 @@ import { isSuspended, isSusQuery, susChord, susCoverage, SUS_INTERVAL, nextSusSt
 import { NOISE_TYPES, noiseBuffer } from "./noise.js";
 import { defaultLine, drawnVals, paintLine, smoothLine, encodeLine, decodeLine } from "./drawn.js";
 import { waitVals, waitPhase, waitPattern, waitDroneMix, waitThirdFreq, waitJetNow, jetWhineBase, WAIT_VOICE, WAIT_DROP_MIN, WAIT_DROP_MAX } from "./wait.js";
+import * as S24 from "./scale24.js";
 import { WAKE_PTS, WAKE_KEY_MOVES, WAKE_TEMPO_LURCH, WAKE_BEATS, WAKE_EVENTS, wakeGapMs, pickWakeEvent, another } from "./wake.js";
 
 /* ═══════════════════════════════════════════════════════
@@ -42,39 +43,13 @@ const likedMean = (likes, field, log = false) => {
   return S ? { v: log ? Math.exp(m / S) : m / S, k: 0.7 * S / (S + 1) } : null;
 };
 
-const rot12 = (p, n) => {
-  n = ((n % 12) + 12) % 12;
-  return ((p >>> n) | (p << (12 - n))) & 0xfff;
-};
-
-const bitCt = (n) => n.toString(2).replace(/0/g, "").length;
-
-// Check for 3 consecutive semitones (circular)
-const hasTriple = (p) => {
-  for (let i = 0; i < 12; i++)
-    if (((p >> i) & 1) && ((p >> ((i + 1) % 12)) & 1) && ((p >> ((i + 2) % 12)) & 1))
-      return true;
-  return false;
-};
-
-// Brightness score: sum of active semitone positions (higher = brighter/Lydian-like)
-const bright = (p) => {
-  let s = 0;
-  for (let i = 0; i < 12; i++) if ((p >> i) & 1) s += i;
-  return s;
-};
-
-const toSemis = (p) => {
-  const r = [];
-  for (let i = 0; i < 12; i++) if ((p >> i) & 1) r.push(i);
-  return r;
-};
-
-const toBin = (p) => Array.from({ length: 12 }, (_, i) => (p >> i) & 1).join("");
+// Scale core lives in scale24.js (24 quarter-tone steps per octave).
+const { rot24, bitCt, hasTriple, bright, toSemis, toBin, up12 } = S24;
+const lift = (rows) => rows.map(([p, w]) => [up12(p), w]);
 
 const CHROMATIC = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
 
-const KNOWN = {
+const KNOWN12 = {
   // ── Diatonic modes ──────────────────────────────
   2773: "Lydian",          2741: "Ionian",         1717: "Mixolydian",
   1709: "Dorian",          1453: "Aeolian",         1451: "Phrygian",
@@ -135,6 +110,10 @@ const KNOWN = {
   // ── Outside (contain a 3-semitone run) ───────────
   1843: "Coltrane Dominant", // 0 1 4 5 8 9 10 — augmented hexatonic + ♭7
 };
+// Names keyed by 24-step pattern. 12-note maqamat that share a pattern with a
+// Western name get both ("Phrygian · Kurd") so either searches.
+const KNOWN = Object.fromEntries(Object.entries(KNOWN12).map(([k, v]) => [up12(+k), v]));
+for (const [k, v] of Object.entries(S24.MAQAM_NAMES)) KNOWN[k] = KNOWN[k] ? `${KNOWN[k]} · ${v}` : v;
 
 // Duduk (Armenian, apricot wood, a big double reed on a cylindrical bore):
 // odd harmonics strong, even ones softer, then a voice-like mouth of formants.
@@ -753,14 +732,17 @@ const BEAT_PATTERNS = {
 // (3-8 notes WITH a cluster) are appended after them as x-<pfx>-<k> so the
 // main ids never shift.
 function buildFamilies() {
-  return [...buildFamilySet(false), ...buildFamilySet(true)];
+  return [...buildFamilySet(false), ...buildMaqamFamilies(), ...buildFamilySet(true)];
 }
 
+// 12-note families: Chloe3's generator over 12-bit patterns, lifted to 24 steps.
+const rot12 = (p, n) => ((p >>> n) | (p << (12 - n))) & 0xfff;
+const triple12 = (p) => hasTriple(up12(p));
 function buildFamilySet(outside) {
   const seen = new Map();
   for (let p = 1; p < 4096; p += 2) {
     const n = bitCt(p);
-    if (n < 3 || n > 8 || hasTriple(p) !== outside) continue;
+    if (n < 3 || n > 8 || triple12(p) !== outside) continue;
     let canon = p;
     for (let s = 1; s < 12; s++) {
       const r = rot12(p, s);
@@ -770,7 +752,7 @@ function buildFamilySet(outside) {
       const ms = new Set();
       for (let s = 0; s < 12; s++) {
         const r = rot12(p, s);
-        if (r & 1) ms.add(r);
+        if (r & 1) ms.add(up12(r));
       }
       seen.set(canon, { n, modes: [...ms].sort((a, b) => bright(b) - bright(a)) });
     }
@@ -781,10 +763,18 @@ function buildFamilySet(outside) {
     .sort(([a, { n: na }], [b, { n: nb }]) => na - nb || a - b)
     .map(([canon, { n, modes }]) => {
       cnt[n] = (cnt[n] || 0) + 1;
-      return { id: `${outside ? "x-" : ""}${pfx[n]}-${cnt[n]}`, n, canon, modes, outside };
+      return { id: `${outside ? "x-" : ""}${pfx[n]}-${cnt[n]}`, n, canon: up12(canon), modes, outside };
     });
 }
 
+// Maqam families: each catalogue seed and its rotations over 24 steps.
+function buildMaqamFamilies() {
+  return S24.MAQAM_SEEDS.map((seed, k) => {
+    const p = S24.fromSteps(seed.steps);
+    const modes = [...new Set(S24.toSteps(p).map(i => rot24(p, i)))].sort((a, b) => bright(b) - bright(a));
+    return { id: `maq-${k + 1}`, n: modes.length ? bitCt(p) : 0, canon: p, modes, outside: false, maqam: true };
+  });
+}
 
 /* ═══════════════════════════════════════════════════════
    INSTRUMENT SYNTHESIS ENGINE
@@ -833,11 +823,13 @@ function makeHall(ac, rt60 = 6, pre = 0.05) {
 // Across Chloe's families: major 0.18, Phrygian Dom. 0.24, octatonic 0.26,
 // outside-scale median 0.30. Mapped 0.20 → 0 (calm) .. 0.33 → 1 (urgent).
 const CLASH = { 1: 1, 11: 1, 6: 0.6, 2: 0.25, 10: 0.25 };
+// Clash for an interval in semitones; a quarter tone takes the rougher neighbour
+const clashOf = (d) => Number.isInteger(d) ? CLASH[d] || 0 : Math.max(CLASH[Math.floor(d)] || 0, CLASH[Math.ceil(d) % 12] || 0);
 const tensionOf = (semis) => {
   const pcs = [...new Set(semis.map(x => ((x % 12) + 12) % 12))];
   let sum = 0, n = 0;
   for (let i = 0; i < pcs.length; i++)
-    for (let j = i + 1; j < pcs.length; j++) { sum += CLASH[(pcs[j] - pcs[i] + 12) % 12] || 0; n++; }
+    for (let j = i + 1; j < pcs.length; j++) { sum += clashOf((pcs[j] - pcs[i] + 12) % 12); n++; }
   return n ? Math.min(1, Math.max(0, (sum / n - 0.2) / 0.13)) : 0;
 };
 
@@ -1191,6 +1183,7 @@ const tunedRatio = (semi, tuning) => {
   const r = TUNINGS[tuning];
   if (!r) return 2 ** (semi / 12);
   const pc = ((semi % 12) + 12) % 12;
+  if (!Number.isInteger(pc)) return 2 ** (semi / 12);   // quarter tones: equal temperament
   return 2 ** ((semi - pc) / 12) * r[pc];
 };
 
@@ -1944,33 +1937,33 @@ const isFire = st => st.world === "fire";
 // Hijaz (Phrygian dominant), Hijaz Kar (double harmonic), harmonic minor,
 // Nikriz (Ukrainian Dorian), Kurd (Phrygian), Neapolitan minor, Nahawand
 // (Aeolian), Bayati without its quarter tone (Dorian), with weights
-const DESERT_SCALES = [[1459, 3], [2483, 3], [2477, 2], [1741, 2], [1451, 2], [2475, 1], [1453, 1], [1709, 1]];
+const DESERT_SCALES = lift([[1459, 3], [2483, 3], [2477, 2], [1741, 2], [1451, 2], [2475, 1], [1453, 1], [1709, 1]]);
 // Ocean: major and minor pentatonic, Ionian, Lydian, Mixolydian, Dorian, with weights
-const OCEAN_SCALES = [[661, 3], [1193, 2], [2741, 2], [2773, 2], [1717, 1], [1709, 2]];
+const OCEAN_SCALES = lift([[661, 3], [1193, 2], [2741, 2], [2773, 2], [1717, 1], [1709, 2]]);
 // Thunderstorm: Aeolian, Dorian, Phrygian, minor pentatonic, harmonic minor
-const THUNDER_SCALES = [[1453, 3], [1709, 2], [1451, 2], [1193, 2], [2477, 1]];
+const THUNDER_SCALES = lift([[1453, 3], [1709, 2], [1451, 2], [1193, 2], [2477, 1]]);
 // Cave: handpan scales: Kurd (Aeolian), Celtic minor, Pygmy, Integral, minor pentatonic, Dorian
-const CAVE_SCALES = [[1453, 3], [1197, 2], [1165, 2], [397, 1], [1193, 2], [1709, 1]];
+const CAVE_SCALES = lift([[1453, 3], [1197, 2], [1165, 2], [397, 1], [1193, 2], [1709, 1]]);
 // Temple: In (Miyako-bushi), Yo, Hirajoshi, minor and major pentatonic, Iwato
-const TEMPLE_SCALES = [[419, 3], [677, 3], [397, 2], [1193, 2], [661, 1], [1123, 1]];
+const TEMPLE_SCALES = lift([[419, 3], [677, 3], [397, 2], [1193, 2], [661, 1], [1123, 1]]);
 // Arctic: Lydian, major pentatonic, Aeolian, Dorian, whole tone, Ionian
-const ARCTIC_SCALES = [[2773, 3], [661, 2], [1453, 2], [1709, 1], [1365, 1], [2741, 1]];
+const ARCTIC_SCALES = lift([[2773, 3], [661, 2], [1453, 2], [1709, 1], [1365, 1], [2741, 1]]);
 // Mountain: major pentatonic, Ionian, Lydian, Mixolydian
-const MOUNTAIN_SCALES = [[661, 3], [2741, 3], [2773, 2], [1717, 2]];
+const MOUNTAIN_SCALES = lift([[661, 3], [2741, 3], [2773, 2], [1717, 2]]);
 // Carnival: Ionian, Mixolydian, major pentatonic, Lydian
-const CARNIVAL_SCALES = [[2741, 3], [1717, 2], [661, 2], [2773, 1]];
+const CARNIVAL_SCALES = lift([[2741, 3], [1717, 2], [661, 2], [2773, 1]]);
 // Celtic: Ionian, Mixolydian, Dorian, Aeolian, major pentatonic
-const CELTIC_SCALES = [[2741, 3], [1717, 3], [1709, 2], [1453, 1], [661, 1]];
+const CELTIC_SCALES = lift([[2741, 3], [1717, 3], [1709, 2], [1453, 1], [661, 1]]);
 // Night drive: Aeolian, Dorian, minor pentatonic, Mixolydian, harmonic minor
-const NIGHT_SCALES = [[1453, 3], [1709, 2], [1193, 2], [1717, 1], [2477, 1]];
+const NIGHT_SCALES = lift([[1453, 3], [1709, 2], [1193, 2], [1717, 1], [2477, 1]]);
 // Fire circle: minor and major pentatonic, Dorian, Mixolydian, Aeolian
-const FIRE_SCALES = [[1193, 3], [661, 2], [1709, 2], [1717, 2], [1453, 1]];
+const FIRE_SCALES = lift([[1193, 3], [661, 2], [1709, 2], [1717, 2], [1453, 1]]);
 // Jungle: the pentatonics mostly, then Dorian, Mixolydian, Ionian
-const JUNGLE_SCALES = [[661, 3], [1193, 3], [1709, 1], [1717, 1], [2741, 1]];
+const JUNGLE_SCALES = lift([[661, 3], [1193, 3], [1709, 1], [1717, 1], [2741, 1]]);
 const GRP_NAME = { 3: "Tritonic", 4: "Tetratonic", 5: "Pentatonic", 6: "Hexatonic", 7: "Heptatonic", 8: "Octatonic" };
 const GRP_PFX  = { 3: "tri", 4: "tet", 5: "pen", 6: "hex", 7: "hep", 8: "oct" };
 // Sidebar group key — outside families get their own groups below the main ones
-const grpKey = (fam) => (fam.outside ? "x-" : "") + GRP_PFX[fam.n];
+const grpKey = (fam) => fam.maqam ? "maq" : (fam.outside ? "x-" : "") + GRP_PFX[fam.n];
 // Outside scales are passing colour, not a brightness position: brightness/EEG
 // picks never choose them, and auto mode drops one in on this share of picks.
 const OUTSIDE_CHANCE = 0.33;
@@ -1987,16 +1980,7 @@ const MIX_PATTERNS = [
 const AUTO_LOCKS_DEFAULT = { sound:true, rootNote:true, rhythm:true, arpDir:true, chordVoice:true, melMode:true, grouping:true, bpm:true, reverb:true, delay:true, delayTime:true, sustain:true, droneOn:true, droneVol:true, droneOct:true, droneWave:true, tuning:false, beat:true, jet:true };
 const isOutsideId = (id) => !!id && id.startsWith("x-");
 
-// Longest run of consecutive semitones (circular) — 3..8 for outside scales
-const maxRun = (p) => {
-  let best = 0;
-  for (let i = 0; i < 12; i++) {
-    let k = 0;
-    while (k < 12 && ((p >> ((i + k) % 12)) & 1)) k++;
-    if (k > best) best = k;
-  }
-  return best;
-};
+const maxRun = S24.maxRun;
 
 // Pick an outside scale: first a run length (each extra semitone halves the
 // chance, so 3-runs ~50% … 8-runs ~1.5%), then a random scale with that run.
@@ -2192,20 +2176,20 @@ const sessionSummary = (sess) => {
    On arrival: while recording, land on `home`, fade out and save the WAV;
    otherwise hold the last waypoint and keep playing. */
 const JOURNEYS = {
-  dawn: { label: "dawn", home: 2773, tip: "Dark to bright: Locrian-dark scales open up to Lydian-bright, the tempo lifts a little, the reverb dries out.",
+  dawn: { label: "dawn", home: up12(2773), tip: "Dark to bright: Locrian-dark scales open up to Lydian-bright, the tempo lifts a little, the reverb dries out.",
     pts: [{ at: 0, b: 0.30, t: 0.8, rv: 0.85, su: 1.4 }, { at: 1, b: 0.70, t: 1.1, rv: 0.45, su: 0.9 }] },
-  dusk: { label: "dusk", home: 1453, tip: "Bright to dark: from open, bright scales down into dark ones, slowing, longer notes, deeper reverb. Good for winding down.",
+  dusk: { label: "dusk", home: up12(1453), tip: "Bright to dark: from open, bright scales down into dark ones, slowing, longer notes, deeper reverb. Good for winding down.",
     pts: [{ at: 0, b: 0.70, t: 1.1, rv: 0.45, su: 0.9 }, { at: 1, b: 0.30, t: 0.65, rv: 0.9, su: 1.6 }] },
-  descent: { label: "descent", home: 2741, tip: "Descent & return: bright down into the dark, slowest at the halfway point, then back up into the light.",
+  descent: { label: "descent", home: up12(2741), tip: "Descent & return: bright down into the dark, slowest at the halfway point, then back up into the light.",
     pts: [{ at: 0, b: 0.65, t: 1, rv: 0.55, su: 1 }, { at: 0.5, b: 0.30, t: 0.75, rv: 0.9, su: 1.5 }, { at: 1, b: 0.70, t: 1.1, rv: 0.5, su: 0.9 }] },
-  storm: { label: "storm", home: 2741, tip: "Calm, storm, calm: tension and tempo build to a peak about 60% of the way in (clashing scales, faster, the orchestra at full energy if it's on), then it clears.",
+  storm: { label: "storm", home: up12(2741), tip: "Calm, storm, calm: tension and tempo build to a peak about 60% of the way in (clashing scales, faster, the orchestra at full energy if it's on), then it clears.",
     pts: [{ at: 0, b: 0.55, t: 0.85, rv: 0.8, su: 1.3, e: 0, tn: 0 }, { at: 0.6, b: 0.45, t: 1.35, rv: 0.5, su: 0.7, e: 0.8, tn: 1 },
           { at: 0.8, b: 0.5, t: 1, rv: 0.7, su: 1, e: 0.3, tn: 0.4 }, { at: 1, b: 0.6, t: 0.8, rv: 0.85, su: 1.3, e: 0, tn: 0 }] },
   // Rise: epic and energizing. Starts from its own driving tempo (not whatever
   // the last one was), climbs brighter, faster and drier with the orchestra
   // pushing, takes one breath at ~60%, then a second, bigger climb it holds to the
   // end. Bold sounds, organ/strings drone, only forward tempo pushes, more marches.
-  rise: { label: "rise", home: 2741, epic: true, bpm: 116,
+  rise: { label: "rise", home: up12(2741), epic: true, bpm: 116,
     tip: "Epic and energizing: a steady build to a big, bright peak. Faster, drier and louder, the orchestra driving and marching, one breath at about 60%, then a second climb that holds to the end.",
     pts: [{ at: 0, b: 0.55, t: 1, rv: 0.5, su: 0.9, e: 0.35, tn: 0.1 }, { at: 0.45, b: 0.67, t: 1.2, rv: 0.42, su: 0.8, e: 0.75, tn: 0.2 },
           { at: 0.6, b: 0.62, t: 1.1, rv: 0.55, su: 1, e: 0.45, tn: 0.1 }, { at: 0.88, b: 0.74, t: 1.35, rv: 0.38, su: 0.7, e: 1, tn: 0.25 },
@@ -2214,7 +2198,7 @@ const JOURNEYS = {
 // Endless: no destination. Overlapping slow waves (17, 6.3 and 11 minutes, so
 // the pattern never lines up the same way twice) keep it wandering, dark-leaning,
 // slow and consonant; built for sleep. Never arrives, so never ends or fades.
-JOURNEYS.endless = { label: "endless", home: 1453, endless: true,
+JOURNEYS.endless = { label: "endless", home: up12(1453), endless: true,
   tip: "Never-ending: a slow, calm wander with no destination, leaning dark, slow and consonant, deep reverb and long notes. No tempo surprises and no march. Built for sleep or long listening.",
   at: (ms) => {
     const m = ms / 60000, w = (p, ph = 0) => Math.sin(2 * Math.PI * m / p + ph);
@@ -2238,7 +2222,7 @@ const shuffled = (n, seed) => {
   for (let i = n - 1; i > 0; i--) { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; x >>>= 0; const j = x % (i + 1); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
 };
-JOURNEYS.map = { label: "map", home: 1709, survey: true,
+JOURNEYS.map = { label: "map", home: up12(1709), survey: true,
   tip: "For measuring with a headband (◇ patterns): brightness, tempo, energy and tension each jump around their whole range in blocks of their own length, never in step, drums come and go on their own clock (brushes in the worlds without drums), and the worlds take turns, so everything gets heard early and late in the session. Best at 30 or 60 minutes, sitting still. It keeps shuffling past the end until you stop it.",
   at: (ms, seed = 1) => {
     const lvl = (k, blockMs, lo, hi) => {
@@ -2252,17 +2236,17 @@ JOURNEYS.map = { label: "map", home: 1709, survey: true,
     return { b: lvl(1, 90000, 0.15, 0.85), t: lvl(2, 150000, 0.7, 1.3), e: lvl(3, 210000, 0, 0.8), tn: lvl(4, 270000, 0, 0.5), dr, rv: 0.6, su: 1 };
   } };
 // The Wait: see wait.js. Its shape depends on a drop point that varies per run
-JOURNEYS.wait = { label: "wait", home: 1189, wait: true, steady: true, bpm: 84,
+JOURNEYS.wait = { label: "wait", home: up12(1189), wait: true, steady: true, bpm: 84,
   tip: "Waiting for the drop: a steady pulse through suspended scales, then the drums fall away and one suspended scale holds, slowing and widening, with no 3rd anywhere. Late in the journey the 3rd finally arrives, one note, major or minor, and the pulse returns.",
   at: (f, drop) => waitVals(f, drop) };
 // Wake: see wake.js. Its surprises are fired by their own effect, below the journey clock
-JOURNEYS.wake = { label: "wake", home: 2773, wake: true, bpm: 120, pts: WAKE_PTS,
+JOURNEYS.wake = { label: "wake", home: up12(2773), wake: true, bpm: 120, pts: WAKE_PTS,
   tip: "Built to keep you awake: it climbs fast, never dips, and keeps breaking its own pattern at uneven times, more often as it goes. Sudden stops, drums dropping out and slamming back, tempo lurches, key jumps, flips between line and arpeggio, and new drum styles. It doesn't end by itself: on arrival it holds at the top and keeps surprising you until you stop it.",
 };
 // Draw: a journey whose shape you draw on the Listen stage. The line lives here so the
 // journey clock, the cards and the stage all read the same one; it can change mid-journey.
 let drawnLine = defaultLine();
-JOURNEYS.draw = { label: "draw", drawn: true, steady: true, home: 1709,
+JOURNEYS.draw = { label: "draw", drawn: true, steady: true, home: up12(1709),
   tip: "Your own journey: draw a line on the Listen stage. High is bright, faster, drier; low is dark, slower, deeper. A gentle slope changes scales a note at a time, a steep cliff jumps.",
   at: (f) => drawnVals(drawnLine, f) };
 const ENDLESS_WINDOW = 40 * 60000;   // how much of Endless a card or the stage draws
@@ -2291,7 +2275,7 @@ const journeyAt = (j, f, run) => {
   for (const k of ["b", "t", "rv", "su", "e", "tn"]) if (a[k] !== undefined) out[k] = a[k] + (b[k] - a[k]) * s;
   return out;
 };
-const patSemis = (p) => [...Array(12).keys()].filter(i => (p >> i) & 1);
+const patSemis = toSemis;
 const popcount = (x) => { let n = 0; while (x) { n += x & 1; x >>= 1; } return n; };
 
 // Arpeggio rhythm patterns: arrays of step durations in eighth-note units.
@@ -2360,7 +2344,7 @@ function Lbl({ children, K }) {
 const HELP_SECTIONS = [
   { title: "WHAT IS CHLOE?", body: "Chloe generates every possible scale from 3 to 8 notes. Scales with 3 or more notes in a row a semitone apart are kept apart as outside scales: they're hidden unless you switch on outside, under the scale search, and then Auto uses them about one pick in three, like passing tones. Use it to hear how different scales sound over a drone note and develop your ear for modal colour. It has two doors: Listen, where you pick a journey and press play, and the Studio, with every scale and setting. This help covers both." },
   { title: "LISTEN", body: "The simple page: pick a journey, press ▶, and Chloe plays it. The stage at the top shows the light show, the journey's path and a dot for where you are on it. Under the journey cards: LENGTH (5, 15, 30 or 60 minutes; Endless has none), and orchestra, drums and drone switches. The world row sets the surroundings (see WORLDS). While drums are on, a row picks their feel; wander lets them roam across every style. The sleep timer (15 to 90 minutes) stops the music, fading out over the last 90 seconds. While it plays, ♥ more of this steers Chloe toward what you're hearing; in Map it only marks the moment. ⏺ record this journey saves a WAV. copy link, under record, copies a link to the journey with your current sound; whoever opens it presses ▶, and Auto makes its own picks, so the shape is the same but not every note. On the DRAW card, draw your line straight on the stage; clear appears beside LENGTH, and the link carries your line. STUDIO → goes to the full app, and LISTEN in the Studio's top bar comes back." },
-  { title: "BINARY NOTATION", body: "Each scale is a 12-bit binary string, one bit per chromatic semitone from the root. 1 = active, 0 = inactive. The string is written root-first (leftmost digit = root), so it reads like the scale. The number in brackets e.g. (2741) is the scale's value; standard binary writes the root on the right, so a binary calculator gives 2741 only for the reversed string (101010110101). Scales are grouped into families sharing the same interval structure - e.g. hep-6 contains all 7 standard modes." },
+  { title: "BINARY NOTATION", body: "Each scale is a 24-digit binary string, one digit per quarter tone from the root (two digits per semitone). 1 = active, 0 = inactive. It is written root-first (leftmost digit = root), so it reads like the scale. Search also takes Chloe3-style 12-digit patterns (one digit per semitone) for scales without quarter tones. The MAQAM group holds Arabic maqamat with quarter tones (Rast, Bayati, Saba, Huzam and their modes, such as Sikah and Iraq); quarter-tone notes are named half-flat, e.g. E½♭. Scales are grouped into families sharing the same interval structure - e.g. hep-6 contains all 7 standard modes." },
   { title: "BRIGHTNESS SORTING", body: "Within each family, modes are sorted bright to dark by summing their active semitone positions (raw brightness). Lydian scores highest (raised 4th), Locrian lowest (flatted 2nd and 5th). This mirrors the circle-of-fifths: Lydian → Ionian → Mixolydian → Dorian → Aeolian → Phrygian → Locrian. The sidebar and scale list show the raw brightness score (e.g. Dorian = 36). The EEG system uses a separate normalized brightness (0.0–1.0) that adjusts for note count, so pentatonics and tetratonics are comparable to heptatonics — Dorian normalizes to exactly 0.5 as the neutral midpoint." },
   { title: "SCALE WHEEL", body: "The circle shows all 12 chromatic notes. Active tones are highlighted and connected by a polygon. Wide polygons = sparse scales. Compact polygons = denser chromatic scales. A perfect regular polygon = equal temperament." },
   { title: "SEARCH & FILTER", body: "The left sidebar has a search box that filters scales by name as you type — results narrow to only matching modes within each family (e.g. searching 'dorian' shows just the Dorian row, not all 7 modes). The number chips (3–8) below it filter by note count — click any to isolate tritonic, pentatonic, heptatonic, etc. The sus chip (or searching 'sus' or 'suspended') shows suspended scales: no 3rd, so neither major nor minor, with a 5th and a 2nd or 4th. These compose with each other and with the header filter bar. The header filter accepts comma-separated terms: family ID (hep-6), group prefix (pen, hep, hex), scale name, binary fragment, decimal value, or interval pattern (2-2-1). The star button on any row marks a favourite; the favs button in the header shows starred scales only. Custom names are searchable too." },
@@ -7009,14 +6993,14 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (!filter.trim()) return base;
     const terms = filter.split(",").map(t => t.trim().toLowerCase()).filter(Boolean);
     // A full id like "tet-5.0" (as patterns shows it) is one mode of one family: just that mode
-    const isId = t => /^(x-)?(tri|tet|pen|hex|hep|oct)-\d+\.\d+$/.test(t);
+    const isId = t => /^(x-)?(tri|tet|pen|hex|hep|oct|maq)-\d+\.\d+$/.test(t);
     const ids = terms.filter(isId), loose = terms.filter(t => !isId(t));
     return base.map(f => {
       if (loose.some(t =>
         f.id.includes(t) ||
-        GRP_PFX[f.n].startsWith(t) ||
+        (f.maqam ? "maqam" : GRP_PFX[f.n]).startsWith(t) ||
         f.modes.some(m =>
-          toBin(m).includes(t) ||
+          (/^[01]+$/.test(t) ? (t.length > 12 ? toBin(m).includes(t) : (S24.toBin12(m) ?? "").includes(t)) : false) ||
           (KNOWN[m] || customNames[m] || "").toLowerCase().includes(t) ||
           matchesInterval(t, m)
         )
@@ -7147,7 +7131,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
   };
 
   const selSemis = morphSemis ? new Set(morphSemis) : sel ? new Set(toSemis(sel.pattern)) : new Set();
-  const selNotes = sel ? toSemis(sel.pattern).map(s => CHROMATIC[(rootIdx + s) % 12]) : [];
+  const selNotes = sel ? toSemis(sel.pattern).map(s => S24.noteName(rootIdx, s)) : [];
   const selIvs = sel
     ? (() => { const s = toSemis(sel.pattern); return s.slice(1).map((v, i) => v - s[i]).concat(12 - s[s.length - 1]); })()
     : [];
@@ -8198,7 +8182,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
           {Object.keys(grouped).sort((a, b) => {
             const fa = grouped[a][0], fb = grouped[b][0];
-            return (fa.outside - fb.outside) || fa.n - fb.n;
+            return (fa.outside - fb.outside) || (!!fa.maqam - !!fb.maqam) || fa.n - fb.n;
           }).map(gk => {
             const fams = grouped[gk], n = fams[0].n, outside = fams[0].outside, exp = isExp(gk);
             return (
@@ -8209,7 +8193,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                   display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
                   position: "sticky", top: 0, zIndex: 10, userSelect: "none",
                 }}>
-                  <span style={{ color: K.a, fontSize: 9, letterSpacing: 3, fontWeight: 600 }}>{outside ? "OUTSIDE · " : ""}{GRP_NAME[n].toUpperCase()}</span>
+                  <span style={{ color: K.a, fontSize: 9, letterSpacing: 3, fontWeight: 600 }}>{fams[0].maqam ? "MAQAM · QUARTER TONES" : <>{outside ? "OUTSIDE · " : ""}{GRP_NAME[n].toUpperCase()}</>}</span>
                   <span style={{ color: K.txt, fontSize: 9 }}>{fams.length} scale{fams.length !== 1 ? "s" : ""}</span>
                   <span style={{ marginLeft: "auto", color: K.txt, fontSize: 11 }}>{exp ? "▾" : "▸"}</span>
                 </div>
