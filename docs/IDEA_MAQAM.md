@@ -362,3 +362,15 @@ brightness = sum of note positions) carries over unchanged:
   a kudüm voice for classical pieces, a davul for folk.
 - Checked headless (played aloud): the journey switches the beat on, reaches
   Hicaz/Aksak, no console errors.
+
+## Draw journey: scale toggle — built 2026-11-08
+
+On the Listen page, with **draw** chosen, a "scales" row picks which scales
+the drawn journey may use: **all scales** (default), **western** (12-note,
+plus the outside scales when that toggle is on), **maqam · dastgah**
+(24-step), **turkish** (53-comma). Filters the one catalogue every pick path
+reads (brightness walk, big jumps, likes, worlds, EEG). Saved in
+localStorage (`chloe-draw-pool`) and in the copied link (`dp=`). Only the
+draw journey uses it; other journeys still use all scales (the open
+"should brightness picks land on maqam?" question stands for them).
+Checked headless: with "turkish", picks stay on Turkish scales; no errors.

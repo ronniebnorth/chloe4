@@ -1981,6 +1981,9 @@ const GRP_PFX  = { 3: "tri", 4: "tet", 5: "pen", 6: "hex", 7: "hep", 8: "oct" };
 // Sidebar group key — outside families get their own groups below the main ones
 const grpKey = (fam) => fam.turkish ? "trk" : fam.maqam ? "maq" : (fam.outside ? "x-" : "") + GRP_PFX[fam.n];
 const grpRank = (fam) => fam.turkish ? 2 : fam.maqam ? 1 : 0;
+// Which scales a drawn journey may use
+const DRAW_POOLS = [["all", "all scales"], ["western", "western"], ["maqam", "maqam · dastgah"], ["turkish", "turkish"]];
+const inDrawPool = (fam, pool) => pool === "western" ? !fam.maqam && !fam.turkish : pool === "maqam" ? !!fam.maqam : pool === "turkish" ? !!fam.turkish : true;
 // Outside scales are passing colour, not a brightness position: brightness/EEG
 // picks never choose them, and auto mode drops one in on this share of picks.
 const OUTSIDE_CHANCE = 0.33;
@@ -2941,6 +2944,12 @@ export default function Chloe() {
     if (l) drawnLine = l;
     return drawnLine;
   });
+  const [drawPool, setDrawPool] = useState(() => {
+    const v = new URLSearchParams(window.location.search).get("dp") ?? localStorage.getItem("chloe-draw-pool");
+    return DRAW_POOLS.some(([k]) => k === v) ? v : "all";
+  });
+  const drawPoolRef = useRef(drawPool);
+  useEffect(() => { drawPoolRef.current = drawPool; localStorage.setItem("chloe-draw-pool", drawPool); }, [drawPool]);
   const [drawTouched, setDrawTouched] = useState(() => !!decodeLine(new URLSearchParams(window.location.search).get("jl")));
   const [linkCopied, setLinkCopied] = useState("");   // Listen page: "", "copied" or "couldn't copy"
   const drawLast = useRef(null);
@@ -6773,8 +6782,10 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       if (loopOnRef.current) { timeout = setTimeout(pickNext, 1000); return; }
       const { sel: cur } = stRef.current;
       const all = buildCatalogue();
-      const outsideOpts = all.filter(e => e.fam.outside && !e.fam.test && (!cur || e.pat !== cur.pattern));
-      const catalogue = all.filter(e => !e.fam.outside);
+      // A drawn journey can be limited to one tradition (all / western / maqam / turkish)
+      const pool = JOURNEYS[journeyRef.current?.id]?.drawn ? drawPoolRef.current : "all";
+      const outsideOpts = all.filter(e => e.fam.outside && !e.fam.test && (pool === "all" || pool === "western") && (!cur || e.pat !== cur.pattern));
+      const catalogue = all.filter(e => !e.fam.outside && inDrawPool(e.fam, pool));
 
       // Now and then, a passing outside scale (only when the outside toggle is on)
       // The Wait picks its own scales, whatever the pool, and holds still once the pulse is over
@@ -6832,7 +6843,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       // Desert: mostly a Middle Eastern scale (in a journey, one near its brightness)
       if (!entry && (desert || ocean || jungle || thunder || cave || temple || arctic || mountain || carnival || celtic || nightdrive || fire) && Math.random() < 0.7) {
         const cands = (ocean || afterStorm ? OCEAN_SCALES : jungle ? JUNGLE_SCALES : thunder ? THUNDER_SCALES : cave ? CAVE_SCALES : temple ? TEMPLE_SCALES : arctic ? ARCTIC_SCALES : mountain ? MOUNTAIN_SCALES : carnival ? CARNIVAL_SCALES : celtic ? CELTIC_SCALES : nightdrive ? NIGHT_SCALES : fire ? FIRE_SCALES : DESERT_SCALES).map(([pat, w]) => ({ e: catalogue.find(e => e.pat === pat), w }))
-          .filter(c => c.e && c.e.pat !== cur?.pattern && (jb === null || Math.abs(normalizedBrightness(c.e.pat) - jb) <= 0.2));
+          .filter(c => c.e && c.e.pat !== cur?.pattern && inDrawPool(c.e.fam, pool) && (jb === null || Math.abs(normalizedBrightness(c.e.pat) - jb) <= 0.2));
         let r = Math.random() * cands.reduce((a, c) => a + c.w, 0);
         for (const c of cands) if ((r -= c.w) < 0) { entry = c.e; break; }
       }
@@ -7592,6 +7603,10 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
           {J === "endless" ? <span style={{ color: K.t2, fontSize: 11 }}>∞ plays until you stop it</span>
             : JOURNEY_MINS.map(m => <button key={m} onClick={() => setJourneyMins(m)} style={chip(journeyMins === m)}>{m} min</button>)}
           {J === "draw" && <button onClick={() => { showLine(defaultLine()); setDrawTouched(false); }} title="Back to the gentle hill" style={chip(false)}>clear</button>}
+          {J === "draw" && <span style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }} title="Which scales your drawn journey may use">
+            <span style={{ color: K.t2, fontSize: 11 }}>scales</span>
+            {DRAW_POOLS.map(([k, l]) => <button key={k} onClick={() => setDrawPool(k)} style={chip(drawPool === k)}>{l}</button>)}
+          </span>}
           <span style={{ flex: 1 }} />
           <button onClick={() => { setSymphonic(v => !v); if (!symphonic) getOrchestra(getCtx()); }} style={chip(symphonic)}>orchestra</button>
           <button onClick={() => { const v = beatStyle === "off" ? (J === "endless" ? "brushes" : JOURNEYS[J].epic ? "drive" : "downtempo") : "off"; setBeatStyle(v); if (v !== "off") getKit(getCtx()); }} style={chip(beatStyle !== "off")}>drums</button>
@@ -7643,7 +7658,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
             u.searchParams.set("view", "listen");
             u.searchParams.set("jo", J);
             if (journeyMins !== 15) u.searchParams.set("jm", journeyMins); else u.searchParams.delete("jm");
-            if (J === "draw") u.searchParams.set("jl", encodeLine(drawnLine));
+            if (J === "draw") { u.searchParams.set("jl", encodeLine(drawnLine)); if (drawPool !== "all") u.searchParams.set("dp", drawPool); else u.searchParams.delete("dp"); }
             const done = msg => { setLinkCopied(msg); setTimeout(() => setLinkCopied(""), 2000); };
             (navigator.clipboard ? navigator.clipboard.writeText(u.toString()) : Promise.reject()).then(() => done("copied"), () => done("couldn't copy"));
           }} title="Copy a link to this journey with your current sound" style={chip(false)}>{linkCopied || "copy link"}</button>
