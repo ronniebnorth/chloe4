@@ -226,3 +226,56 @@ Chloe gains finer pitch, or as an openly labelled 24-step approximation.
   A♭ B♭ → key E♭ Bayat-e Tork → key F Afshari (G½♭) → key G Dashti → key C
   Shur with G½♭. Same notes throughout, as intended. No console errors. Not yet
   listened to.
+
+## Backlog — ideas parked 2026-11-08 (come back to these)
+
+Gathered from the session that built Chloe4. Nothing here is started.
+
+**First**
+- **Listen test** of both journeys (live: `?view=listen&jo=persia`,
+  `?view=listen&jo=shur`). Main question: do the half-flats sound like real
+  Persian/Arabic music, or just out of tune?
+
+**Pitch / engine**
+- **Quarter-tone key offset.** Let Chloe's key sit on a quarter tone. This
+  unlocks Abu Ata in the Shur journey (finalis A½♭) and Segah/Sikah on their
+  own koron tonic. Touches the drone, `noteFreq`, the root-note buttons and
+  the wheel labels.
+- **Turkish makam.** Needs finer pitch than quarter tones (53 steps per
+  octave, or pitches stored in cents); in 24 steps it sounds Arabic. Either
+  that engine change (the old "Chloe5" direction) or an openly labelled
+  24-step approximation.
+- **Brightness tie-break.** Rast ties Mixolydian (37), Hijaz ties Aeolian
+  (35); pick a rule for equal brightness.
+- **Should brightness/EEG picks land on maqam scales?** Currently they can.
+  Try it in a normal journey and decide whether maqam should be opt-in.
+
+**Display / search**
+- The 12-cell note strip and the piano still show semitones only;
+  quarter-tone notes don't light up (the wheel does).
+- Interval search with halves ("2-1.5-1.5") is untested.
+- Search options from the Chloe3 discussion: short binary fragments that only
+  match from the root, and a full pattern that shows just that mode, not
+  the whole family.
+
+**Claude / docs**
+- The Claude prompt still describes the catalogue in 12-note terms (no
+  mention of maqam, quarter tones, or the 24-step codes).
+- README and `package.json` still say Chloe3; give the Chloe4 repo its own
+  README intro and link.
+- Chloe3's copy of this doc (`chloe3/docs/IDEA_MAQAM.md`, commit ca2e389) is
+  committed but never pushed, and is now older than this one.
+
+**More music**
+- **More maqamat:** Kurd/Nahawand variants, Sikah Baladi, Jiharkah,
+  Mustaar, Rahat al-Arwah. Check each against maqamworld.com.
+- **More dastgah:** Nava, Rast-Panjgah, Bayat-e Esfahan (under Homayun),
+  Bayat-e Kord. Check against Iranica / fis-iran.org.
+- **More single-dastgah journeys** like Shur: Homayun → Bayat-e Esfahan,
+  and journeys inside Segah and Chahargah through their gushes.
+- **An Arabic maqam journey** following a *sayr* (e.g. Bayati opening, a
+  turn through Saba or Hijaz, back to Bayati), built the same way.
+- **Instruments/percussion for these journeys:** a tar/setar voice, ney
+  (closest now: shaku), tombak or daf patterns for the beat engine.
+- Optional Arabic/Persian note naming (e.g. koron/sori signs) alongside
+  E½♭-style names.
