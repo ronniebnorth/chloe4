@@ -115,6 +115,7 @@ const KNOWN12 = {
 const KNOWN = Object.fromEntries(Object.entries(KNOWN12).map(([k, v]) => [up12(+k), v]));
 for (const [k, v] of Object.entries(S24.MAQAM_NAMES)) KNOWN[k] = KNOWN[k] ? `${KNOWN[k]} · ${v}` : v;
 for (const [k, v] of S24.TURK_NAMES) KNOWN[k] = v;
+for (const [k, v] of S24.REAL_NAMES) KNOWN[k] = v;
 
 // Duduk (Armenian, apricot wood, a big double reed on a cylindrical bore):
 // odd harmonics strong, even ones softer, then a voice-like mouth of formants.
@@ -734,7 +735,7 @@ const BEAT_PATTERNS = {
 // main ids never shift.
 function buildFamilies() {
   const test = { id: "x-tet-qt", n: 4, canon: S24.QUARTER_TEST, modes: [S24.QUARTER_TEST], outside: true, test: true };
-  return [...buildFamilySet(false), ...buildMaqamFamilies(), ...buildTurkFamilies(), ...buildFamilySet(true), test];
+  return [...buildFamilySet(false), ...buildMaqamFamilies(), ...buildTurkFamilies(), ...buildRealFamilies(), ...buildFamilySet(true), test];
 }
 
 // 12-note families: Chloe3's generator over 12-bit patterns, lifted to 24 steps.
@@ -774,6 +775,15 @@ function buildTurkFamilies() {
   return S24.TURK_SEEDS.map((seed, k) => {
     const modes = S24.turkRotations(seed.pos).sort((a, b) => bright(b) - bright(a));
     return { id: `trk-${k + 1}`, n: seed.pos.length, canon: modes[0], modes, outside: false, turkish: true };
+  });
+}
+
+// Real-intonation families: scales that exist only in cents (just, Pythagorean,
+// the overtone series, Shur as played), each with its rotations.
+function buildRealFamilies() {
+  return S24.REAL_SEEDS.map((seed, k) => {
+    const modes = S24.realRotations(seed.id).sort((a, b) => bright(b) - bright(a));
+    return { id: `rel-${k + 1}`, n: seed.cents.length, canon: seed.id, modes, outside: false, real: true };
   });
 }
 
@@ -1979,11 +1989,12 @@ const JUNGLE_SCALES = lift([[661, 3], [1193, 3], [1709, 1], [1717, 1], [2741, 1]
 const GRP_NAME = { 3: "Tritonic", 4: "Tetratonic", 5: "Pentatonic", 6: "Hexatonic", 7: "Heptatonic", 8: "Octatonic" };
 const GRP_PFX  = { 3: "tri", 4: "tet", 5: "pen", 6: "hex", 7: "hep", 8: "oct" };
 // Sidebar group key — outside families get their own groups below the main ones
-const grpKey = (fam) => fam.turkish ? "trk" : fam.maqam ? "maq" : (fam.outside ? "x-" : "") + GRP_PFX[fam.n];
-const grpRank = (fam) => fam.turkish ? 2 : fam.maqam ? 1 : 0;
+const grpKey = (fam) => fam.real ? "rel" : fam.turkish ? "trk" : fam.maqam ? "maq" : (fam.outside ? "x-" : "") + GRP_PFX[fam.n];
+const grpRank = (fam) => fam.real ? 3 : fam.turkish ? 2 : fam.maqam ? 1 : 0;
 // Which scales a drawn journey may use
-const DRAW_POOLS = [["all", "all scales"], ["western", "western"], ["maqam", "maqam · dastgah"], ["turkish", "turkish"]];
-const inDrawPool = (fam, pool) => pool === "western" ? !fam.maqam && !fam.turkish : pool === "maqam" ? !!fam.maqam : pool === "turkish" ? !!fam.turkish : true;
+const DRAW_POOLS = [["all", "all scales"], ["western", "western"], ["maqam", "maqam · dastgah"], ["turkish", "turkish"], ["real", "real intonation"]];
+const inDrawPool = (fam, pool) => pool === "western" ? !fam.maqam && !fam.turkish && !fam.real : pool === "maqam" ? !!fam.maqam
+  : pool === "turkish" ? !!fam.turkish : pool === "real" ? !!fam.real : true;
 // Outside scales are passing colour, not a brightness position: brightness/EEG
 // picks never choose them, and auto mode drops one in on this share of picks.
 const OUTSIDE_CHANCE = 0.33;
@@ -2512,7 +2523,9 @@ function HelpModal({ onClose, K }) {
    VISUALIZER
 ═══════════════════════════════════════════════════════ */
 
-function Visualizer({ analyserRef, playing, rootIdx, active, K }) {
+function Visualizer({ analyserRef, playing, rootIdx, active, sys, K }) {
+  const sysRef = useRef(sys);
+  useEffect(() => { sysRef.current = sys; }, [sys]);
   const canvasRef  = useRef(null);
   const rafRef     = useRef(null);
   const KRef       = useRef(K);
@@ -2662,8 +2675,11 @@ function Visualizer({ analyserRef, playing, rootIdx, active, K }) {
         // between get a small tick, or a smaller labelled dot when the scale uses them
         // (semitones first, quarter tones on top so they sit over their neighbours)
         const order = [...Array(12).keys()].map(i => 2 * i).concat([...Array(12).keys()].map(i => 2 * i + 1));
+        // Exact (cents) notes light their nearest grid dot and carry their exact name there (D+4¢)
+        const near = new Map();
+        for (const x of act) if (!Number.isInteger(x * 2)) { const k = ((Math.round(x * 2) % 24) + 24) % 24; if (!near.has(k) && !act.has(k / 2)) near.set(k, x); }
         for (const k of order) {
-          const s = k / 2, quarter = k % 2 === 1;
+          const s = near.has(k) ? near.get(k) : k / 2, quarter = k % 2 === 1;
           const a = (k / 24) * Math.PI * 2 - Math.PI / 2;
           const x = cx + wheelR * Math.cos(a);
           const y = cy + wheelR * Math.sin(a);
@@ -2676,9 +2692,11 @@ function Visualizer({ analyserRef, playing, rootIdx, active, K }) {
             ctx.fill();
             continue;
           }
-          const label = S24.noteName(rootOff, s);
+          const label = S24.noteName(rootOff, s, sysRef.current);
           const r = quarter ? dotR * 0.85 : dotR;
-          ctx.font = `500 ${quarter ? Math.max(6, Math.round(fontSize * 0.72)) : fontSize}px 'JetBrains Mono', monospace`;
+          // long labels (D+4¢) shrink so they stay inside their dot
+          const fit = label.length > 3 ? Math.max(0.55, 3 / label.length) : 1;
+          ctx.font = `500 ${Math.max(5, Math.round((quarter ? fontSize * 0.72 : fontSize) * fit))}px 'JetBrains Mono', monospace`;
 
           ctx.beginPath();
           ctx.arc(x, y, r - 1, 0, Math.PI * 2);
@@ -2693,7 +2711,7 @@ function Visualizer({ analyserRef, playing, rootIdx, active, K }) {
         }
         // Notes off the quarter-tone grid (Turkish commas): their own dot at the exact angle
         for (const s of act) {
-          if (Number.isInteger(s * 2)) continue;
+          if (Number.isInteger(s * 2) || [...near.values()].includes(s)) continue;
           const a = (s / 12) * Math.PI * 2 - Math.PI / 2, x = cx + wheelR * Math.cos(a), y = cy + wheelR * Math.sin(a);
           const isPlaying = playingRef.current !== null && Math.abs(playingRef.current - s) < 1e-6;
           ctx.font = `500 ${Math.max(6, Math.round(fontSize * 0.72))}px 'JetBrains Mono', monospace`;
@@ -2703,7 +2721,7 @@ function Visualizer({ analyserRef, playing, rootIdx, active, K }) {
           ctx.fill();
           ctx.strokeStyle = Kc.a; ctx.lineWidth = 1.5; ctx.stroke();
           ctx.fillStyle = isPlaying ? "#000" : Kc.a;
-          ctx.fillText(S24.noteName(rootOff, s), x, y + 0.5);
+          ctx.fillText(S24.noteName(rootOff, s, sysRef.current), x, y + 0.5);
         }
       }
     };
@@ -7143,12 +7161,12 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (!filter.trim()) return base;
     const terms = filter.split(",").map(t => t.trim().toLowerCase()).filter(Boolean);
     // A full id like "tet-5.0" (as patterns shows it) is one mode of one family: just that mode
-    const isId = t => /^(x-)?(tri|tet|pen|hex|hep|oct|maq|trk)-\d+\.\d+$/.test(t);
+    const isId = t => /^(x-)?(tri|tet|pen|hex|hep|oct|maq|trk|rel)-\d+\.\d+$/.test(t);
     const ids = terms.filter(isId), loose = terms.filter(t => !isId(t));
     return base.map(f => {
       if (loose.some(t =>
         f.id.includes(t) ||
-        (f.turkish ? "makam" : f.maqam ? "maqam" : GRP_PFX[f.n]).startsWith(t) ||
+        (f.real ? "real" : f.turkish ? "makam" : f.maqam ? "maqam" : GRP_PFX[f.n]).startsWith(t) ||
         f.modes.some(m =>
           (/^[01]+$/.test(t) ? (t.length > 12 ? toBin(m).includes(t) : (S24.toBin12(m) ?? "").includes(t)) : false) ||
           (KNOWN[m] || customNames[m] || "").toLowerCase().includes(t) ||
@@ -7506,7 +7524,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
         {/* Stage: the light show, with the journey's path and where you are on it */}
         <div style={{ width: "100%", maxWidth: 720, position: "relative", height: 260, borderRadius: 10, overflow: "hidden", border: `1px solid ${K.br}`, background: K.bg2 }}>
           <div style={{ position: "absolute", inset: 0, opacity: playingNow ? 0.85 : 0.25, transition: "opacity 2s" }}>
-            <Visualizer analyserRef={analyserRef} playing={playing} rootIdx={rootIdx} active={selSemis} K={K} />
+            <Visualizer analyserRef={analyserRef} playing={playing} rootIdx={rootIdx} active={selSemis} sys={sel ? S24.systemOf(sel.pattern) : "12"} K={K} />
           </div>
           <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, width: "100%", height: J === "draw" ? "100%" : 110 }}>
             {big.hill && <path d={big.hill} fill={JOURNEY_COLOR} opacity={0.12} />}
@@ -8347,7 +8365,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                   display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
                   position: "sticky", top: 0, zIndex: 10, userSelect: "none",
                 }}>
-                  <span style={{ color: K.a, fontSize: 9, letterSpacing: 3, fontWeight: 600 }}>{fams[0].turkish ? "TURKISH MAKAM · 53 COMMAS" : fams[0].maqam ? "MAQAM · DASTGAH · QUARTER TONES" : <>{outside ? "OUTSIDE · " : ""}{GRP_NAME[n].toUpperCase()}</>}</span>
+                  <span style={{ color: K.a, fontSize: 9, letterSpacing: 3, fontWeight: 600 }}>{fams[0].real ? "REAL INTONATION · CENTS" : fams[0].turkish ? "TURKISH MAKAM · 53 COMMAS" : fams[0].maqam ? "MAQAM · DASTGAH · QUARTER TONES" : <>{outside ? "OUTSIDE · " : ""}{GRP_NAME[n].toUpperCase()}</>}</span>
                   <span style={{ color: K.txt, fontSize: 9 }}>{fams.length} scale{fams.length !== 1 ? "s" : ""}</span>
                   <span style={{ marginLeft: "auto", color: K.txt, fontSize: 11 }}>{exp ? "▾" : "▸"}</span>
                 </div>
@@ -8473,7 +8491,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
           </div>
           <div style={{ flex: 1, overflow: "hidden" }}>
             {centerTab === "viz"
-              ? <Visualizer analyserRef={analyserRef} playing={playing} rootIdx={rootIdx} active={selSemis} K={K} />
+              ? <Visualizer analyserRef={analyserRef} playing={playing} rootIdx={rootIdx} active={selSemis} sys={sel ? S24.systemOf(sel.pattern) : "12"} K={K} />
               : <ScaleInfo sel={sel} selName={selName} selIvs={selIvs} selNotes={selNotes} demoKey={demoKey} K={K} />
             }
           </div>

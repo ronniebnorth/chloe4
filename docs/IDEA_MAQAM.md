@@ -408,3 +408,26 @@ Unlocked next (backlog):
   koron tonic).
 - The wheel labels cents scales with comma marks; pass the scale's system to
   it as the note list does.
+
+## Real intonation scales + draw option — built 2026-11-09
+
+- New sidebar group **REAL INTONATION · CENTS**: scales that exist only in
+  cents (`REAL_SEEDS` in `scale24.js`), each rotated into its modes:
+  - **Just major (5-limit)**: 1/1 9/8 5/4 4/3 3/2 5/3 15/8 (0 204 386 498 702
+    884 1088); modes named Just Dorian… Just Locrian. Some modes carry the
+    syntonic-comma "wolf" (Just Dorian's D–A fifth is 680¢), which is how
+    just intonation really behaves.
+  - **Pythagorean major**: 1/1 9/8 81/64 4/3 3/2 27/16 243/128; modes named.
+  - **Overtone scale**: harmonics 8–14 (0 204 386 551 702 841 969).
+  - **Shur, as played (Abdoli)**: 0 149 300 500 702 783 985, measured
+    performance values quoted on microtonaltheory.com.
+- Draw journey scales toggle gains **real intonation**.
+- Notes and wheel labels show cent offsets (E−14¢); exact notes light their
+  nearest wheel dot; long labels shrink to fit.
+- Arabic measured intonation left out: the sources found (2026-11-09) were
+  descriptive ("near 350¢, regional variation") without usable per-degree
+  figures. Candidates to read: the 1932 Cairo Congress open dataset
+  (arxiv 2506.14503, cents histograms for Egyptian bayati/rast), and Abu
+  Shumays' "The Fuzzy Boundaries of Intonation in Maqam" (2009).
+- Checked headless: draw + real intonation picks Just, Pythagorean and
+  overtone modes; no console errors.

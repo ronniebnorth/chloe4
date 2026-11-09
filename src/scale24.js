@@ -294,3 +294,33 @@ export const TURK_PATH = [
   { at: 0.76, name: "Uşşak", shift: 2, usul: "curcuna", pat: tp([8, 5, 9, 9, 4, 9, 9]) },
   { at: 0.88, name: "Rast", shift: 0, usul: "duyek", pat: tp([9, 8, 5, 9, 9, 8, 5]) },
 ];
+
+/* ── Real intonation: scales that exist only in cents ─────────────────────
+   Pitches from pure frequency ratios or published measurements, not from any
+   grid. cents(r) = 1200·log2(r). Each seed is rotated into its modes.
+   Sources: just and Pythagorean tunings and the harmonic series are exact by
+   definition; Persian Shur as measured by Abdoli, quoted on
+   microtonaltheory.com ("Persian Dastgahs"). */
+const rc = (n, d) => 1200 * Math.log2(n / d);
+const MODE_NAMES = ["Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"];
+export const REAL_SEEDS = [
+  { name: "Just major (5-limit)", tag: "Just", modes: MODE_NAMES,
+    cents: [[1, 1], [9, 8], [5, 4], [4, 3], [3, 2], [5, 3], [15, 8]].map(([n, d]) => rc(n, d)) },
+  { name: "Pythagorean major", tag: "Pythagorean", modes: MODE_NAMES,
+    cents: [[1, 1], [9, 8], [81, 64], [4, 3], [3, 2], [27, 16], [243, 128]].map(([n, d]) => rc(n, d)) },
+  { name: "Overtone scale (harmonics 8–14)", tag: "Overtone", modes: null,
+    cents: [8, 9, 10, 11, 12, 13, 14].map(h => rc(h, 8)) },
+  { name: "Shur, as played (Abdoli)", tag: "Shur", modes: null,
+    cents: [0, 149, 300, 500, 702, 783, 985] },
+].map(sd => ({ ...sd, id: fromCents(sd.cents, "cents") }));
+// Names for every mode of the real-intonation seeds
+export const REAL_NAMES = [];
+for (const sd of REAL_SEEDS) {
+  const c = centsOf(sd.id);
+  c.forEach((_, k) => {
+    const id = fromCents(rotCents(c, k), "cents");
+    const name = k === 0 ? sd.name : sd.modes ? `${sd.tag} ${sd.modes[k]}` : null;
+    if (name) REAL_NAMES.push([id, name]);
+  });
+}
+export const realRotations = (id) => { const c = centsOf(id); return c.map((_, k) => fromCents(rotCents(c, k), "cents")); };
