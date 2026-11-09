@@ -494,3 +494,9 @@ weighing more, not only on the root.
   overlapping slow sine waves (4.1 and 1.7 min, random phase), updated every
   2 s, reaching both ends now and then, instead of jumping every 30–90 s.
   Button labelled "wander" (Listen: "felt ~"); same storage/link keys.
+- Then: **WANDER SPEED** (¼×–4×, log; 1× ≈ a 4-minute sweep) and **WANDER
+  RANGE** (5–100%; 100% = full root↔felt sweep, less = drift around where
+  the slider was when wander started) sliders, shown while wander is on.
+  Wave phases accumulate, so changing either mid-wander never jumps. Saved
+  (`chloe-felt-wspeed`, `chloe-felt-wrange`); links carry `bfs=`, `bfw=`.
+  Checked headless: 4×, 30% around 0.3 drifted 20–28% with no jumps.

@@ -2445,7 +2445,7 @@ const HELP_SECTIONS = [
   { title: "BINARY NOTATION", body: "Each scale is a binary string written root-first (leftmost digit = root), so it reads like the scale. 1 = active, 0 = inactive. Ordinary scales show 12 digits, one per semitone, with their familiar number (Ionian = 2741). Scales with quarter tones show 24 digits, one per quarter tone, and a 24-step number. Search takes either form. The MAQAM group holds Arabic maqamat with quarter tones (Rast, Bayati, Saba, Huzam and their modes, such as Sikah and Iraq); quarter-tone notes are named half-flat, e.g. E½♭. Scales are grouped into families sharing the same interval structure - e.g. hep-6 contains all 7 standard modes." },
   { title: "WORLD SCALES & TUNINGS", body: "Every scale is stored as its pitches in cents above the root (100 cents = a semitone). Four groups sit below the Western ones in the sidebar. MAQAM · DASTGAH · QUARTER TONES: Arabic maqamat (Rast, Bayati, Saba, Huzam and their modes, such as Sikah and Iraq) and Persian dastgahs (Chahargah, Homayun; Shur, Segah and Mahur share notes with Bayati, Sikah and Ionian and show both names), on a 24-step grid, half-flat notes written E½♭. TURKISH MAKAM · 53 COMMAS: Rast, Uşşak, Hicaz, Bûselik and their modes (Hüseynî, Kürdî) in true Turkish pitches; a whole tone is 9 commas, codes show the steps in commas (Rast = 9·8·5·9·9·8·5), and B⁻¹ means B one comma flat. REAL INTONATION · CENTS: Just major and its modes (pure ratios, 3rds 14¢ low). Just major is note for note Ionian with TUNING set to just; the difference is in its modes, which keep that one C-major tuning like a fixed just keyboard, so some have a sour 'wolf' 5th (Just Dorian's is 680¢). For pure intervals on any scale, from its own root, use the TUNING switch (equal / just / pyth) instead., Pythagorean major and its modes, the overtone scale (harmonics 8–14) and Shur as played (measured, Abdoli); notes show their offset, e.g. E−14¢. Search maqam, makam or real to find each group. Sources and details: docs/IDEA_MAQAM.md in the Chloe4 repo." },
   { title: "RESOLUTION", body: "The RESOLUTION slider (Studio, under TUNING) sets how finely the octave is divided when notes are played: every pitch is rounded to the nearest of that many equal steps, from 12 to 1200. 12 = piano: quarter tones, Turkish and cents scales collapse onto it. 24 = quarter tones: maqam and dastgah come alive. 53 = Turkish commas, and just intervals within about a cent. 1200 = cents: exact, every scale as stored. Buttons jump to 12, 24, 31 (Huygens), 41, 53, 72 (Byzantine chant) and 1200. Slide slowly up with Rast or Just major playing to hear the music sharpen into its true shape; in-between values like 64 put some intervals noticeably off, which is why those numbers matter. The wheel shows a tick per step (a fine ring past 150), and the note names follow what you hear. Brightness, the scale list and journeys stay on the exact cents. Saved, and carried in share links (edo=)." },
-  { title: "BRIGHT FEEL", body: "Studio, under RESOLUTION: a slider from ROOT to FELT for how journeys judge a move toward brighter or darker. Root (0%) = by each scale's fixed brightness, measured from the root, as always. Felt (100%) = also by what you've just heard: every note leaves a memory in the ear that grows the longer and louder it sounds and fades over about 3 seconds; the drone counts as a root held all the time. A move that changes a note you're holding (a long E dropping to E♭) is felt strongly; the same move when E hasn't sounded lately slips by. Still heading for the journey's target, felt picks hidden moves when it's close and moves you'll feel in the right direction when it's further off. In between blends the two. WANDER lets Chloe drift the slider itself, slowly and smoothly, on overlapping waves of a few minutes, now and then reaching all the way to root or felt, so it shifts under you. On the Listen page: felt (on/off) and felt ~ (wander). The wheel glows on the notes being held, more strongly the further toward felt. The difference is biggest with the drone off and a melody that lingers." },
+  { title: "BRIGHT FEEL", body: "Studio, under RESOLUTION: a slider from ROOT to FELT for how journeys judge a move toward brighter or darker. Root (0%) = by each scale's fixed brightness, measured from the root, as always. Felt (100%) = also by what you've just heard: every note leaves a memory in the ear that grows the longer and louder it sounds and fades over about 3 seconds; the drone counts as a root held all the time. A move that changes a note you're holding (a long E dropping to E♭) is felt strongly; the same move when E hasn't sounded lately slips by. Still heading for the journey's target, felt picks hidden moves when it's close and moves you'll feel in the right direction when it's further off. In between blends the two. WANDER lets Chloe drift the slider itself, slowly and smoothly, on overlapping waves of a few minutes, so it shifts under you. While it's on, WANDER SPEED sets how fast (¼× ≈ 16 minutes a sweep, 1× ≈ 4, 4× ≈ 1) and WANDER RANGE how far: 100% sweeps from root to felt, less drifts around where the slider was when you switched wander on. On the Listen page: felt (on/off) and felt ~ (wander). The wheel glows on the notes being held, more strongly the further toward felt. The difference is biggest with the drone off and a melody that lingers." },
   { title: "BRIGHTNESS SORTING", body: "Within each family, modes are sorted bright to dark by summing their active semitone positions (raw brightness). Lydian scores highest (raised 4th), Locrian lowest (flatted 2nd and 5th). This mirrors the circle-of-fifths: Lydian → Ionian → Mixolydian → Dorian → Aeolian → Phrygian → Locrian. Positions count in semitones, so quarter tones and cents scales score in between: Rast 37 (beside Mixolydian), Bayati 34.5 (between Aeolian and Phrygian), Just major 37.6. The sidebar and scale list show the raw brightness score (e.g. Dorian = 36). The EEG system uses a separate normalized brightness (0.0–1.0) that adjusts for note count, so pentatonics and tetratonics are comparable to heptatonics — Dorian normalizes to exactly 0.5 as the neutral midpoint." },
   { title: "SCALE WHEEL", body: "The circle shows the 12 chromatic notes, with a small dot for each quarter tone between them (24 positions). Active tones are highlighted and connected by a polygon; a quarter-tone note gets its own labelled dot (E½♭), and a Turkish or cents note lights the nearest dot with its exact name (B⁻¹, E−14¢), drawn at its true angle. Wide polygons = sparse scales. Compact polygons = denser chromatic scales. A perfect regular polygon = equal temperament." },
   { title: "SEARCH & FILTER", body: "The left sidebar has a search box that filters scales by name as you type — results narrow to only matching modes within each family (e.g. searching 'dorian' shows just the Dorian row, not all 7 modes). The NOTES sliders below it set a from–to range of notes per scale (3 to 12): 5–7 shows pentatonic to heptatonic, 5–5 only pentatonics. The range also limits what Auto and the journeys pick (the Persia, Shur and Makam paths keep their own scales), so it sets how many corners the polygon has. Scales with 9 to 12 notes all contain a cluster of semitones, so they are outside scales (Nonatonic, Decatonic, Hendecatonic, Chromatic): switch on outside to see and hear them; with a 9–12 range Auto then picks only those. The sus chip (or searching 'sus' or 'suspended') shows suspended scales: no 3rd, so neither major nor minor, with a 5th and a 2nd or 4th. These compose with each other and with the header filter bar. The header filter accepts comma-separated terms: family ID (hep-6), group prefix (pen, hep, hex), scale name, binary fragment, decimal value, or interval pattern (2-2-1). The star button on any row marks a favourite; the favs button in the header shows starred scales only. Custom names are searchable too." },
@@ -3755,19 +3755,30 @@ export default function Chloe() {
   const feltAmtRef = useRef(feltAmt);
   useEffect(() => { feltAmtRef.current = feltAmt; localStorage.setItem("chloe-felt-amt", String(feltAmt)); }, [feltAmt]);
   useEffect(() => { localStorage.setItem("chloe-felt-random", feltRandom ? "1" : "0"); }, [feltRandom]);
-  // Wander: Chloe drifts the amount slowly and smoothly between root and felt, on two
-  // overlapping slow waves (about 4 and 1.7 minutes, so the pattern never lines up the
-  // same way twice), visiting both ends now and then. Updated every 2 s.
+  // Wander: Chloe drifts the amount slowly and smoothly, on two overlapping waves
+  // (about 4.1 and 1.7 minutes at 1×, so it never lines up the same way twice).
+  // SPEED scales how fast (¼× to 4×); RANGE how far: 100% sweeps root to felt, less
+  // drifts around where the slider was when wander was switched on. Phases are
+  // accumulated, so changing speed or range mid-wander never jumps.
+  const lsNum = (k, d, lo, hi) => { const v = +(new URLSearchParams(window.location.search).get(k[0]) ?? localStorage.getItem(k[1]) ?? d); return isNaN(v) ? d : Math.max(lo, Math.min(hi, v)); };
+  const [wanderSpeed, setWanderSpeed] = useState(() => lsNum(["bfs", "chloe-felt-wspeed"], 1, 0.25, 4));
+  const [wanderRange, setWanderRange] = useState(() => lsNum(["bfw", "chloe-felt-wrange"], 1, 0.05, 1));
+  const wanderRef = useRef({ speed: wanderSpeed, range: wanderRange, center: feltAmt, p1: 0, p2: 0, t: 0 });
+  useEffect(() => { wanderRef.current.speed = wanderSpeed; localStorage.setItem("chloe-felt-wspeed", String(wanderSpeed)); }, [wanderSpeed]);
+  useEffect(() => { wanderRef.current.range = wanderRange; localStorage.setItem("chloe-felt-wrange", String(wanderRange)); }, [wanderRange]);
   useEffect(() => {
     if (!feltRandom) return;
-    const t0 = Date.now(), ph = Math.random() * 2 * Math.PI;
+    const w = wanderRef.current, ph = Math.random() * 2 * Math.PI;
+    w.center = feltAmtRef.current; w.p1 = ph; w.p2 = 2 * ph; w.t = Date.now();
     const step = () => {
-      const m = (Date.now() - t0) / 60000;
-      const v = 0.5 + 0.42 * Math.sin(2 * Math.PI * m / 4.1 + ph) + 0.16 * Math.sin(2 * Math.PI * m / 1.7 + 2 * ph);
+      const now = Date.now(), dm = (now - w.t) / 60000; w.t = now;
+      w.p1 += 2 * Math.PI * dm * w.speed / 4.1; w.p2 += 2 * Math.PI * dm * w.speed / 1.7;
+      const c = (1 - w.range) * w.center + w.range * 0.5;
+      const v = c + w.range * (0.42 * Math.sin(w.p1) + 0.16 * Math.sin(w.p2));
       setFeltAmt(+Math.max(0, Math.min(1, v)).toFixed(2));
     };
     step();
-    const iv = setInterval(step, 2000);
+    const iv = setInterval(step, 1000);
     return () => clearInterval(iv);
   }, [feltRandom]);
   const [noteRange, setNoteRange] = useState(() => {
@@ -7454,6 +7465,8 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (noteRangeOn) p.set("nr", noteRange.join("-"));
     if (feltAmt > 0) p.set("bf", feltAmt);
     if (feltRandom) p.set("bfr", "1");
+    if (wanderSpeed !== 1) p.set("bfs", wanderSpeed);
+    if (wanderRange !== 1) p.set("bfw", wanderRange);
     if (droneOct)    p.set("do", droneOct);
     if (droneOn)     p.set("dr", "1");
     if (droneWave !== "tanpura") p.set("dw", droneWave);
@@ -7481,7 +7494,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (sidebarW !== 520) p.set("sw", sidebarW);
     const qs = p.toString();
     return window.location.origin + window.location.pathname + (qs ? "?" + qs : "");
-  }, [resolution, noteRange, noteRangeOn, feltAmt, feltRandom, drawLine, susPool, rootIdx, timbre, instrument, noteVol, reverbAmt, delayAmt, sustainMult, bpm, filter, sel, aRef, droneOct, droneOn, droneWave, melMode, grouping, blend, tempoGlide, soundBlend, tuning, autoTempo, symphonic, beatStyle, beatWander, world, worldWander, weatherBrain, journey, journeyMins, sleepMins, smooth, autoLocks, sidebarW]);
+  }, [resolution, noteRange, noteRangeOn, feltAmt, feltRandom, wanderSpeed, wanderRange, drawLine, susPool, rootIdx, timbre, instrument, noteVol, reverbAmt, delayAmt, sustainMult, bpm, filter, sel, aRef, droneOct, droneOn, droneWave, melMode, grouping, blend, tempoGlide, soundBlend, tuning, autoTempo, symphonic, beatStyle, beatWander, world, worldWander, weatherBrain, journey, journeyMins, sleepMins, smooth, autoLocks, sidebarW]);
 
   // Record button: start tapping the master output; stop → download the WAV
   const toggleRec = useCallback(async () => {
@@ -9099,6 +9112,18 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                 fontSize: 9, cursor: "pointer", fontFamily: "inherit", fontWeight: feltRandom ? 600 : 400,
               }}>wander</button>
             </div>
+            {feltRandom && (
+              <div style={{ display: "grid", gridTemplateColumns: "max-content 1fr max-content", gap: "4px 6px", alignItems: "center", margin: "-2px 0 8px 12px" }}>
+                <span title="How fast the wander moves: ¼× = very slow (a sweep takes about 16 minutes), 1× = about 4 minutes, 4× = about a minute" style={{ color: K.lbl, fontSize: 9, letterSpacing: 2, cursor: "help" }}>WANDER SPEED</span>
+                <input type="range" min={0} max={1} step={0.01} value={Math.log(wanderSpeed / 0.25) / Math.log(16)}
+                  onChange={e => setWanderSpeed(+(0.25 * 16 ** +e.target.value).toFixed(2))} style={{ minWidth: 0, accentColor: K.a }} />
+                <span style={{ color: K.a, fontSize: 10, minWidth: 36, textAlign: "right" }}>{wanderSpeed < 1 ? wanderSpeed.toFixed(2) : wanderSpeed.toFixed(1)}×</span>
+                <span title="How far it wanders: 100% sweeps all the way from root to felt; less drifts around where the slider was when you switched wander on" style={{ color: K.lbl, fontSize: 9, letterSpacing: 2, cursor: "help" }}>WANDER RANGE</span>
+                <input type="range" min={0.05} max={1} step={0.01} value={wanderRange}
+                  onChange={e => setWanderRange(+e.target.value)} style={{ minWidth: 0, accentColor: K.a }} />
+                <span style={{ color: K.a, fontSize: 10, minWidth: 36, textAlign: "right" }}>{Math.round(wanderRange * 100)}%</span>
+              </div>
+            )}
             {/* Symphonic — sampled strings + double bass under the line */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <span title="Adds an orchestra under the line: a string section swells on chords built from the current scale, cellos drive a low pulse, a double bass holds the roots, and timpani and taiko drums hit the changes (a big boom on a new scale), violin and flute weave fast runs through it, all in a cathedral reverb. Uses real recorded samples, a one-time download of about 30 MB in all the first time you switch it on." style={{ color: K.t2, fontSize: 9, letterSpacing: 2, flexShrink: 0, cursor: "help" }}>SYMPHONIC{orchLoading ? " · loading…" : ""}</span>
