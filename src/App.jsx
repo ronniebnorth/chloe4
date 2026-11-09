@@ -8687,7 +8687,8 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
         {/* ══════════════════════════════════════
             RIGHT PANEL
         ══════════════════════════════════════ */}
-        <div style={{ width: sidebarW, display: "flex", flexDirection: "column", background: K.bg2, flexShrink: 0, position: "relative", minHeight: 0 }}>
+        {/* (the whole right panel scrolls, so the piano is reachable however tall PLAYBACK gets) */}
+        <div style={{ width: sidebarW, display: "flex", flexDirection: "column", background: K.bg2, flexShrink: 0, position: "relative", minHeight: 0, overflowY: "auto", overflowX: "hidden" }}>
           {/* Drag handle */}
           <div onMouseDown={onDragStart} style={{
             position: "absolute", left: 0, top: 0, bottom: 0, width: 5,
@@ -9333,7 +9334,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
           </Sec>
 
           {/* Scale info */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "14px 14px" }}>
+          <div style={{ flex: "1 0 auto", padding: "14px 14px" }}>
             {sel ? (
               <>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 3 }}>
