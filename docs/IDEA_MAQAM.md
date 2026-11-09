@@ -279,3 +279,22 @@ Gathered from the session that built Chloe4. Nothing here is started.
   (closest now: shaku), tombak or daf patterns for the beat engine.
 - Optional Arabic/Persian note naming (e.g. koron/sori signs) alongside
   E½♭-style names.
+
+**Bends — Ronnie's idea, 2026-11-08:** *"we will be able to play even
+western 12 tone music, with slight bends... like guitar players do."*
+- **Blue-note scales (easy, uses the 24-step grid as it is).** Blues players
+  bend the ♭3 about a quarter tone up (the blue 3rd, between minor and
+  major), and treat ♭7 and ♭5 the same way. Add scales such as C E½♭ F G B½♭
+  (blues pentatonic with blue 3rd and 7th) and a blues hexatonic with a
+  blue ♭5. Note: close to Rast's notes, which is part of why blues and
+  Arabic music can sound related.
+- **Bends as articulation (new playing feature).** A real bend is a pitch
+  glide, not a fixed note. A "bend" setting where Chloe sometimes: curls the
+  blue 3rd or ♭7 up a quarter tone at the end of the note; bends up into a
+  note from a half step below; adds a small shimmer at the end of long
+  notes. Works on plain 12-note scales too, so Western music sounds played
+  by a guitarist. Machinery exists: steppe strings already slide into
+  notes (`exponentialRampToValueAtTime` on synth voices); sampled
+  instruments can bend through a detune ramp. Needs: a per-note bend
+  envelope in the note player, a probability/amount control (log curve),
+  and rules for which degrees bend (blue 3rd, ♭7, 4th → 5th).
