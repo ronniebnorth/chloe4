@@ -1,8 +1,16 @@
-# Chloe — Scale Explorer
+# Chloe4 — Scale Explorer, beyond 12 notes
 
 An interactive musical scale explorer built on binary scale encoding. Every possible scale in the 12-tone system is a 12-bit binary number. Chloe generates them all, sorts their modes by brightness, and lets you hear any scale in any key.
 
-**[Try it live](https://ronniebnorth.github.io/chloe3/)**
+**Chloe4** keeps all of that and goes past the piano's 12 notes. Every scale is stored as its pitches in cents, so it holds:
+- **Arabic maqam and Persian dastgah** on a 24-step quarter-tone grid (Rast, Bayati, Saba, Huzam, Chahargah, Homayun…).
+- **Turkish makam** in true Turkish pitches, 53 commas per octave (Rast, Uşşak, Hicaz, Bûselik, Hüseynî, Kürdî).
+- **Real intonations**: just and Pythagorean tunings, the overtone series, and Persian Shur as measured from players.
+- **Journeys** through them: *persia* (a tour of the dastgahs), *shur* (inside one dastgah, the home note climbing), and *makam* (Turkish, with a darbuka playing usuls like Aksak 9/8). Drawn journeys can be limited to one tradition or tuning.
+
+Design notes, sources and the backlog: [docs/IDEA_MAQAM.md](docs/IDEA_MAQAM.md). Chloe3 (12 notes) lives on at [ronniebnorth.github.io/chloe3](https://ronniebnorth.github.io/chloe3/).
+
+**[Try Chloe4 live](https://ronniebnorth.github.io/chloe4/)**
 
 ## How It Works
 
