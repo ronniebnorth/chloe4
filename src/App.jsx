@@ -2244,6 +2244,16 @@ JOURNEYS.wait = { label: "wait", home: up12(1189), wait: true, steady: true, bpm
 JOURNEYS.wake = { label: "wake", home: up12(2773), wake: true, bpm: 120, pts: WAKE_PTS,
   tip: "Built to keep you awake: it climbs fast, never dips, and keeps breaking its own pattern at uneven times, more often as it goes. Sudden stops, drums dropping out and slamming back, tempo lurches, key jumps, flips between line and arpeggio, and new drum styles. It doesn't end by itself: on arrival it holds at the top and keeps surprising you until you stop it.",
 };
+// Persia: a tour of the Persian dastgahs shaped like a radif performance (see
+// PERSIAN_PATH in scale24.js). Scales come from the path, not from brightness;
+// b here only draws the climb to the owj (Mahur) and the forud home.
+// Santur (dulcimer) and kamancheh (fiddle) take turns; slow and spacious.
+JOURNEYS.persia = { label: "persia", home: S24.fromSteps(S24.PERSIAN_PATH[0].steps), persian: true, bpm: 72,
+  tip: "A tour of the Persian dastgahs: opens on Shur, climbs through Afshari, Homayun, Segah and Chahargah to a bright peak on Mahur, then comes back down home to Shur. Quarter tones (koron) throughout; santur and kamancheh take turns.",
+  pts: S24.PERSIAN_PATH.map(st => {
+    const b = { Shur: 0.32, Afshari: 0.28, Homayun: 0.45, Segah: 0.55, Chahargah: 0.62, Mahur: 0.74 }[st.name];
+    return { at: st.at, b, t: 0.8 + 0.25 * (b - 0.28) / 0.46, rv: 0.8 - 0.2 * (b - 0.28) / 0.46, su: 1.3 };
+  }).concat([{ at: 1, b: 0.32, t: 0.8, rv: 0.8, su: 1.4 }]) };
 // Draw: a journey whose shape you draw on the Listen stage. The line lives here so the
 // journey clock, the cards and the stage all read the same one; it can change mid-journey.
 let drawnLine = defaultLine();
@@ -4368,7 +4378,7 @@ export default function Chloe() {
       orchT = setTimeout(orchTick, hold * 1000);
     };
 
-    let steppeInst = "lute", celticInst = "whistle", celticLeft = 32, fireInst = "kalimba", fireLeft = 32;
+    let steppeInst = "lute", celticInst = "whistle", celticLeft = 32, fireInst = "kalimba", fireLeft = 32, persiaInst = "dulcimer", persiaLeft = 32;
     // The lead's clock: each note has an exact time on the audio clock, set from the
     // last note's, and the timer only wakes up a little ahead of it. (A chain of
     // plain timers lands a few ms late every note, and the lateness adds up, so the
@@ -4392,7 +4402,11 @@ export default function Chloe() {
       const { rootIdx: ri, timbre: t, noteVol: nv, aRef: ar, tuning: tu } = stRef.current;
       const b = tg.cur ?? stRef.current.bpm;
       let inst = stRef.current.instrument;
-      if (isOcean(stRef.current)) inst = "whale";
+      if (JOURNEYS[journeyRef.current?.id]?.persian) {   // santur and kamancheh take turns, 24-48 notes each
+        if (--persiaLeft < 0) { persiaInst = persiaInst === "dulcimer" ? "fiddle" : "dulcimer"; persiaLeft = 24 + Math.floor(Math.random() * 24); }
+        inst = persiaInst;
+      }
+      else if (isOcean(stRef.current)) inst = "whale";
       else if (isJungle(stRef.current)) inst = "kalimba";
       else if (isThunder(stRef.current)) inst = "felt";
       else if (isCave(stRef.current)) inst = "hang";
@@ -6673,7 +6687,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       const waitPh = waitRun ? waitPhase(Math.min(1, waitEl / ((waitRun.mins ?? 15) * 60000)), waitRun.drop) : null;
 
       let entry = null;
-      if (outsideOpts.length && !susPoolRef.current && !waitRun && Math.random() < OUTSIDE_CHANCE)
+      if (outsideOpts.length && !susPoolRef.current && !waitRun && !JOURNEYS[journeyRef.current?.id]?.persian && Math.random() < OUTSIDE_CHANCE)
         entry = pickOutside(outsideOpts);
 
       // Journey: walk toward its brightness target one note at a time (a one-note
@@ -6691,7 +6705,14 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       // Suspended pool: travel through every suspended scale before any repeats.
       // This comes before the worlds, likes, journey and EEG, which pick scales of
       // their own. A journey still leans the order toward its brightness.
-      if (waitRun) {
+      const persianRun = JOURNEYS[journeyRef.current?.id]?.persian ? journeyRef.current : null;
+      if (persianRun) {
+        const f = Math.min(1, (Date.now() - persianRun.startMs) / ((persianRun.mins ?? 15) * 60000));
+        const st = S24.persianStation(f);
+        const fam = FAMILIES.find(fm => fm.modes.includes(st.pat));
+        if (fam) entry = { fam, modeIdx: fam.modes.indexOf(st.pat), pat: st.pat };
+        setSusTour(null);
+      } else if (waitRun) {
         const regular = activeFamiliesRef.current.filter(fm => !fm.outside);
         const pool = regular.filter(fm => fm.n >= 5).flatMap(fm => fm.modes.map((pat, i) => ({ fam: fm, modeIdx: i, pat }))).filter(e => isSuspended(e.pat));
         const pat = waitPattern(waitRun, waitPh, cur?.pattern ?? null, pool);
@@ -6867,8 +6888,9 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       // ...and now and then the tune lifts a whole step
       if (_al.rootNote && celtic && Math.random() < 0.15) later(() => setRootIdx(r => (r + 2) % 12));
       // Key changes, apart from where something else owns the root or it should hold still:
-      // Celtic (above), Rise (its riffs), Endless (sleep), The Wait, Map (it's measuring)
-      else if (_al.rootNote && !celtic && !sleepJ && !epicJ && !waitRun && !JOURNEYS[J?.id]?.survey && Math.random() < KEY_CHANCE) {
+      // Celtic (above), Rise (its riffs), Endless (sleep), The Wait, Map (it's measuring),
+      // Persia (a dastgah performance keeps one tonic)
+      else if (_al.rootNote && !celtic && !sleepJ && !epicJ && !waitRun && !JOURNEYS[J?.id]?.survey && !JOURNEYS[J?.id]?.persian && Math.random() < KEY_CHANCE) {
         const mv = KEY_MOVES[Math.floor(Math.random() * KEY_MOVES.length)];
         later(() => setRootIdx(r => (r + mv) % 12));
       }
@@ -8209,7 +8231,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                   display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
                   position: "sticky", top: 0, zIndex: 10, userSelect: "none",
                 }}>
-                  <span style={{ color: K.a, fontSize: 9, letterSpacing: 3, fontWeight: 600 }}>{fams[0].maqam ? "MAQAM · QUARTER TONES" : <>{outside ? "OUTSIDE · " : ""}{GRP_NAME[n].toUpperCase()}</>}</span>
+                  <span style={{ color: K.a, fontSize: 9, letterSpacing: 3, fontWeight: 600 }}>{fams[0].maqam ? "MAQAM · DASTGAH · QUARTER TONES" : <>{outside ? "OUTSIDE · " : ""}{GRP_NAME[n].toUpperCase()}</>}</span>
                   <span style={{ color: K.txt, fontSize: 9 }}>{fams.length} scale{fams.length !== 1 ? "s" : ""}</span>
                   <span style={{ marginLeft: "auto", color: K.txt, fontSize: 11 }}>{exp ? "▾" : "▸"}</span>
                 </div>

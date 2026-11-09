@@ -105,24 +105,64 @@ export const MAQAM_SEEDS = [
   { name: "Bayati", steps: [0, 3, 6, 10, 14, 16, 20] },
   { name: "Saba",  steps: [0, 3, 6, 8, 14, 16, 20] },
   { name: "Huzam", steps: [0, 3, 7, 9, 15, 17, 21] },
+  // Persian dastgah (Vaziri's 24-quarter-tone approximation; koron = half-flat).
+  // Shur shares Bayati's notes, Segah = Sikah, Mahur = Ionian: those are named, not seeded.
+  { name: "Chahargah", steps: [0, 3, 8, 10, 14, 17, 22] },
+  { name: "Homayun", steps: [0, 3, 8, 10, 14, 16, 20] },
+  { name: "Afshari", steps: [0, 3, 6, 10, 13, 16, 20] },
 ];
 
 // Test scale: notes a quarter tone apart, to hear how they rub (C, C½♯, D, G).
 // Lives in the outside group; auto mode never picks it.
 export const QUARTER_TEST = fromSteps([0, 1, 4, 14]);
 
-export const MAQAM_NAMES = {
-  [QUARTER_TEST]: "Quarter-tone test",
-  [fromSteps([0, 4, 7, 10, 14, 18, 21])]: "Rast",
-  [fromSteps([0, 3, 7, 11, 14, 17, 21])]: "Sikah",
-  [fromSteps([0, 3, 7, 10, 13, 17, 21])]: "Iraq",
-  [fromSteps([0, 3, 6, 10, 14, 16, 20])]: "Bayati",
-  [fromSteps([0, 3, 6, 8, 14, 16, 20])]: "Saba",
-  [fromSteps([0, 3, 7, 9, 15, 17, 21])]: "Huzam",
-  // 12-note maqamat, named on their existing patterns
-  [fromSteps([0, 2, 8, 10, 14, 16, 20])]: "Hijaz",
-  [fromSteps([0, 4, 6, 10, 14, 16, 22])]: "Nahawand",
-  [fromSteps([0, 2, 6, 10, 14, 16, 20])]: "Kurd",
-  [fromSteps([0, 4, 8, 10, 14, 18, 22])]: "Ajam",
-  [fromSteps([0, 4, 6, 12, 14, 18, 20])]: "Nikriz",
+// Names by pattern. A pattern with more than one name (Bayati = Shur) gets them
+// all, joined with " · ", so each one searches.
+const NAME_LIST = [
+  [QUARTER_TEST, "Quarter-tone test"],
+  [[0, 4, 7, 10, 14, 18, 21], "Rast"],
+  [[0, 3, 7, 11, 14, 17, 21], "Sikah"],
+  [[0, 3, 7, 11, 14, 17, 21], "Segah"],
+  [[0, 3, 7, 10, 13, 17, 21], "Iraq"],
+  [[0, 3, 6, 10, 14, 16, 20], "Bayati"],
+  [[0, 3, 6, 10, 14, 16, 20], "Shur"],
+  [[0, 3, 6, 8, 14, 16, 20], "Saba"],
+  [[0, 3, 7, 9, 15, 17, 21], "Huzam"],
+  [[0, 3, 8, 10, 14, 17, 22], "Chahargah"],
+  [[0, 3, 8, 10, 14, 16, 20], "Homayun"],
+  [[0, 3, 6, 10, 13, 16, 20], "Afshari"],
+  // 12-note maqamat and dastgah, named on their existing patterns
+  [[0, 2, 8, 10, 14, 16, 20], "Hijaz"],
+  [[0, 4, 6, 10, 14, 16, 22], "Nahawand"],
+  [[0, 2, 6, 10, 14, 16, 20], "Kurd"],
+  [[0, 4, 8, 10, 14, 18, 22], "Ajam"],
+  [[0, 4, 8, 10, 14, 18, 22], "Mahur"],
+  [[0, 4, 6, 12, 14, 18, 20], "Nikriz"],
+];
+export const MAQAM_NAMES = {};
+for (const [st, name] of NAME_LIST) {
+  const k = typeof st === "number" ? st : fromSteps(st);
+  MAQAM_NAMES[k] = MAQAM_NAMES[k] ? `${MAQAM_NAMES[k]} · ${name}` : name;
+}
+
+/* ── Persian journey: a tour of the dastgahs, shaped like a radif performance ──
+   Opens on Shur (the darāmad, home), climbs through dastgahs that sit
+   brighter and higher, peaks on Mahur (the owj, the high point), then comes
+   back down to Shur (the forud, the return). A tour of several dastgahs is
+   Chloe's own shape; a real performance stays inside one dastgah and moves
+   through its gushes. Stations by journey fraction. */
+export const PERSIAN_PATH = [
+  { at: 0.00, name: "Shur", steps: [0, 3, 6, 10, 14, 16, 20] },
+  { at: 0.16, name: "Afshari", steps: [0, 3, 6, 10, 13, 16, 20] },
+  { at: 0.30, name: "Homayun", steps: [0, 3, 8, 10, 14, 16, 20] },
+  { at: 0.44, name: "Segah", steps: [0, 3, 7, 11, 14, 17, 21] },
+  { at: 0.58, name: "Chahargah", steps: [0, 3, 8, 10, 14, 17, 22] },
+  { at: 0.70, name: "Mahur", steps: [0, 4, 8, 10, 14, 18, 22] },
+  { at: 0.82, name: "Homayun", steps: [0, 3, 8, 10, 14, 16, 20] },
+  { at: 0.90, name: "Shur", steps: [0, 3, 6, 10, 14, 16, 20] },
+];
+export const persianStation = (f) => {
+  let st = PERSIAN_PATH[0];
+  for (const s of PERSIAN_PATH) if (f >= s.at) st = s;
+  return { ...st, pat: fromSteps(st.steps) };
 };

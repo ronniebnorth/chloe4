@@ -181,3 +181,25 @@ Suggested order: **Persian journey first** (works on the current 24-step
 grid: add the dastgah scales as catalogue seeds, then a journey that starts
 on the darāmad, climbs through gushes and does a forud home). Turkish after
 Chloe gains finer pitch, or as an openly labelled 24-step approximation.
+
+## Persian journey — built 2026-11-08
+
+- Dastgah scales added (24-step, Vaziri-style; koron = half-flat):
+  Chahargah, Homayun and Afshari are new families in the MAQAM · DASTGAH
+  group; Shur is named on Bayati's pattern, Segah on Sikah's, Mahur on
+  Ionian's. Names with several labels show all of them ("Bayati · Shur").
+- Journey **persia** (`JOURNEYS.persia`, path in `PERSIAN_PATH` in
+  `scale24.js`): Shur (darāmad, home) → Afshari → Homayun → Segah →
+  Chahargah → Mahur (owj, the peak, ~70%) → Homayun → Shur (forud) from 90%.
+  Scales come from the path, not brightness; the journey curve only draws
+  the climb. 72 BPM, tempo lifts a little toward the peak, reverb dries a
+  little. Santur (dulcimer) and kamancheh (fiddle) take turns every 24–48
+  notes. No automatic key changes (one tonic, as in a performance); no
+  outside scales.
+- Honest framing: touring several dastgahs is Chloe's own shape. A real
+  performance stays inside one dastgah and moves through its gushes. A
+  single-dastgah journey (e.g. Shur with its āvāzes Dashti, Abu Ata,
+  Bayat-e Tork) is a possible next version once those gushes' notes are
+  checked against a source.
+- Checked headless: the journey starts on Shur, plays, no console errors.
+  Not yet listened to.
