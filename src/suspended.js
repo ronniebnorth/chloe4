@@ -1,9 +1,10 @@
+import { approx, noteDist } from "./scale24.js";
 // Suspended harmony: a 2nd or 4th standing in for the 3rd, under a perfect 5th.
 // With no 3rd the music is neither major nor minor; the ear waits for one.
 
 // Patterns are 24-step (quarter tones): semitone s is bit 2s.
 const bitOf = semis => ((Math.round(semis * 2) % 24) + 24) % 24;
-const HAS = (p, semis) => (p >> bitOf(semis)) & 1;
+const HAS = (p, semis) => (approx(p) >> bitOf(semis)) & 1;   // exact (cents) scales by their nearest quarter tones
 
 // A suspended scale: no 3rd above the root (minor or major), a perfect 5th,
 // and a 2nd or a 4th. Egyptian (0 2 5 7 10) is the classic one.
@@ -35,7 +36,6 @@ export const susCoverage = (p, voice) => {
   return { full, n };
 };
 
-const bitsDiff = (a, b) => { let n = 0, x = a ^ b; while (x) { n += x & 1; x >>= 1; } return n; };
 
 // The next stop on a tour of the suspended scales: only scales not yet heard
 // this lap, leaning toward the fewest changed notes so it travels rather than
@@ -49,7 +49,7 @@ export const nextSusStop = (sus, seen, curPat, weigh = () => 0, rnd = Math.rando
   if (!left.length) return { entry: null, lapped: false };
   let best = null, bestCost = Infinity;
   for (const e of left) {
-    const cost = (curPat == null ? 0 : bitsDiff(e.pat, curPat)) + weigh(e) + rnd() * 1.5;
+    const cost = (curPat == null ? 0 : noteDist(e.pat, curPat)) + weigh(e) + rnd() * 1.5;
     if (cost < bestCost) { bestCost = cost; best = e; }
   }
   seen.add(best.pat);

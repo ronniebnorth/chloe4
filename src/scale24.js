@@ -1,4 +1,11 @@
-// Chloe4 scale core: 24 steps per octave (quarter tones).
+// Chloe4 scale core. Every scale is, at bottom, a list of pitches in cents above
+// its root. Two kinds of pattern number carry that:
+//   • grid patterns (≤ FULL): 24 bits, one per quarter tone (below);
+//   • exact patterns (> FULL): a stable ID for a list of cents stored in EXACT
+//     (Turkish makam, and any tuning that isn't on the quarter-tone grid).
+// Everything else (brightness, notes, names, the wheel) reads pitches through
+// centsOf/toSemis, so both kinds behave the same. Exact scales also keep their
+// nearest 24-step shape (approx) for comparisons that count shared notes.
 //
 // A pattern is a 24-bit number, root-first: bit i = the note i quarter tones
 // above the root. A 12-note (Chloe3) scale is its 12-bit pattern with every bit
@@ -25,6 +32,37 @@ export const down24 = (p) => {
 };
 
 export const isMicro = (p) => p > FULL || (p & 0xaaaaaa) !== 0;
+export const isExact = (p) => p > FULL;
+
+/* ── Exact-pitch scales: stored in cents ──────────────────────────────────
+   fromCents(list, system) → a stable pattern ID made from the pitches
+   themselves (an FNV hash of the cents, rounded to 0.01), so the same scale
+   gets the same ID every session: favourites, likes and saved moments keep
+   pointing at it. system says how to show it: "53" (Turkish commas) or "cents". */
+const EXACT = new Map();
+const hashId = (key, salt) => {
+  let h = 2166136261 ^ salt;
+  for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return FULL + 1 + ((h >>> 0) % (0x7fffffff - FULL - 1));
+};
+export const fromCents = (cents, system = "cents") => {
+  const c = [...new Set(cents.map(x => Math.round((((x % 1200) + 1200) % 1200) * 100) / 100))].sort((a, b) => a - b);
+  if (c[0] !== 0) c.unshift(0);
+  const key = c.join(",");
+  for (let salt = 0; ; salt++) {   // a hash collision (vanishingly rare) moves to the next salt
+    const id = hashId(key, salt), e = EXACT.get(id);
+    if (!e) { EXACT.set(id, { key, cents: c, system, approx: fromSteps(c.map(x => Math.round(x / 50))) }); return id; }
+    if (e.key === key) return id;
+  }
+};
+export const systemOf = (p) => p > FULL ? EXACT.get(p).system : (p & 0xaaaaaa) ? "24" : "12";
+// Nearest 24-step shape: the pattern itself for grid scales
+export const approx = (p) => p > FULL ? EXACT.get(p).approx : p;
+// Notes that differ / are shared between two scales (by nearest 24-step shape)
+export const noteDist = (a, b) => bitCt(approx(a) ^ approx(b));
+export const sharedNotes = (a, b) => bitCt(approx(a) & approx(b));
+// Rotate an exact scale: the note at index k becomes the new root
+export const rotCents = (cents, k) => cents.map(x => ((x - cents[k]) % 1200 + 1200) % 1200).sort((a, b) => a - b);
 
 // Rotate by n quarter steps (the note n quarter steps up becomes the new root)
 export const rot24 = (p, n) => {
@@ -32,20 +70,33 @@ export const rot24 = (p, n) => {
   return ((p >>> n) | (p << (Q - n))) & FULL;
 };
 
-export const bitCt = (p) => { p &= FULL; let n = 0; while (p) { n += p & 1; p >>>= 1; } return n; };
+export const bitCt = (p) => { p = approx(p) & FULL; let n = 0; while (p) { n += p & 1; p >>>= 1; } return n; };
 
 // Quarter-step positions of the notes
 export const toSteps = (p) => {
+  p = approx(p);
   const r = [];
   for (let i = 0; i < Q; i++) if ((p >> i) & 1) r.push(i);
   return r;
 };
 
-// Semitones above the root (fractional for quarter tones)
-export const toSemis = (p) => p > FULL ? TURK.get(p).semis.slice() : toSteps(p).map(i => i / 2);
+// Pitches above the root in cents, and in semitones (fractional off the semitone grid)
+export const centsOf = (p) => p > FULL ? EXACT.get(p).cents.slice() : toSteps(p).map(i => i * 50);
+export const toSemis = (p) => centsOf(p).map(c => c / 100);
 
 // Root-first 24-digit code
-export const toBin = (p) => p > FULL ? turkCode(p) : Array.from({ length: Q }, (_, i) => (p >> i) & 1).join("");
+export const toBin = (p) => p > FULL ? exactCode(p) : Array.from({ length: Q }, (_, i) => (p >> i) & 1).join("");
+// Exact scales show the steps between notes: in commas for Turkish (9·8·5…), else in cents
+const exactCode = (p) => {
+  const { cents: c, system } = EXACT.get(p);
+  const steps = c.map((x, i) => (c[i + 1] ?? 1200) - x);
+  return steps.map(d => system === "53" ? Math.round(d * 53 / 1200) : Math.round(d)).join("·");
+};
+// Interval labels for display: "9k" (commas), "204¢" (cents) or semitones (grid)
+export const intervalLabels = (p) => {
+  if (p > FULL) { const unit = EXACT.get(p).system === "53" ? "k" : "¢"; return exactCode(p).split("·").map(x => x + unit); }
+  const s = toSemis(p); return s.slice(1).map((v, i) => v - s[i]).concat(12 - s[s.length - 1]);
+};
 
 // Root-first 12-digit Chloe3 code, or null for quarter-tone scales
 export const toBin12 = (p) => {
@@ -54,7 +105,7 @@ export const toBin12 = (p) => {
 };
 
 // Brightness: sum of note positions in semitones (Chloe3's numbers; halves for quarter tones)
-export const bright = (p) => p > FULL ? +TURK.get(p).semis.reduce((a, b) => a + b, 0).toFixed(1) : toSteps(p).reduce((s, i) => s + i, 0) / 2;
+export const bright = (p) => +(centsOf(p).reduce((a, b) => a + b, 0) / 100).toFixed(1);
 
 // Crowding: three notes inside one whole tone (4 quarter steps), circular.
 // For 12-note scales this is exactly Chloe3's "3 consecutive semitones".
@@ -69,6 +120,7 @@ export const hasTriple = (p) => {
 
 // Longest run of notes each a semitone apart (circular) — Chloe3's maxRun
 export const maxRun = (p) => {
+  p = approx(p);
   let best = 0;
   for (let i = 0; i < Q; i += 1) {
     if (!((p >> i) & 1)) continue;
@@ -86,7 +138,8 @@ export const fromSemis = (semis) => fromSteps(semis.map(s => Math.round(s * 2)))
 // Quarter tones: half-flat of the note above when that's a natural (E½♭, B½♭),
 // otherwise half-sharp of the natural below (C½♯, F½♯).
 const CHROM = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
-export const noteName = (rootIdx, semi) => {
+// system: "53" names off-grid notes in commas (B⁻¹); "cents" in cents (E−14¢)
+export const noteName = (rootIdx, semi, system = "53") => {
   const x = ((rootIdx + semi) % 12 + 12) % 12;
   if (Number.isInteger(x)) return CHROM[x];
   if (Number.isInteger(x * 2)) {
@@ -94,8 +147,10 @@ export const noteName = (rootIdx, semi) => {
     if (CHROM[up].length === 1) return CHROM[up] + "½♭";
     return CHROM[Math.floor(x)] + "½♯";
   }
-  // Off the quarter-tone grid (Turkish): nearest semitone, then commas up/down: B⁻¹
-  const n = Math.round(x), k = Math.round((x - n) * 53 / 12);
+  // Off the quarter-tone grid: nearest semitone, then cents (E−14¢) or Turkish commas (B⁻¹)
+  const n = Math.round(x);
+  if (system !== "53") { const c = Math.round((x - n) * 100); return CHROM[n % 12] + (c ? (c < 0 ? "−" : "+") + Math.abs(c) + "¢" : ""); }
+  const k = Math.round((x - n) * 53 / 12);
   const sup = String(Math.abs(k)).split("").map(d => "⁰¹²³⁴⁵⁶⁷⁸⁹"[d]).join("");
   return CHROM[n % 12] + (k ? (k < 0 ? "⁻" : "⁺") + sup : "");
 };
@@ -103,25 +158,11 @@ export const noteName = (rootIdx, semi) => {
 /* ── Turkish makam: exact pitches, 53 commas per octave (Arel-Ezgi-Uzdilek) ──
    A whole tone is 9 commas. Interval names: B bakiye 4, S küçük mücennep 5,
    K büyük mücennep 8, T tanini 9, A artık ikili 12. These scales are stored
-   as exact pitches, not on the 24-step grid: the pattern number is a tag in
-   the high bits plus the nearest 24-step shape (for the wheel and
-   comparisons), and toSemis/bright read the exact pitches from TURK. */
+   as exact pitches in cents (fromCents, system "53"), not on the 24-step grid. */
 export const COMMA = 12 / 53;   // in semitones (about 22.6 cents)
-const TURK = new Map();
-let turkN = 0;
-export const isTurk = (p) => p > FULL;
-// Pattern for a set of comma positions above the root (0 first)
-export const turkPattern = (pos) => {
-  const key = pos.join(",");
-  for (const [id, v] of TURK) if (v.key === key) return id;
-  const semis = pos.map(c => c * COMMA);
-  const id = ((++turkN) << 24) | fromSteps(semis.map(x => Math.round(x * 2)));
-  TURK.set(id, { key, pos, semis });
-  return id;
-};
-export const turkCommas = (p) => TURK.get(p)?.pos;
-// Display code: the steps between notes in commas, e.g. 9·8·5·9·9·8·5
-const turkCode = (p) => { const c = TURK.get(p).pos; return c.map((x, i) => (c[i + 1] ?? 53) - x).join("·"); };
+// Pattern for a set of comma positions above the root (0 first): stored as cents
+export const turkPattern = (pos) => fromCents(pos.map(k => k * 1200 / 53), "53");
+export const isTurk = (p) => p > FULL && EXACT.get(p).system === "53";
 const cum = (iv) => iv.slice(0, -1).reduce((a, x) => [...a, a[a.length - 1] + x], [0]);
 // Seeds as steps in commas (each sums to 53). Rotations give the other makams.
 export const TURK_SEEDS = [
@@ -130,8 +171,7 @@ export const TURK_SEEDS = [
   { name: "Hicaz", iv: [5, 12, 5, 9, 8, 5, 9] },        // Hicaz tetrachord + Rast pentachord on Neva
   { name: "Bûselik", iv: [9, 4, 9, 9, 4, 9, 9] },       // Bûselik pentachord + Kürdî tetrachord on Hüseynî
 ].map(sd => ({ ...sd, pos: cum(sd.iv) }));
-const rotPos = (pos, k) => pos.map(x => ((x - pos[k]) % 53 + 53) % 53).sort((a, b) => a - b);
-export const turkRotations = (pos) => pos.map((_, k) => turkPattern(rotPos(pos, k)));
+export const turkRotations = (pos) => { const id = turkPattern(pos), c = centsOf(id); return c.map((_, k) => fromCents(rotCents(c, k), "53")); };
 // Named makams by their steps in commas
 export const TURK_NAMES = [
   [[9, 8, 5, 9, 9, 8, 5], "Rast"],

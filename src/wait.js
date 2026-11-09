@@ -5,7 +5,7 @@
 //   release : a little later than expected (drop varies per run), the 3rd arrives,
 //             one note, major or minor; the music finally has a mood and the pulse returns
 import { nextSusStop } from "./suspended.js";
-import { up12 } from "./scale24.js";
+import { up12, noteDist } from "./scale24.js";
 
 export const WAIT_PULSE_END = 0.35;
 export const WAIT_DROP_MIN = 0.80, WAIT_DROP_MAX = 0.88;
@@ -33,7 +33,7 @@ export const WAIT_VOICE = { pulse: "off", wait: "sus4", release: "triad" };
 
 export const addThird = (p, third) => p | (1 << (2 * third));   // third in semitones
 
-const diff = (a, b) => { let n = 0, x = a ^ b; while (x) { n += x & 1; x >>= 1; } return n; };
+const diff = noteDist;
 const nearestHold = cur => cur == null ? WAIT_HOLDS[0] : diff(WAIT_HOLDS[0], cur) <= diff(WAIT_HOLDS[1], cur) ? WAIT_HOLDS[0] : WAIT_HOLDS[1];
 
 // The scale for this pick. run keeps { hold, third, release, seen } between picks.

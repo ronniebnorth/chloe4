@@ -1,4 +1,4 @@
-import { up12, bright, toSemis, bitCt } from "./scale24.js";
+import { up12, bright, toSemis, bitCt, sharedNotes } from "./scale24.js";
 
 export const BRIGHTNESS_CONFIG = {
   neutralPattern:       up12(1709),   // Dorian — reference; neutral target in normalized space is 0.5
@@ -107,7 +107,7 @@ export function diatonicNeighborhood(pattern) {
   let maxShared = 0;
   let relatives = [];
   for (const mode of DIATONIC_MODES) {
-    const shared = countBits(pattern & mode.pattern);
+    const shared = sharedNotes(pattern, mode.pattern);
     if (shared > maxShared) { maxShared = shared; relatives = [mode.name]; }
     else if (shared === maxShared) relatives.push(mode.name);
   }
@@ -146,7 +146,7 @@ export function findClosestScale(normalizedTarget, catalogue, currentPattern, co
     if (config.noteCountPreference && currentNotes && entry.notes !== currentNotes) dist += 0.08;
     // Prefer common tones with current scale
     if (config.commonTonePreference && currentPattern) {
-      const shared = bitCt(entry.pattern & currentPattern);
+      const shared = sharedNotes(entry.pattern, currentPattern);
       dist -= shared * 0.01;
     }
     if (dist < bestScore) { bestScore = dist; best = entry; }

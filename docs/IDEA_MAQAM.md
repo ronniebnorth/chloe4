@@ -374,3 +374,37 @@ localStorage (`chloe-draw-pool`) and in the copied link (`dp=`). Only the
 draw journey uses it; other journeys still use all scales (the open
 "should brightness picks land on maqam?" question stands for them).
 Checked headless: with "turkish", picks stay on Turkish scales; no errors.
+
+## Pitch stored in cents — built 2026-11-08
+
+"Store in cents and get it done right." Every scale is now, at bottom, a
+list of pitches in cents above its root (`centsOf(p)` in `scale24.js`):
+
+- **Grid patterns** (≤ 2^24−1) are unchanged: 24 bits, one per quarter tone;
+  their cents are derived (bit i = i × 50 ¢). All 4,095 Chloe3 scales verified
+  identical (brightness, codes, crowding, rotation).
+- **Exact patterns** (> 2^24−1): `fromCents(list, system)` stores any pitch
+  list and returns a **stable ID** made from the pitches themselves (FNV hash
+  of cents rounded to 0.01, salted on the vanishingly rare collision). Same
+  scale, same ID every session, so favourites, likes and saved moments stay
+  attached. (The first Turkish version used load-order IDs that could
+  have shifted.)
+- `system` says how to show it: `"53"` → steps in commas (9·8·5…), notes
+  with comma marks (B⁻¹); `"cents"` → steps in cents (204·182·112…), notes
+  with cent offsets (E−14¢).
+- Exact scales keep their nearest 24-step shape (`approx`) for the few
+  things that count shared/different notes: `noteDist`, `sharedNotes`,
+  `bitCt`, suspended-scale checks, the Wait. Pitches, brightness, names,
+  intervals and the wheel all read exact cents.
+- Turkish makams are now `fromCents(commas × 1200/53, "53")`.
+- Checked: makam journey (Rast → Hicaz) headless, no console errors; a just-
+  intonation major (0 204 386 498 702 884 1088) round-trips with cents labels.
+
+Unlocked next (backlog):
+- **Real intonations** as cents scales: measured Arabic Bayati/Rast (the
+  Bayati 2nd varies by region), Persian koron as players tune it (Sanati's
+  thesis measured Shur/Dashti intervals), just intonation, Partch's 43.
+- **Key in cents**: let the root sit anywhere (Abu Ata on A½♭, Segah on its
+  koron tonic).
+- The wheel labels cents scales with comma marks; pass the scale's system to
+  it as the note list does.

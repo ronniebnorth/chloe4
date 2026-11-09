@@ -2324,7 +2324,6 @@ const journeyAt = (j, f, run) => {
   return out;
 };
 const patSemis = toSemis;
-const popcount = (x) => { let n = 0; while (x) { n += x & 1; x >>= 1; } return n; };
 
 // Arpeggio rhythm patterns: arrays of step durations in eighth-note units.
 // Single notes use each value directly; chords use value × 2.
@@ -2796,7 +2795,7 @@ function ScaleInfo({ sel, selName, selIvs, selNotes, demoKey, K }) {
           <span style={{ color: K.lbl, letterSpacing: 2, fontSize: 9 }}>INTERVALS</span>
           <span style={{ color: K.txt }}>{ivStr}</span>
           <span style={{ color: K.lbl, letterSpacing: 2, fontSize: 9 }}>DECIMAL</span>
-          <span style={{ color: K.t2 }}>{S24.isTurk(sel.pattern) ? "— (exact pitches, 53 commas per octave)" : S24.down24(sel.pattern) ?? sel.pattern}</span>
+          <span style={{ color: K.t2 }}>{S24.isExact(sel.pattern) ? `— (exact pitches: ${S24.centsOf(sel.pattern).map(Math.round).join(" ")} cents)` : S24.down24(sel.pattern) ?? sel.pattern}</span>
         </div>
       </div>
 
@@ -6855,7 +6854,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       }
       if (!entry && jv && cur && !isOutsideId(cur.id) && Math.abs(normalizedBrightness(cur.pattern) - jb) <= 0.12) {
         const scored = catalogue.filter(e => e.pat !== cur.pattern).map(e => {
-          const d = popcount(e.pat ^ cur.pattern);
+          const d = S24.noteDist(e.pat, cur.pattern);
           let sc = Math.abs(normalizedBrightness(e.pat) - jb) + 0.03 * d + Math.random() * 0.02;
           if (jv.tn !== undefined) sc += 0.4 * Math.abs(tensionOf(patSemis(e.pat)) - jv.tn);
           return { e, sc };
@@ -7282,10 +7281,9 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
   };
 
   const selSemis = morphSemis ? new Set(morphSemis) : sel ? new Set(toSemis(sel.pattern)) : new Set();
-  const selNotes = sel ? toSemis(sel.pattern).map(s => S24.noteName(rootIdx, s)) : [];
+  const selNotes = sel ? toSemis(sel.pattern).map(s => S24.noteName(rootIdx, s, S24.systemOf(sel.pattern))) : [];
   const selIvs = sel
-    ? (S24.isTurk(sel.pattern) ? S24.toBin(sel.pattern).split("·").map(k => k + "k")
-      : (() => { const s = toSemis(sel.pattern); return s.slice(1).map((v, i) => v - s[i]).concat(12 - s[s.length - 1]); })())
+    ? S24.intervalLabels(sel.pattern)
     : [];
   const selName = sel ? (KNOWN[sel.pattern] || customNames[sel.pattern] || null) : null;
 
@@ -8397,7 +8395,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                           <span style={{ color: isSel ? K.a : K.txt, fontSize: S24.isMicro(mode) ? 8 : 10, letterSpacing: S24.isMicro(mode) ? 0 : 1.5, fontWeight: isSel ? 500 : 300, minWidth: 130, whiteSpace: "nowrap", fontFamily: "inherit" }}>
                             {S24.toBin12(mode) ?? toBin(mode)}
                           </span>
-                          <span style={{ color: K.t2, fontSize: 9, minWidth: 40, whiteSpace: "nowrap" }}>({S24.isTurk(mode) ? "53" : S24.down24(mode) ?? mode})</span>
+                          <span style={{ color: K.t2, fontSize: 9, minWidth: 40, whiteSpace: "nowrap" }}>({S24.isTurk(mode) ? "53" : S24.isExact(mode) ? "¢" : S24.down24(mode) ?? mode})</span>
                           <span style={{ color: K.t2, fontSize: 9, opacity: 0.7, minWidth: 28 }}>{fam.outside ? "b—" : `b${bright(mode)}`}</span>
                           {name && (
                             <span style={{ color: isSel ? K.a : K.t1, fontSize: 10 }}>{name}</span>
@@ -9116,7 +9114,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
 
                 <Lbl K={K}>BINARY PATTERN</Lbl>
                 <div style={{ color: K.t2, fontSize: 10, letterSpacing: S24.isMicro(sel.pattern) ? 0.5 : 2, marginBottom: 2 }}>{S24.toBin12(sel.pattern) ?? toBin(sel.pattern)}</div>
-                <div style={{ color: K.t2, fontSize: 9, opacity: 0.6, marginBottom: 14 }}>{S24.isTurk(sel.pattern) ? "steps in commas, 53 per octave" : <>decimal {S24.down24(sel.pattern) ?? sel.pattern}{S24.isMicro(sel.pattern) ? " (24-step)" : ""}</>} · brightness {bright(sel.pattern)}</div>
+                <div style={{ color: K.t2, fontSize: 9, opacity: 0.6, marginBottom: 14 }}>{S24.isTurk(sel.pattern) ? "steps in commas, 53 per octave" : S24.isExact(sel.pattern) ? "steps in cents" : <>decimal {S24.down24(sel.pattern) ?? sel.pattern}{S24.isMicro(sel.pattern) ? " (24-step)" : ""}</>} · brightness {bright(sel.pattern)}</div>
 
                 <Lbl K={K}>KEYBOARD</Lbl>
                 <Piano active={selSemis} playing={playing} K={K} />
