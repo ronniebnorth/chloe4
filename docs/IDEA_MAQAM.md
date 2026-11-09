@@ -562,3 +562,17 @@ chords, sounding ones ring out; on = strings swell in. Saved
 (`chloe-sym-wander`); links carry `syw=1`. Checked headless: link turns it on,
 Listen shows "orchestra ~ out", no errors. Not yet checked: how the in/out
 transitions sound (fade lengths) by ear.
+
+## Makam journey moves within each makam + rotation ID fix — 2026-11-09
+
+- Each section briefly visits a related makam on the same home note
+  (`related` in `TURK_PATH`): about once a minute (first after 40–70 s, then
+  every 40–80 s after returning), for 15–30 s. Rast ↔ Rast descending,
+  Hüseynî ↔ Uşşak, Uşşak ↔ Hüseynî/Kürdî, Hicaz ↔ Uşşak. Key never moves.
+- **Bug fixed:** since the cents change, Turkish family rotations were made by
+  subtracting rounded cents, so some came out 0.01¢ off the same makam written
+  from commas → different IDs. Hüseynî, Kürdî and Rast (descending) lost their
+  sidebar names, and the makam journey's Hüseynî section fell back to random
+  scales. Rotations now happen in whole commas (`rotPos`). Verified: every
+  journey makam and every named makam is in a family; real-intonation names
+  all match too. Headless: Rast → Rast (descending) → Rast → Hüseynî.

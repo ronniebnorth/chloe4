@@ -2346,7 +2346,7 @@ JOURNEYS.shur = { label: "shur", home: S24.fromSteps(S24.SHUR_PATH[0].steps), pe
 // home note moves to Dügah for Hüseynî, Uşşak and the Hicaz peak, and back to Rast.
 // Oud (lute) and ney (shaku) take turns.
 JOURNEYS.makam = { label: "makam", home: S24.TURK_PATH[0].pat, persian: true, turkish: true, path: S24.TURK_PATH, bpm: 70,
-  tip: "Turkish makam, in true Turkish pitches (53 commas per octave, not Arabic quarter tones): opens on Rast, moves up to Hüseynî and Uşşak, peaks on Hicaz with its wide augmented second, and comes back down home to Rast. Oud and ney take turns.",
+  tip: "Turkish makam, in true Turkish pitches (53 commas per octave, not Arabic quarter tones): opens on Rast, moves up to Hüseynî and Uşşak, peaks on Hicaz with its wide augmented second, and comes back down home to Rast. About once a minute each section leans briefly into a related makam on the same home note and returns, as a taksim does. Oud and ney take turns.",
   pts: S24.TURK_PATH.map(st => {
     const b = { Rast: 0.35, "Hüseynî": 0.45, "Uşşak": 0.52, Hicaz: 0.7 }[st.name];
     return { at: st.at, b, t: 0.85 + 0.2 * (b - 0.35) / 0.35, rv: 0.75 - 0.15 * (b - 0.35) / 0.35, su: 1.3 };
@@ -7082,8 +7082,22 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
           const key = (persianRun.base + st.shift) % 12;
           if (key !== stRef.current.rootIdx) setRootIdx(key);
         }
-        const fam = FAMILIES.find(fm => fm.modes.includes(st.pat));
-        if (fam) entry = { fam, modeIdx: fam.modes.indexOf(st.pat), pat: st.pat };
+        // Moving within the makam: about once a minute a section leans into a related
+        // makam on the same home note for 15-30 s, then comes back home
+        let pat = st.pat;
+        if (st.related?.length) {
+          const now = Date.now(), v = persianRun.visit ??= { until: 0, next: now + 40000 + Math.random() * 30000, pat: null, home: st.pat };
+          if (v.home !== st.pat) { v.home = st.pat; v.until = 0; v.next = now + 40000 + Math.random() * 30000; }   // new section: settle first
+          if (now < v.until) pat = v.pat;
+          else if (now >= v.next) {
+            v.pat = st.related[Math.floor(Math.random() * st.related.length)];
+            v.until = now + 15000 + Math.random() * 15000;
+            v.next = v.until + 40000 + Math.random() * 40000;
+            pat = v.pat;
+          }
+        }
+        const fam = FAMILIES.find(fm => fm.modes.includes(pat));
+        if (fam) entry = { fam, modeIdx: fam.modes.indexOf(pat), pat };
         setSusTour(null);
       } else if (waitRun) {
         const regular = activeFamiliesRef.current.filter(fm => !fm.outside);

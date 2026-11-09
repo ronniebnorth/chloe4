@@ -171,7 +171,10 @@ export const TURK_SEEDS = [
   { name: "Hicaz", iv: [5, 12, 5, 9, 8, 5, 9] },        // Hicaz tetrachord + Rast pentachord on Neva
   { name: "Bûselik", iv: [9, 4, 9, 9, 4, 9, 9] },       // Bûselik pentachord + Kürdî tetrachord on Hüseynî
 ].map(sd => ({ ...sd, pos: cum(sd.iv) }));
-export const turkRotations = (pos) => { const id = turkPattern(pos), c = centsOf(id); return c.map((_, k) => fromCents(rotCents(c, k), "53")); };
+// Rotate in whole commas (not rounded cents), so a rotation gets exactly the same
+// pitches, and so the same ID, as the makam written straight from its commas
+const rotPos = (pos, k) => pos.map(x => ((x - pos[k]) % 53 + 53) % 53).sort((a, b) => a - b);
+export const turkRotations = (pos) => pos.map((_, k) => turkPattern(rotPos(pos, k)));
 // Named makams by their steps in commas
 export const TURK_NAMES = [
   [[9, 8, 5, 9, 9, 8, 5], "Rast"],
@@ -286,13 +289,22 @@ export const persianStation = (f, path = PERSIAN_PATH) => {
    usul = the darbuka cycle for that section (the "makam" beat): Düyek at home,
    Sofyan, Semai, then Aksak (9/8) for the Hicaz peak, Curcuna (10/8) on the way down. */
 const tp = (iv) => turkPattern(cum(iv));
+// related: makams on the same home note that a section visits briefly and returns
+// from, the way a taksim leans into a neighbour (one or two notes change, the key
+// doesn't): Rast ↔ Rast descending (leading tone drops 4 commas to F), Hüseynî ↔
+// Uşşak (the 6th), Uşşak ↔ Hüseynî / Kürdî (the 6th / the 2nd down a bakiye),
+// Hicaz ↔ Uşşak.
+const T = {
+  rast: tp([9, 8, 5, 9, 9, 8, 5]), rastDesc: tp([9, 8, 5, 9, 9, 4, 9]), huseyni: tp([8, 5, 9, 9, 8, 5, 9]),
+  ussak: tp([8, 5, 9, 9, 4, 9, 9]), hicaz: tp([5, 12, 5, 9, 8, 5, 9]), kurdi: tp([4, 9, 9, 9, 4, 9, 9]),
+};
 export const TURK_PATH = [
-  { at: 0.00, name: "Rast", shift: 0, usul: "duyek", pat: tp([9, 8, 5, 9, 9, 8, 5]) },
-  { at: 0.20, name: "Hüseynî", shift: 2, usul: "sofyan", pat: tp([8, 5, 9, 9, 8, 5, 9]) },
-  { at: 0.38, name: "Uşşak", shift: 2, usul: "semai", pat: tp([8, 5, 9, 9, 4, 9, 9]) },
-  { at: 0.56, name: "Hicaz", shift: 2, usul: "aksak", pat: tp([5, 12, 5, 9, 8, 5, 9]) },
-  { at: 0.76, name: "Uşşak", shift: 2, usul: "curcuna", pat: tp([8, 5, 9, 9, 4, 9, 9]) },
-  { at: 0.88, name: "Rast", shift: 0, usul: "duyek", pat: tp([9, 8, 5, 9, 9, 8, 5]) },
+  { at: 0.00, name: "Rast", shift: 0, usul: "duyek", pat: T.rast, related: [T.rastDesc] },
+  { at: 0.20, name: "Hüseynî", shift: 2, usul: "sofyan", pat: T.huseyni, related: [T.ussak] },
+  { at: 0.38, name: "Uşşak", shift: 2, usul: "semai", pat: T.ussak, related: [T.huseyni, T.kurdi] },
+  { at: 0.56, name: "Hicaz", shift: 2, usul: "aksak", pat: T.hicaz, related: [T.ussak] },
+  { at: 0.76, name: "Uşşak", shift: 2, usul: "curcuna", pat: T.ussak, related: [T.huseyni, T.kurdi] },
+  { at: 0.88, name: "Rast", shift: 0, usul: "duyek", pat: T.rast, related: [T.rastDesc] },
 ];
 
 /* ── Real intonation: scales that exist only in cents ─────────────────────
