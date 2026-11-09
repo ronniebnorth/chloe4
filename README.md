@@ -5,8 +5,12 @@ An interactive musical scale explorer built on binary scale encoding. Every poss
 **Chloe4** keeps all of that and goes past the piano's 12 notes. Every scale is stored as its pitches in cents, so it holds:
 - **Arabic maqam and Persian dastgah** on a 24-step quarter-tone grid (Rast, Bayati, Saba, Huzam, Chahargah, Homayun…).
 - **Turkish makam** in true Turkish pitches, 53 commas per octave (Rast, Uşşak, Hicaz, Bûselik, Hüseynî, Kürdî).
-- **Real intonations**: just and Pythagorean tunings, the overtone series, and Persian Shur as measured from players.
-- **Journeys** through them: *persia* (a tour of the dastgahs), *shur* (inside one dastgah, the home note climbing), and *makam* (Turkish, with a darbuka playing usuls like Aksak 9/8). Drawn journeys can be limited to one tradition or tuning.
+- **Byzantine chant** in its own 72 moria per octave (the diatonic, soft and hard chromatic modes).
+- **Real intonations**: just and Pythagorean tunings, the overtone series, Persian Shur as measured from players, and the Chinese pentatonic and old heptatonic in pure fifths.
+- **Key in cents**: the home note can sit between the piano's notes (Abu Ata on a half-flat, Dügah 9 commas above Rast, a key drifting by commas), and every voice, drone and sample follows.
+- **Journeys** through them: *persia* (a tour of the dastgahs), *shur* (inside one dastgah, the home note climbing), *makam* (Turkish, with a darbuka playing usuls like Aksak 9/8), *byzantine* (chant over the ison), and *spiral* (the Chinese pentatonic climbing a pure fifth at a time, drifting by the Pythagorean comma: Jing Fang's 53 fifths, then Qian Lezhi's chain of 360). Drawn journeys can be limited to one tradition or tuning.
+- **Voices**: a sampled choir and "oohs", and a synthesised chant voice that sings any microtone exactly; an ison drone of low voices.
+- **More controls**: RESOLUTION (12 to 1200 steps per octave), BRIGHT FEEL (brightness as the ear remembers it), MOOD (chill to epic), WORLD SCALES (how often world scales come up), each with a wander.
 
 Design notes, sources and the backlog: [docs/IDEA_MAQAM.md](docs/IDEA_MAQAM.md). Chloe3 (12 notes) lives on at [ronniebnorth.github.io/chloe3](https://ronniebnorth.github.io/chloe3/).
 
