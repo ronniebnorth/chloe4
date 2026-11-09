@@ -547,3 +547,7 @@ outside chance. Applies to free Auto and brightness-picking journeys (not
 Persia/Shur/Makam or a limited draw pool). Saved (`chloe-world-share`); links
 carry `ws=`. Checked headless at 100%: Just Dorian, Just Mixolydian, a Shur-as-
 played mode, a Turkish makam, Chahargah; no errors.
+- Then: **world scales wander** (waves 5.3 / 2.1 min at 1×, speed ¼–4×,
+  range 5–100%; full range sweeps Western-only ↔ world-only). Saved
+  (`chloe-world-wander`, `-wspeed`, `-wrange`); links carry `wsw=`, `wss=`,
+  `wsr=`. Checked headless: share drifted 0 → 6 → 11% at 4×.
