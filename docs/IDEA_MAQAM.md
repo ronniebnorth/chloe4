@@ -298,3 +298,47 @@ western 12 tone music, with slight bends... like guitar players do."*
   instruments can bend through a detune ramp. Needs: a per-note bend
   envelope in the note player, a probability/amount control (log curve),
   and rules for which degrees bend (blue 3rd, ♭7, 4th → 5th).
+
+## Where Chloe's resolution is headed — Ronnie, 2026-11-08
+
+*"I'm making Chloe higher resolution."* Each step up reaches more of the
+world's music, and the core idea (a scale = a root-first string of notes;
+brightness = sum of note positions) carries over unchanged:
+
+- **12 per octave** (Chloe1–3): Western music, anything on a piano.
+- **24** (Chloe4): Arabic maqam, Persian dastgah (Vaziri's grid), blues
+  blue notes.
+- **53** (Turkish makam theory, Arel-Ezgi-Uzdilek: 9 commas per whole tone).
+- **Cents** (any pitch): guitar bends, real players' intonation, any tuning.
+  Chloe4's Turkish makams (below) are the first step toward that: their
+  notes are stored as exact pitches, not grid positions.
+
+## Turkish makam — built 2026-11-08
+
+- **Exact pitches, not the 24 grid.** Turkish makams are stored as positions
+  in commas (53 per octave, Arel-Ezgi-Uzdilek; whole tone = 9 commas). A
+  Turkish pattern number = a tag in the high bits (`turkN << 24`) plus the
+  nearest 24-step shape (used for the wheel grid, crowding and comparisons);
+  `toSemis` and `bright` read the exact pitches from the `TURK` table in
+  `scale24.js`. This is the first step toward pitch in cents.
+- Families (sidebar group TURKISH MAKAM · 53 COMMAS), from seeds in commas:
+  Rast 9·8·5·9·9·8·5 (modes incl. Hüseynî), Uşşak 8·5·9·9·4·9·9 (= Rast
+  descending's notes), Hicaz 5·12·5·9·8·5·9, Bûselik 9·4·9·9·4·9·9 (modes
+  incl. Kürdî). Codes shown as steps in commas; intervals as "9k - 8k …";
+  notes named with comma marks (B⁻¹ = B one comma flat; segah perde).
+- Journey **makam**: Rast (tonic) → Hüseynî (home moves to Dügah, +2) →
+  Uşşak → Hicaz (peak) → Uşşak → Rast. 70 BPM; oud (lute) and ney (shaku)
+  take turns; key holds except for the station moves.
+- Sources: Wikipedia "Turkish makam" (comma sizes of B/S/K/T/A; Rast = Rast
+  pentachord + Rast tetrachord on Neva; Uşşak = Uşşak tetrachord + Bûselik
+  pentachord on Neva; Rast descending drops the leading tone 4 commas to
+  Acem; Bûselik = Bûselik pentachord + Kürdî tetrachord). Hicaz tetrachord
+  taken as S·A·S = 5·12·5 (the AEU textbook form; the Wikipedia note table
+  suggests performers vary).
+- Checked headless with the clock fast-forwarded (Rast on C): C D E⁻¹ F G A
+  B⁻¹ → D Hüseynî (same notes) → D Uşşak (6th drops) → D Hicaz → C Rast.
+  Wheel draws the comma notes at their exact angles. No console errors. Not
+  yet listened to.
+- Not yet: Saba, Segah, Hüzzam, Nihavend, Karcığar, Suzinak (check each
+  against a source); seyir direction (ascending vs descending makams);
+  makam-specific çeşni (flavour) phrases.

@@ -18,13 +18,13 @@ export const up12 = (p12) => {
 
 // 24-bit → 12-bit, or null if the scale has a quarter tone
 export const down24 = (p) => {
-  if (p & 0xaaaaaa) return null;
+  if (p > FULL || (p & 0xaaaaaa)) return null;
   let r = 0;
   for (let i = 0; i < 12; i++) if ((p >> (2 * i)) & 1) r |= 1 << i;
   return r;
 };
 
-export const isMicro = (p) => (p & 0xaaaaaa) !== 0;
+export const isMicro = (p) => p > FULL || (p & 0xaaaaaa) !== 0;
 
 // Rotate by n quarter steps (the note n quarter steps up becomes the new root)
 export const rot24 = (p, n) => {
@@ -32,7 +32,7 @@ export const rot24 = (p, n) => {
   return ((p >>> n) | (p << (Q - n))) & FULL;
 };
 
-export const bitCt = (p) => { let n = 0; while (p) { n += p & 1; p >>>= 1; } return n; };
+export const bitCt = (p) => { p &= FULL; let n = 0; while (p) { n += p & 1; p >>>= 1; } return n; };
 
 // Quarter-step positions of the notes
 export const toSteps = (p) => {
@@ -42,10 +42,10 @@ export const toSteps = (p) => {
 };
 
 // Semitones above the root (fractional for quarter tones)
-export const toSemis = (p) => toSteps(p).map(i => i / 2);
+export const toSemis = (p) => p > FULL ? TURK.get(p).semis.slice() : toSteps(p).map(i => i / 2);
 
 // Root-first 24-digit code
-export const toBin = (p) => Array.from({ length: Q }, (_, i) => (p >> i) & 1).join("");
+export const toBin = (p) => p > FULL ? turkCode(p) : Array.from({ length: Q }, (_, i) => (p >> i) & 1).join("");
 
 // Root-first 12-digit Chloe3 code, or null for quarter-tone scales
 export const toBin12 = (p) => {
@@ -54,7 +54,7 @@ export const toBin12 = (p) => {
 };
 
 // Brightness: sum of note positions in semitones (Chloe3's numbers; halves for quarter tones)
-export const bright = (p) => toSteps(p).reduce((s, i) => s + i, 0) / 2;
+export const bright = (p) => p > FULL ? +TURK.get(p).semis.reduce((a, b) => a + b, 0).toFixed(1) : toSteps(p).reduce((s, i) => s + i, 0) / 2;
 
 // Crowding: three notes inside one whole tone (4 quarter steps), circular.
 // For 12-note scales this is exactly Chloe3's "3 consecutive semitones".
@@ -89,10 +89,59 @@ const CHROM = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A�
 export const noteName = (rootIdx, semi) => {
   const x = ((rootIdx + semi) % 12 + 12) % 12;
   if (Number.isInteger(x)) return CHROM[x];
-  const up = Math.ceil(x) % 12;
-  if (CHROM[up].length === 1) return CHROM[up] + "½♭";
-  return CHROM[Math.floor(x)] + "½♯";
+  if (Number.isInteger(x * 2)) {
+    const up = Math.ceil(x) % 12;
+    if (CHROM[up].length === 1) return CHROM[up] + "½♭";
+    return CHROM[Math.floor(x)] + "½♯";
+  }
+  // Off the quarter-tone grid (Turkish): nearest semitone, then commas up/down: B⁻¹
+  const n = Math.round(x), k = Math.round((x - n) * 53 / 12);
+  const sup = String(Math.abs(k)).split("").map(d => "⁰¹²³⁴⁵⁶⁷⁸⁹"[d]).join("");
+  return CHROM[n % 12] + (k ? (k < 0 ? "⁻" : "⁺") + sup : "");
 };
+
+/* ── Turkish makam: exact pitches, 53 commas per octave (Arel-Ezgi-Uzdilek) ──
+   A whole tone is 9 commas. Interval names: B bakiye 4, S küçük mücennep 5,
+   K büyük mücennep 8, T tanini 9, A artık ikili 12. These scales are stored
+   as exact pitches, not on the 24-step grid: the pattern number is a tag in
+   the high bits plus the nearest 24-step shape (for the wheel and
+   comparisons), and toSemis/bright read the exact pitches from TURK. */
+export const COMMA = 12 / 53;   // in semitones (about 22.6 cents)
+const TURK = new Map();
+let turkN = 0;
+export const isTurk = (p) => p > FULL;
+// Pattern for a set of comma positions above the root (0 first)
+export const turkPattern = (pos) => {
+  const key = pos.join(",");
+  for (const [id, v] of TURK) if (v.key === key) return id;
+  const semis = pos.map(c => c * COMMA);
+  const id = ((++turkN) << 24) | fromSteps(semis.map(x => Math.round(x * 2)));
+  TURK.set(id, { key, pos, semis });
+  return id;
+};
+export const turkCommas = (p) => TURK.get(p)?.pos;
+// Display code: the steps between notes in commas, e.g. 9·8·5·9·9·8·5
+const turkCode = (p) => { const c = TURK.get(p).pos; return c.map((x, i) => (c[i + 1] ?? 53) - x).join("·"); };
+const cum = (iv) => iv.slice(0, -1).reduce((a, x) => [...a, a[a.length - 1] + x], [0]);
+// Seeds as steps in commas (each sums to 53). Rotations give the other makams.
+export const TURK_SEEDS = [
+  { name: "Rast", iv: [9, 8, 5, 9, 9, 8, 5] },          // Rast pentachord + Rast tetrachord on Neva
+  { name: "Uşşak", iv: [8, 5, 9, 9, 4, 9, 9] },         // Uşşak tetrachord + Bûselik pentachord on Neva
+  { name: "Hicaz", iv: [5, 12, 5, 9, 8, 5, 9] },        // Hicaz tetrachord + Rast pentachord on Neva
+  { name: "Bûselik", iv: [9, 4, 9, 9, 4, 9, 9] },       // Bûselik pentachord + Kürdî tetrachord on Hüseynî
+].map(sd => ({ ...sd, pos: cum(sd.iv) }));
+const rotPos = (pos, k) => pos.map(x => ((x - pos[k]) % 53 + 53) % 53).sort((a, b) => a - b);
+export const turkRotations = (pos) => pos.map((_, k) => turkPattern(rotPos(pos, k)));
+// Named makams by their steps in commas
+export const TURK_NAMES = [
+  [[9, 8, 5, 9, 9, 8, 5], "Rast"],
+  [[8, 5, 9, 9, 8, 5, 9], "Hüseynî"],                    // Rast's notes seen from Dügah (A)
+  [[8, 5, 9, 9, 4, 9, 9], "Uşşak"],
+  [[5, 12, 5, 9, 8, 5, 9], "Hicaz"],
+  [[9, 4, 9, 9, 4, 9, 9], "Bûselik"],
+  [[4, 9, 9, 9, 4, 9, 9], "Kürdî"],
+  [[9, 8, 5, 9, 9, 4, 9], "Rast (descending)"],          // the leading tone drops 4 commas to Acem (F)
+].map(([iv, name]) => [turkPattern(cum(iv)), name]);
 
 /* ── Maqam catalogue (Arabic, 24-step teaching grid) ─────────────────────
    Quarter-step positions above the root, ascending form. Each entry seeds a
@@ -185,5 +234,21 @@ export const SHUR_PATH = [
 export const persianStation = (f, path = PERSIAN_PATH) => {
   let st = path[0];
   for (const s of path) if (f >= s.at) st = s;
-  return { ...st, pat: fromSteps(st.steps) };
+  return { ...st, pat: st.pat ?? fromSteps(st.steps) };
 };
+
+/* ── Turkish journey (makam): a seyir-like path around Rast ──
+   Rast on its tonic (G, Rast perde), then the home note moves up a whole tone to
+   Dügah (A): Hüseynî (Rast's own notes seen from A), Uşşak (the 6th drops to
+   F), Hicaz (the augmented second, the peak), back through Uşşak, then home to
+   Rast. Chloe's key moves exactly 2 semitones (200 cents) for the A stations;
+   a Turkish whole tone is 9 commas (204 cents), 4 cents wider: too small to hear. */
+const tp = (iv) => turkPattern(cum(iv));
+export const TURK_PATH = [
+  { at: 0.00, name: "Rast", shift: 0, pat: tp([9, 8, 5, 9, 9, 8, 5]) },
+  { at: 0.20, name: "Hüseynî", shift: 2, pat: tp([8, 5, 9, 9, 8, 5, 9]) },
+  { at: 0.38, name: "Uşşak", shift: 2, pat: tp([8, 5, 9, 9, 4, 9, 9]) },
+  { at: 0.56, name: "Hicaz", shift: 2, pat: tp([5, 12, 5, 9, 8, 5, 9]) },
+  { at: 0.76, name: "Uşşak", shift: 2, pat: tp([8, 5, 9, 9, 4, 9, 9]) },
+  { at: 0.88, name: "Rast", shift: 0, pat: tp([9, 8, 5, 9, 9, 8, 5]) },
+];

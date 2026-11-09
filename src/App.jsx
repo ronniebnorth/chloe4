@@ -114,6 +114,7 @@ const KNOWN12 = {
 // Western name get both ("Phrygian · Kurd") so either searches.
 const KNOWN = Object.fromEntries(Object.entries(KNOWN12).map(([k, v]) => [up12(+k), v]));
 for (const [k, v] of Object.entries(S24.MAQAM_NAMES)) KNOWN[k] = KNOWN[k] ? `${KNOWN[k]} · ${v}` : v;
+for (const [k, v] of S24.TURK_NAMES) KNOWN[k] = v;
 
 // Duduk (Armenian, apricot wood, a big double reed on a cylindrical bore):
 // odd harmonics strong, even ones softer, then a voice-like mouth of formants.
@@ -733,7 +734,7 @@ const BEAT_PATTERNS = {
 // main ids never shift.
 function buildFamilies() {
   const test = { id: "x-tet-qt", n: 4, canon: S24.QUARTER_TEST, modes: [S24.QUARTER_TEST], outside: true, test: true };
-  return [...buildFamilySet(false), ...buildMaqamFamilies(), ...buildFamilySet(true), test];
+  return [...buildFamilySet(false), ...buildMaqamFamilies(), ...buildTurkFamilies(), ...buildFamilySet(true), test];
 }
 
 // 12-note families: Chloe3's generator over 12-bit patterns, lifted to 24 steps.
@@ -766,6 +767,14 @@ function buildFamilySet(outside) {
       cnt[n] = (cnt[n] || 0) + 1;
       return { id: `${outside ? "x-" : ""}${pfx[n]}-${cnt[n]}`, n, canon: up12(canon), modes, outside };
     });
+}
+
+// Turkish makam families: exact pitches in commas, rotated over 53.
+function buildTurkFamilies() {
+  return S24.TURK_SEEDS.map((seed, k) => {
+    const modes = S24.turkRotations(seed.pos).sort((a, b) => bright(b) - bright(a));
+    return { id: `trk-${k + 1}`, n: seed.pos.length, canon: modes[0], modes, outside: false, turkish: true };
+  });
 }
 
 // Maqam families: each catalogue seed and its rotations over 24 steps.
@@ -825,7 +834,8 @@ function makeHall(ac, rt60 = 6, pre = 0.05) {
 // outside-scale median 0.30. Mapped 0.20 → 0 (calm) .. 0.33 → 1 (urgent).
 const CLASH = { 1: 1, 11: 1, 6: 0.6, 2: 0.25, 10: 0.25 };
 // Clash for an interval in semitones; a quarter tone takes the rougher neighbour
-const clashOf = (d) => Number.isInteger(d) ? CLASH[d] || 0 : Math.max(CLASH[Math.floor(d)] || 0, CLASH[Math.ceil(d) % 12] || 0);
+// (Turkish comma intervals are first rounded to the nearest quarter tone: an 8-comma 2nd is a neutral 2nd, not a semitone)
+const clashOf = (d) => { d = Math.round(d * 2) / 2; return Number.isInteger(d) ? CLASH[d % 12] || 0 : Math.max(CLASH[Math.floor(d)] || 0, CLASH[Math.ceil(d) % 12] || 0); };
 const tensionOf = (semis) => {
   const pcs = [...new Set(semis.map(x => ((x % 12) + 12) % 12))];
   let sum = 0, n = 0;
@@ -1964,7 +1974,8 @@ const JUNGLE_SCALES = lift([[661, 3], [1193, 3], [1709, 1], [1717, 1], [2741, 1]
 const GRP_NAME = { 3: "Tritonic", 4: "Tetratonic", 5: "Pentatonic", 6: "Hexatonic", 7: "Heptatonic", 8: "Octatonic" };
 const GRP_PFX  = { 3: "tri", 4: "tet", 5: "pen", 6: "hex", 7: "hep", 8: "oct" };
 // Sidebar group key — outside families get their own groups below the main ones
-const grpKey = (fam) => fam.maqam ? "maq" : (fam.outside ? "x-" : "") + GRP_PFX[fam.n];
+const grpKey = (fam) => fam.turkish ? "trk" : fam.maqam ? "maq" : (fam.outside ? "x-" : "") + GRP_PFX[fam.n];
+const grpRank = (fam) => fam.turkish ? 2 : fam.maqam ? 1 : 0;
 // Outside scales are passing colour, not a brightness position: brightness/EEG
 // picks never choose them, and auto mode drops one in on this share of picks.
 const OUTSIDE_CHANCE = 0.33;
@@ -2263,6 +2274,15 @@ JOURNEYS.shur = { label: "shur", home: S24.fromSteps(S24.SHUR_PATH[0].steps), pe
     const b = { 0: 0.3, 3: 0.45, 5: 0.56, 7: 0.68 }[st.shift];
     return { at: st.at, b, t: 0.85 + 0.2 * (b - 0.3) / 0.38, rv: 0.8 - 0.15 * (b - 0.3) / 0.38, su: 1.3 };
   }).concat([{ at: 1, b: 0.3, t: 0.85, rv: 0.85, su: 1.4 }]) };
+// Makam: Turkish, exact 53-comma pitches (see TURK_PATH in scale24.js). Rast, then the
+// home note moves to Dügah for Hüseynî, Uşşak and the Hicaz peak, and back to Rast.
+// Oud (lute) and ney (shaku) take turns.
+JOURNEYS.makam = { label: "makam", home: S24.TURK_PATH[0].pat, persian: true, turkish: true, path: S24.TURK_PATH, bpm: 70,
+  tip: "Turkish makam, in true Turkish pitches (53 commas per octave, not Arabic quarter tones): opens on Rast, moves up to Hüseynî and Uşşak, peaks on Hicaz with its wide augmented second, and comes back down home to Rast. Oud and ney take turns.",
+  pts: S24.TURK_PATH.map(st => {
+    const b = { Rast: 0.35, "Hüseynî": 0.45, "Uşşak": 0.52, Hicaz: 0.7 }[st.name];
+    return { at: st.at, b, t: 0.85 + 0.2 * (b - 0.35) / 0.35, rv: 0.75 - 0.15 * (b - 0.35) / 0.35, su: 1.3 };
+  }).concat([{ at: 1, b: 0.35, t: 0.85, rv: 0.8, su: 1.4 }]) };
 // Draw: a journey whose shape you draw on the Listen stage. The line lives here so the
 // journey clock, the cards and the stage all read the same one; it can change mid-journey.
 let drawnLine = defaultLine();
@@ -2608,13 +2628,11 @@ function Visualizer({ analyserRef, playing, rootIdx, active, K }) {
         ctx.stroke();
 
         // Polygon over 24 quarter-tone positions (semitone s sits at position 2s)
-        const activePts = [];
-        for (let k = 0; k < 24; k++) {
-          if (act.has(k / 2)) {
-            const a = (k / 24) * Math.PI * 2 - Math.PI / 2;
-            activePts.push([cx + wheelR * Math.cos(a), cy + wheelR * Math.sin(a)]);
-          }
-        }
+        // (exact angles, so Turkish notes between the grid points land where they sound)
+        const activePts = [...act].map(x => ((x % 12) + 12) % 12).sort((u, v) => u - v).map(x => {
+          const a = (x / 12) * Math.PI * 2 - Math.PI / 2;
+          return [cx + wheelR * Math.cos(a), cy + wheelR * Math.sin(a)];
+        });
         if (activePts.length >= 2) {
           ctx.beginPath();
           ctx.moveTo(activePts[0][0], activePts[0][1]);
@@ -2665,6 +2683,20 @@ function Visualizer({ analyserRef, playing, rootIdx, active, K }) {
 
           ctx.fillStyle = isPlaying ? "#000" : isActive ? Kc.a : Kc.whTxt;
           ctx.fillText(label, x, y + 0.5);
+        }
+        // Notes off the quarter-tone grid (Turkish commas): their own dot at the exact angle
+        for (const s of act) {
+          if (Number.isInteger(s * 2)) continue;
+          const a = (s / 12) * Math.PI * 2 - Math.PI / 2, x = cx + wheelR * Math.cos(a), y = cy + wheelR * Math.sin(a);
+          const isPlaying = playingRef.current !== null && Math.abs(playingRef.current - s) < 1e-6;
+          ctx.font = `500 ${Math.max(6, Math.round(fontSize * 0.72))}px 'JetBrains Mono', monospace`;
+          ctx.beginPath();
+          ctx.arc(x, y, dotR * 0.85 - 1, 0, Math.PI * 2);
+          ctx.fillStyle = isPlaying ? Kc.a : Kc.a + "30";
+          ctx.fill();
+          ctx.strokeStyle = Kc.a; ctx.lineWidth = 1.5; ctx.stroke();
+          ctx.fillStyle = isPlaying ? "#000" : Kc.a;
+          ctx.fillText(S24.noteName(rootOff, s), x, y + 0.5);
         }
       }
     };
@@ -2756,7 +2788,7 @@ function ScaleInfo({ sel, selName, selIvs, selNotes, demoKey, K }) {
           <span style={{ color: K.lbl, letterSpacing: 2, fontSize: 9 }}>INTERVALS</span>
           <span style={{ color: K.txt }}>{ivStr}</span>
           <span style={{ color: K.lbl, letterSpacing: 2, fontSize: 9 }}>DECIMAL</span>
-          <span style={{ color: K.t2 }}>{sel.pattern}</span>
+          <span style={{ color: K.t2 }}>{S24.isTurk(sel.pattern) ? "— (exact pitches, 53 commas per octave)" : S24.down24(sel.pattern) ?? sel.pattern}</span>
         </div>
       </div>
 
@@ -4411,8 +4443,10 @@ export default function Chloe() {
       const { rootIdx: ri, timbre: t, noteVol: nv, aRef: ar, tuning: tu } = stRef.current;
       const b = tg.cur ?? stRef.current.bpm;
       let inst = stRef.current.instrument;
-      if (JOURNEYS[journeyRef.current?.id]?.persian) {   // santur and kamancheh take turns, 24-48 notes each
-        if (--persiaLeft < 0) { persiaInst = persiaInst === "dulcimer" ? "fiddle" : "dulcimer"; persiaLeft = 24 + Math.floor(Math.random() * 24); }
+      if (JOURNEYS[journeyRef.current?.id]?.persian) {   // santur & kamancheh (Persian) or oud & ney (Turkish) take turns, 24-48 notes each
+        const pair = JOURNEYS[journeyRef.current.id].turkish ? ["lute", "shaku"] : ["dulcimer", "fiddle"];
+        if (!pair.includes(persiaInst)) persiaInst = pair[0];
+        if (--persiaLeft < 0) { persiaInst = persiaInst === pair[0] ? pair[1] : pair[0]; persiaLeft = 24 + Math.floor(Math.random() * 24); }
         inst = persiaInst;
       }
       else if (isOcean(stRef.current)) inst = "whale";
@@ -7046,12 +7080,12 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (!filter.trim()) return base;
     const terms = filter.split(",").map(t => t.trim().toLowerCase()).filter(Boolean);
     // A full id like "tet-5.0" (as patterns shows it) is one mode of one family: just that mode
-    const isId = t => /^(x-)?(tri|tet|pen|hex|hep|oct|maq)-\d+\.\d+$/.test(t);
+    const isId = t => /^(x-)?(tri|tet|pen|hex|hep|oct|maq|trk)-\d+\.\d+$/.test(t);
     const ids = terms.filter(isId), loose = terms.filter(t => !isId(t));
     return base.map(f => {
       if (loose.some(t =>
         f.id.includes(t) ||
-        (f.maqam ? "maqam" : GRP_PFX[f.n]).startsWith(t) ||
+        (f.turkish ? "makam" : f.maqam ? "maqam" : GRP_PFX[f.n]).startsWith(t) ||
         f.modes.some(m =>
           (/^[01]+$/.test(t) ? (t.length > 12 ? toBin(m).includes(t) : (S24.toBin12(m) ?? "").includes(t)) : false) ||
           (KNOWN[m] || customNames[m] || "").toLowerCase().includes(t) ||
@@ -7186,7 +7220,8 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
   const selSemis = morphSemis ? new Set(morphSemis) : sel ? new Set(toSemis(sel.pattern)) : new Set();
   const selNotes = sel ? toSemis(sel.pattern).map(s => S24.noteName(rootIdx, s)) : [];
   const selIvs = sel
-    ? (() => { const s = toSemis(sel.pattern); return s.slice(1).map((v, i) => v - s[i]).concat(12 - s[s.length - 1]); })()
+    ? (S24.isTurk(sel.pattern) ? S24.toBin(sel.pattern).split("·").map(k => k + "k")
+      : (() => { const s = toSemis(sel.pattern); return s.slice(1).map((v, i) => v - s[i]).concat(12 - s[s.length - 1]); })())
     : [];
   const selName = sel ? (KNOWN[sel.pattern] || customNames[sel.pattern] || null) : null;
 
@@ -8235,7 +8270,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
           {Object.keys(grouped).sort((a, b) => {
             const fa = grouped[a][0], fb = grouped[b][0];
-            return (fa.outside - fb.outside) || (!!fa.maqam - !!fb.maqam) || fa.n - fb.n;
+            return (fa.outside - fb.outside) || (grpRank(fa) - grpRank(fb)) || fa.n - fb.n;
           }).map(gk => {
             const fams = grouped[gk], n = fams[0].n, outside = fams[0].outside, exp = isExp(gk);
             return (
@@ -8246,7 +8281,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                   display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
                   position: "sticky", top: 0, zIndex: 10, userSelect: "none",
                 }}>
-                  <span style={{ color: K.a, fontSize: 9, letterSpacing: 3, fontWeight: 600 }}>{fams[0].maqam ? "MAQAM · DASTGAH · QUARTER TONES" : <>{outside ? "OUTSIDE · " : ""}{GRP_NAME[n].toUpperCase()}</>}</span>
+                  <span style={{ color: K.a, fontSize: 9, letterSpacing: 3, fontWeight: 600 }}>{fams[0].turkish ? "TURKISH MAKAM · 53 COMMAS" : fams[0].maqam ? "MAQAM · DASTGAH · QUARTER TONES" : <>{outside ? "OUTSIDE · " : ""}{GRP_NAME[n].toUpperCase()}</>}</span>
                   <span style={{ color: K.txt, fontSize: 9 }}>{fams.length} scale{fams.length !== 1 ? "s" : ""}</span>
                   <span style={{ marginLeft: "auto", color: K.txt, fontSize: 11 }}>{exp ? "▾" : "▸"}</span>
                 </div>
@@ -8294,7 +8329,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                           <span style={{ color: isSel ? K.a : K.txt, fontSize: S24.isMicro(mode) ? 8 : 10, letterSpacing: S24.isMicro(mode) ? 0 : 1.5, fontWeight: isSel ? 500 : 300, minWidth: 130, whiteSpace: "nowrap", fontFamily: "inherit" }}>
                             {S24.toBin12(mode) ?? toBin(mode)}
                           </span>
-                          <span style={{ color: K.t2, fontSize: 9, minWidth: 40, whiteSpace: "nowrap" }}>({S24.down24(mode) ?? mode})</span>
+                          <span style={{ color: K.t2, fontSize: 9, minWidth: 40, whiteSpace: "nowrap" }}>({S24.isTurk(mode) ? "53" : S24.down24(mode) ?? mode})</span>
                           <span style={{ color: K.t2, fontSize: 9, opacity: 0.7, minWidth: 28 }}>{fam.outside ? "b—" : `b${bright(mode)}`}</span>
                           {name && (
                             <span style={{ color: isSel ? K.a : K.t1, fontSize: 10 }}>{name}</span>
@@ -9013,7 +9048,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
 
                 <Lbl K={K}>BINARY PATTERN</Lbl>
                 <div style={{ color: K.t2, fontSize: 10, letterSpacing: S24.isMicro(sel.pattern) ? 0.5 : 2, marginBottom: 2 }}>{S24.toBin12(sel.pattern) ?? toBin(sel.pattern)}</div>
-                <div style={{ color: K.t2, fontSize: 9, opacity: 0.6, marginBottom: 14 }}>decimal {S24.down24(sel.pattern) ?? sel.pattern}{S24.isMicro(sel.pattern) ? " (24-step)" : ""} · brightness {bright(sel.pattern)}</div>
+                <div style={{ color: K.t2, fontSize: 9, opacity: 0.6, marginBottom: 14 }}>{S24.isTurk(sel.pattern) ? "steps in commas, 53 per octave" : <>decimal {S24.down24(sel.pattern) ?? sel.pattern}{S24.isMicro(sel.pattern) ? " (24-step)" : ""}</>} · brightness {bright(sel.pattern)}</div>
 
                 <Lbl K={K}>KEYBOARD</Lbl>
                 <Piano active={selSemis} playing={playing} K={K} />
