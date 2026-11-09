@@ -530,3 +530,8 @@ journey with wander, no console errors. To tune by ear: the 0.18 tempo and
   Persia/Shur ≥ 24 (never lowered), with a note beside the slider for 10 s.
 - Checked headless: resolution 12 → Makam start → 53 with the note; lute
   dashed while the journey plays.
+- 2026-11-09: the two NOTES sliders were confusing (no sign which was "fewest"
+  and which "most"), so they became **number buttons 3–12 + all**: click one
+  = only that size, click a second = the span between, click the single one
+  again or "all" = every size. 9–12 are dimmed while outside is off.
+  Checked headless: 5 → [5]; then 7 → [5 6 7]; 9 → [9]; 9 again → all.
