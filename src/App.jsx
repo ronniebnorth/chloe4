@@ -1235,6 +1235,12 @@ const feltShift = (a, b, root, drone) => {
   return W > 0.05 ? num / W : 0;
 };
 
+// Mood, chill (−1) to epic (+1); 0 = neutral (no change). Set from the Studio's MOOD
+// slider. It leans everything Auto and the journeys do: tempo, note length, energy
+// (how busy drums and orchestra play), reverb, the sounds and the scales' tension.
+let MOOD = 0;
+const moodTempo = (b) => b * (1 + 0.18 * MOOD);
+
 // Resolution (steps per octave) every played pitch is rounded to; set from the
 // Studio's RESOLUTION slider. 1200 = exact.
 let RESOLUTION = S24.RES_MAX;
@@ -2446,6 +2452,7 @@ const HELP_SECTIONS = [
   { title: "WORLD SCALES & TUNINGS", body: "Every scale is stored as its pitches in cents above the root (100 cents = a semitone). Four groups sit below the Western ones in the sidebar. MAQAM · DASTGAH · QUARTER TONES: Arabic maqamat (Rast, Bayati, Saba, Huzam and their modes, such as Sikah and Iraq) and Persian dastgahs (Chahargah, Homayun; Shur, Segah and Mahur share notes with Bayati, Sikah and Ionian and show both names), on a 24-step grid, half-flat notes written E½♭. TURKISH MAKAM · 53 COMMAS: Rast, Uşşak, Hicaz, Bûselik and their modes (Hüseynî, Kürdî) in true Turkish pitches; a whole tone is 9 commas, codes show the steps in commas (Rast = 9·8·5·9·9·8·5), and B⁻¹ means B one comma flat. REAL INTONATION · CENTS: Just major and its modes (pure ratios, 3rds 14¢ low). Just major is note for note Ionian with TUNING set to just; the difference is in its modes, which keep that one C-major tuning like a fixed just keyboard, so some have a sour 'wolf' 5th (Just Dorian's is 680¢). For pure intervals on any scale, from its own root, use the TUNING switch (equal / just / pyth) instead., Pythagorean major and its modes, the overtone scale (harmonics 8–14) and Shur as played (measured, Abdoli); notes show their offset, e.g. E−14¢. Search maqam, makam or real to find each group. Sources and details: docs/IDEA_MAQAM.md in the Chloe4 repo." },
   { title: "RESOLUTION", body: "The RESOLUTION slider (Studio, under TUNING) sets how finely the octave is divided when notes are played: every pitch is rounded to the nearest of that many equal steps, from 12 to 1200. 12 = piano: quarter tones, Turkish and cents scales collapse onto it. 24 = quarter tones: maqam and dastgah come alive. 53 = Turkish commas, and just intervals within about a cent. 1200 = cents: exact, every scale as stored. Buttons jump to 12, 24, 31 (Huygens), 41, 53, 72 (Byzantine chant) and 1200. Slide slowly up with Rast or Just major playing to hear the music sharpen into its true shape; in-between values like 64 put some intervals noticeably off, which is why those numbers matter. The wheel shows a tick per step (a fine ring past 150), and the note names follow what you hear. Brightness, the scale list and journeys stay on the exact cents. Saved, and carried in share links (edo=)." },
   { title: "BRIGHT FEEL", body: "Studio, under RESOLUTION: a slider from ROOT to FELT for how journeys judge a move toward brighter or darker. Root (0%) = by each scale's fixed brightness, measured from the root, as always. Felt (100%) = also by what you've just heard: every note leaves a memory in the ear that grows the longer and louder it sounds and fades over about 3 seconds; the drone counts as a root held all the time. A move that changes a note you're holding (a long E dropping to E♭) is felt strongly; the same move when E hasn't sounded lately slips by. Still heading for the journey's target, felt picks hidden moves when it's close and moves you'll feel in the right direction when it's further off. In between blends the two. WANDER lets Chloe drift the slider itself, slowly and smoothly, on overlapping waves of a few minutes, so it shifts under you. While it's on, WANDER SPEED sets how fast (¼× ≈ 16 minutes a sweep, 1× ≈ 4, 4× ≈ 1) and WANDER RANGE how far: 100% sweeps from root to felt, less drifts around where the slider was when you switched wander on. On the Listen page: felt (on/off) and felt ~ (wander). The wheel glows on the notes being held, more strongly the further toward felt. The difference is biggest with the drone off and a melody that lingers." },
+  { title: "MOOD: CHILL ↔ EPIC", body: "Studio, under BRIGHT FEEL (chill, epic and mood ~ on the Listen page): one slider that leans everything Auto and the journeys do. Toward chill: slower (to −18%), notes ring longer, deeper reverb, drums and orchestra calmer, soft sounds (space, felt, glass, pads), consonant scales. Toward epic: faster (to +18%), punchier notes, drier, drums and orchestra busier (fills, marches, timpani), bold sounds (guitar, saw, leads), more tension allowed. The middle (neutral) changes nothing; double-click the slider to return there. A journey keeps its shape and mood sets how chill or epic it's played. The BPM shown stays yours; mood scales it as it plays. WANDER drifts the mood slowly on its own, with WANDER SPEED (¼× ≈ 19 minutes a sweep, 4× ≈ a minute) and WANDER RANGE (100% = chill to epic; less = around where you set it). Saved, and carried in share links." },
   { title: "BRIGHTNESS SORTING", body: "Within each family, modes are sorted bright to dark by summing their active semitone positions (raw brightness). Lydian scores highest (raised 4th), Locrian lowest (flatted 2nd and 5th). This mirrors the circle-of-fifths: Lydian → Ionian → Mixolydian → Dorian → Aeolian → Phrygian → Locrian. Positions count in semitones, so quarter tones and cents scales score in between: Rast 37 (beside Mixolydian), Bayati 34.5 (between Aeolian and Phrygian), Just major 37.6. The sidebar and scale list show the raw brightness score (e.g. Dorian = 36). The EEG system uses a separate normalized brightness (0.0–1.0) that adjusts for note count, so pentatonics and tetratonics are comparable to heptatonics — Dorian normalizes to exactly 0.5 as the neutral midpoint." },
   { title: "SCALE WHEEL", body: "The circle shows the 12 chromatic notes, with a small dot for each quarter tone between them (24 positions). Active tones are highlighted and connected by a polygon; a quarter-tone note gets its own labelled dot (E½♭), and a Turkish or cents note lights the nearest dot with its exact name (B⁻¹, E−14¢), drawn at its true angle. Wide polygons = sparse scales. Compact polygons = denser chromatic scales. A perfect regular polygon = equal temperament." },
   { title: "SEARCH & FILTER", body: "The left sidebar has a search box that filters scales by name as you type — results narrow to only matching modes within each family (e.g. searching 'dorian' shows just the Dorian row, not all 7 modes). The NOTES sliders below it set a from–to range of notes per scale (3 to 12): 5–7 shows pentatonic to heptatonic, 5–5 only pentatonics. The range also limits what Auto and the journeys pick (the Persia, Shur and Makam paths keep their own scales), so it sets how many corners the polygon has. Scales with 9 to 12 notes all contain a cluster of semitones, so they are outside scales (Nonatonic, Decatonic, Hendecatonic, Chromatic): switch on outside to see and hear them; with a 9–12 range Auto then picks only those. The sus chip (or searching 'sus' or 'suspended') shows suspended scales: no 3rd, so neither major nor minor, with a 5th and a 2nd or 4th. These compose with each other and with the header filter bar. The header filter accepts comma-separated terms: family ID (hep-6), group prefix (pen, hep, hex), scale name, binary fragment, decimal value, or interval pattern (2-2-1). The star button on any row marks a favourite; the favs button in the header shows starred scales only. Custom names are searchable too." },
@@ -3781,6 +3788,31 @@ export default function Chloe() {
     const iv = setInterval(step, 1000);
     return () => clearInterval(iv);
   }, [feltRandom]);
+  // Mood: chill (−1) … epic (+1), with its own wander (speed, range), like BRIGHT FEEL
+  const [mood, setMood] = useState(() => lsNum(["mood", "chloe-mood"], 0, -1, 1));
+  const [moodWander, setMoodWander] = useState(() => (new URLSearchParams(window.location.search).get("mw") ?? localStorage.getItem("chloe-mood-wander")) === "1");
+  const [moodWSpeed, setMoodWSpeed] = useState(() => lsNum(["mws", "chloe-mood-wspeed"], 1, 0.25, 4));
+  const [moodWRange, setMoodWRange] = useState(() => lsNum(["mwr", "chloe-mood-wrange"], 1, 0.05, 1));
+  const moodRef = useRef(mood), moodWRef = useRef({ speed: moodWSpeed, range: moodWRange, center: mood, p1: 0, p2: 0, t: 0 });
+  useEffect(() => { moodRef.current = mood; MOOD = mood; localStorage.setItem("chloe-mood", String(mood)); }, [mood]);
+  useEffect(() => { localStorage.setItem("chloe-mood-wander", moodWander ? "1" : "0"); }, [moodWander]);
+  useEffect(() => { moodWRef.current.speed = moodWSpeed; localStorage.setItem("chloe-mood-wspeed", String(moodWSpeed)); }, [moodWSpeed]);
+  useEffect(() => { moodWRef.current.range = moodWRange; localStorage.setItem("chloe-mood-wrange", String(moodWRange)); }, [moodWRange]);
+  useEffect(() => {
+    if (!moodWander) return;
+    const w = moodWRef.current, ph = Math.random() * 2 * Math.PI;
+    w.center = moodRef.current; w.p1 = ph; w.p2 = 2 * ph; w.t = Date.now();
+    const step = () => {
+      const now = Date.now(), dm = (now - w.t) / 60000; w.t = now;
+      w.p1 += 2 * Math.PI * dm * w.speed / 4.7; w.p2 += 2 * Math.PI * dm * w.speed / 1.9;
+      const c = (1 - w.range) * w.center;
+      const v = c + w.range * (0.84 * Math.sin(w.p1) + 0.32 * Math.sin(w.p2));
+      setMood(+Math.max(-1, Math.min(1, v)).toFixed(2));
+    };
+    step();
+    const iv = setInterval(step, 1000);
+    return () => clearInterval(iv);
+  }, [moodWander]);
   const [noteRange, setNoteRange] = useState(() => {
     const m = (new URLSearchParams(window.location.search).get("nr") ?? localStorage.getItem("chloe-note-range") ?? "").match(/^(\d+)-(\d+)$/);
     const lo = m ? Math.max(NOTES_MIN, Math.min(NOTES_MAX, +m[1])) : NOTES_MIN, hi = m ? Math.max(lo, Math.min(NOTES_MAX, +m[2])) : NOTES_MAX;
@@ -4438,7 +4470,7 @@ export default function Chloe() {
       return end - t0;
     };
     const updateEnergy = (base) => {
-      const target = Math.min(1, tensionOf(base) * 0.9 + (mo.steps.length ? 0.4 : 0) + (journeyRef.current?.vals?.e ?? 0));
+      const target = Math.max(0, Math.min(1, tensionOf(base) * 0.9 + (mo.steps.length ? 0.4 : 0) + (journeyRef.current?.vals?.e ?? 0) + 0.35 * MOOD));
       energy += (target - energy) * (target > energy ? 0.25 : 0.04);
       energyRef.current = energy;
       peakE = Math.max(peakE, energy);
@@ -4447,7 +4479,7 @@ export default function Chloe() {
       let hold = 4;
       try {
         const st = stRef.current;
-        const b = tg.cur ?? st.bpm;
+        const b = moodTempo(tg.cur ?? st.bpm);
         const barSec = 240 / b;
         hold = Math.max(1, Math.min(4, Math.round((5 - 2.5 * energy) / barSec))) * barSec;
         if (st.symphonic && st.sel && lastBase && lastBase.length >= 3) {
@@ -4595,7 +4627,7 @@ export default function Chloe() {
     };
     const playNote = (semi, dur, vel, strum = 0) => {
       const { rootIdx: ri, timbre: t, noteVol: nv, aRef: ar, tuning: tu } = stRef.current;
-      const b = tg.cur ?? stRef.current.bpm;
+      const b = moodTempo(tg.cur ?? stRef.current.bpm);
       let inst = stRef.current.instrument;
       if (JOURNEYS[journeyRef.current?.id]?.persian) {   // santur & kamancheh (Persian) or oud & ney (Turkish) take turns, 24-48 notes each
         const pair = JOURNEYS[journeyRef.current.id].turkish ? ["lute", "shaku"] : ["dulcimer", "fiddle"];
@@ -4636,7 +4668,7 @@ export default function Chloe() {
       let sv = semi;
       if (sleep) { sv -= 12; while (sv > 7) sv -= 12; }
       const freq = ar * 2 ** ((60 + OFFS[ri] + (sv - semi) - 69) / 12) * tunedRatio(semi, tu);
-      const beatDur = (dur * 60 / b / 2) * stRef.current.sustainMult;
+      const beatDur = (dur * 60 / b / 2) * stRef.current.sustainMult * (1 - 0.25 * MOOD);   // chill rings longer, epic punchier
       const snd = { inst, t };
       const same = (a, b) => a && a.inst === b.inst && (a.inst || a.t === b.t);
       if (!same(sb.to, snd)) {
@@ -6467,7 +6499,7 @@ export default function Chloe() {
               beatStyleNow = beatSwapTo; beatSwapTo = null; beatBar = 0; beatNoCrash = false;
               beatPhraseRef.current = false;
             }
-            const b0 = tg.cur ?? st.bpm, bb = b0 > 160 ? b0 / 2 : b0;
+            const b0 = moodTempo(tg.cur ?? st.bpm), bb = b0 > 160 ? b0 / 2 : b0;
             beatStepHookRef.current?.(ac, beatNext, beatStep, WORLD[beatStyleNow] ? 60 / (b0 > 120 ? b0 / 2 : b0) / 4 : 60 / bb / 4);
             if (WORLD[beatStyleNow]) {
               const lb = b0 > 120 ? b0 / 2 : b0, sd = 60 / lb / 4;   // laid back: half-time above 120
@@ -7005,6 +7037,8 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
           // Felt brightness: still heading for the target, a move that changes the notes
           // the ear is holding is FELT. Close to the target, prefer hidden moves (notes not
           // heard lately); further off, prefer moves felt in the right direction.
+          // Mood: chill leans to consonant scales, epic allows more tension
+          if (MOOD !== 0) sc += 0.25 * Math.abs(MOOD) * Math.abs(tensionOf(patSemis(e.pat)) - (0.375 + 0.225 * MOOD));
           const fa = feltAmtRef.current;
           if (fa > 0) {
             const gap = jb - normalizedBrightness(cur.pattern), f = feltShift(cur.pattern, e.pat, stRef.current.rootIdx, stRef.current.droneOn);
@@ -7079,7 +7113,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
         const s = only[Math.floor(Math.random() * only.length)];
         if (INSTRUMENTS.includes(s)) setInstrument(s); else { setTimbre(s); setInstrument(null); }
       } else if (_al.sound && Math.random() < 0.4 && maybe()) {
-        const pool = only || ["piano","piano","guitar","guitar","xylo","space","space","sine","triangle","sawtooth","duduk"];
+        const pool = only || (MOOD < -0.3 ? [...SOFT, "felt", "glass", "kalimba"] : MOOD > 0.3 ? [...BOLD, "synlead", "fiddle"] : ["piano","piano","guitar","guitar","xylo","space","space","sine","triangle","sawtooth","duduk"]);
         const s = likedPick(likes, "snd", pool) ?? pool[Math.floor(Math.random() * pool.length)];
         later(() => { if (INSTRUMENTS.includes(s)) setInstrument(s); else { setTimbre(s); setInstrument(null); } });
       }
@@ -7145,8 +7179,8 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
         bpm = to;
         later(() => { if (burstHome !== null) burstHome = to; else setBpm(to); });
       } else if (_al.bpm && stRef.current.autoTempo === "drift" && maybe()) later(() => setBpm(bpm));
-      if (_al.reverb && J?.vals) { const rv = parseFloat(Math.min(1, Math.max(0, J.vals.rv + (Math.random() - 0.5) * 0.08)).toFixed(2)); later(() => setReverbAmt(rv)); }
-      else if (_al.reverb && maybe()) { const rv = parseFloat((0.3 + Math.random() * 0.65).toFixed(2)); later(() => setReverbAmt(rv)); }
+      if (_al.reverb && J?.vals) { const rv = parseFloat(Math.min(1, Math.max(0, J.vals.rv - 0.15 * MOOD + (Math.random() - 0.5) * 0.08)).toFixed(2)); later(() => setReverbAmt(rv)); }
+      else if (_al.reverb && maybe()) { const rv = parseFloat(Math.min(1, Math.max(0, 0.3 + Math.random() * 0.65 - 0.2 * MOOD)).toFixed(2)); later(() => setReverbAmt(rv)); }
       if (_al.reverb && nightdrive) { const rv = parseFloat((0.45 + Math.random() * 0.15).toFixed(2)); later(() => setReverbAmt(rv)); }
       if (_al.reverb && fire) { const rv = parseFloat((0.35 + Math.random() * 0.15).toFixed(2)); later(() => setReverbAmt(rv)); }   // under the night sky
       if (_al.reverb && celtic) { const rv = parseFloat((0.35 + Math.random() * 0.15).toFixed(2)); later(() => setReverbAmt(rv)); }   // the session
@@ -7467,6 +7501,10 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (feltRandom) p.set("bfr", "1");
     if (wanderSpeed !== 1) p.set("bfs", wanderSpeed);
     if (wanderRange !== 1) p.set("bfw", wanderRange);
+    if (mood !== 0) p.set("mood", mood);
+    if (moodWander) p.set("mw", "1");
+    if (moodWSpeed !== 1) p.set("mws", moodWSpeed);
+    if (moodWRange !== 1) p.set("mwr", moodWRange);
     if (droneOct)    p.set("do", droneOct);
     if (droneOn)     p.set("dr", "1");
     if (droneWave !== "tanpura") p.set("dw", droneWave);
@@ -7494,7 +7532,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (sidebarW !== 520) p.set("sw", sidebarW);
     const qs = p.toString();
     return window.location.origin + window.location.pathname + (qs ? "?" + qs : "");
-  }, [resolution, noteRange, noteRangeOn, feltAmt, feltRandom, wanderSpeed, wanderRange, drawLine, susPool, rootIdx, timbre, instrument, noteVol, reverbAmt, delayAmt, sustainMult, bpm, filter, sel, aRef, droneOct, droneOn, droneWave, melMode, grouping, blend, tempoGlide, soundBlend, tuning, autoTempo, symphonic, beatStyle, beatWander, world, worldWander, weatherBrain, journey, journeyMins, sleepMins, smooth, autoLocks, sidebarW]);
+  }, [resolution, noteRange, noteRangeOn, feltAmt, feltRandom, wanderSpeed, wanderRange, mood, moodWander, moodWSpeed, moodWRange, drawLine, susPool, rootIdx, timbre, instrument, noteVol, reverbAmt, delayAmt, sustainMult, bpm, filter, sel, aRef, droneOct, droneOn, droneWave, melMode, grouping, blend, tempoGlide, soundBlend, tuning, autoTempo, symphonic, beatStyle, beatWander, world, worldWander, weatherBrain, journey, journeyMins, sleepMins, smooth, autoLocks, sidebarW]);
 
   // Record button: start tapping the master output; stop → download the WAV
   const toggleRec = useCallback(async () => {
@@ -7772,6 +7810,9 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
           <button onClick={() => { const v = beatStyle === "off" ? (J === "endless" ? "brushes" : JOURNEYS[J].epic ? "drive" : "downtempo") : "off"; setBeatStyle(v); if (v !== "off") getKit(getCtx()); }} style={chip(beatStyle !== "off")}>drums</button>
           <button onClick={() => { wake(); setDroneOn(v => !v); }} style={chip(droneOn)}>drone</button>
           <button onClick={() => { setFeltRandom(false); setFeltAmt(v => v > 0 ? 0 : 1); }} title="Felt brightness: judge the journey's moves by the notes you've just heard, held notes weighing most (off = by the root only, as always). The Studio has a slider for how much." style={chip(feltAmt > 0 && !feltRandom)}>felt{feltAmt > 0 && feltAmt < 1 && !feltRandom ? ` ${Math.round(feltAmt * 100)}%` : ""}</button>
+          <button onClick={() => { setMoodWander(false); setMood(m => m < -0.3 ? 0 : -0.7); }} title="Mood: chill (slower, longer notes, deeper reverb, calmer drums, soft sounds, consonant scales). The Studio has a slider from chill to epic." style={chip(mood < -0.3 && !moodWander)}>chill</button>
+          <button onClick={() => { setMoodWander(false); setMood(m => m > 0.3 ? 0 : 0.7); }} title="Mood: epic (faster, punchier, drier, busier drums and orchestra, bold sounds, more tension)" style={chip(mood > 0.3 && !moodWander)}>epic</button>
+          <button onClick={() => setMoodWander(v => !v)} title="Mood, wander: Chloe drifts slowly between chill and epic" style={chip(moodWander)}>mood ~{moodWander ? ` ${mood < 0 ? "chill" : "epic"} ${Math.round(Math.abs(mood) * 100)}%` : ""}</button>
           <button onClick={() => setFeltRandom(v => !v)} title="Felt brightness, wander: Chloe drifts how much felt counts, slowly and smoothly over a few minutes, now and then all the way to root or felt" style={chip(feltRandom)}>felt ~{feltRandom ? ` ${Math.round(feltAmt * 100)}%` : ""}</button>
         </div>
 
@@ -9122,6 +9163,32 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                 <input type="range" min={0.05} max={1} step={0.01} value={wanderRange}
                   onChange={e => setWanderRange(+e.target.value)} style={{ minWidth: 0, accentColor: K.a }} />
                 <span style={{ color: K.a, fontSize: 10, minWidth: 36, textAlign: "right" }}>{Math.round(wanderRange * 100)}%</span>
+              </div>
+            )}
+            {/* Mood — chill ↔ epic, leaning tempo, note length, energy, reverb, sounds and scales */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <span title="Chill to epic, leaning everything Auto and the journeys do. Chill: slower (down to −18%), longer notes, deeper reverb, drums and orchestra calmer, soft sounds (space, felt, glass, pads), consonant scales. Epic: faster (up to +18%), punchier notes, drier, drums and orchestra busier (fills, marches, timpani), bold sounds (guitar, saw, brass-like leads), more tension allowed. The middle changes nothing. A journey keeps its shape; mood sets how chill or epic it's played. wander = Chloe drifts it slowly; speed and range as for BRIGHT FEEL." style={{ color: K.lbl, fontSize: 9, letterSpacing: 2, cursor: "help" }}>MOOD</span>
+              <span style={{ color: K.t2, fontSize: 9 }}>chill</span>
+              <input type="range" min={-1} max={1} step={0.01} value={mood} onChange={e => { setMoodWander(false); const v = +e.target.value; setMood(Math.abs(v) < 0.04 ? 0 : v); }}
+                onDoubleClick={() => { setMoodWander(false); setMood(0); }} style={{ flex: 1, minWidth: 0, accentColor: K.a }} />
+              <span style={{ color: K.t2, fontSize: 9 }}>epic</span>
+              <span style={{ color: K.a, fontSize: 10, minWidth: 60, textAlign: "right" }}>{mood === 0 ? "neutral" : `${mood < 0 ? "chill" : "epic"} ${Math.round(Math.abs(mood) * 100)}%`}</span>
+              <button onClick={() => setMoodWander(v => !v)} style={{
+                background: moodWander ? K.a : K.bg3, color: moodWander ? "#000" : K.txt,
+                border: `1px solid ${moodWander ? K.a : K.br}`, borderRadius: 3, padding: "3px 8px",
+                fontSize: 9, cursor: "pointer", fontFamily: "inherit", fontWeight: moodWander ? 600 : 400,
+              }}>wander</button>
+            </div>
+            {moodWander && (
+              <div style={{ display: "grid", gridTemplateColumns: "max-content 1fr max-content", gap: "4px 6px", alignItems: "center", margin: "-2px 0 8px 12px" }}>
+                <span title="How fast the mood wanders: ¼× ≈ 19 minutes a sweep, 1× ≈ 5, 4× ≈ a minute and a bit" style={{ color: K.lbl, fontSize: 9, letterSpacing: 2, cursor: "help" }}>WANDER SPEED</span>
+                <input type="range" min={0} max={1} step={0.01} value={Math.log(moodWSpeed / 0.25) / Math.log(16)}
+                  onChange={e => setMoodWSpeed(+(0.25 * 16 ** +e.target.value).toFixed(2))} style={{ minWidth: 0, accentColor: K.a }} />
+                <span style={{ color: K.a, fontSize: 10, minWidth: 36, textAlign: "right" }}>{moodWSpeed < 1 ? moodWSpeed.toFixed(2) : moodWSpeed.toFixed(1)}×</span>
+                <span title="How far the mood wanders: 100% sweeps from chill to epic; less drifts around where the slider was when you switched wander on" style={{ color: K.lbl, fontSize: 9, letterSpacing: 2, cursor: "help" }}>WANDER RANGE</span>
+                <input type="range" min={0.05} max={1} step={0.01} value={moodWRange}
+                  onChange={e => setMoodWRange(+e.target.value)} style={{ minWidth: 0, accentColor: K.a }} />
+                <span style={{ color: K.a, fontSize: 10, minWidth: 36, textAlign: "right" }}>{Math.round(moodWRange * 100)}%</span>
               </div>
             )}
             {/* Symphonic — sampled strings + double bass under the line */}

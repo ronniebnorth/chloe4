@@ -500,3 +500,23 @@ weighing more, not only on the root.
   Wave phases accumulate, so changing either mid-wander never jumps. Saved
   (`chloe-felt-wspeed`, `chloe-felt-wrange`); links carry `bfs=`, `bfw=`.
   Checked headless: 4×, 30% around 0.3 drifted 20–28% with no jumps.
+
+## Mood: chill ↔ epic, with wander — built 2026-11-09
+
+One slider, −1 (chill) … +1 (epic), 0 = no change (`MOOD` in App.jsx), leaning
+what Auto and journeys do:
+- tempo ×(1 + 0.18·m) at the melody, orchestra and beat clocks (the BPM
+  shown stays the user's);
+- note length ×(1 − 0.25·m);
+- energy target + 0.35·m (drum fills, doubled hats, marches, orchestra);
+- Auto's reverb picks − 0.15·m (journey) / − 0.2·m (free);
+- Auto's sound pool: soft (space, sine, piano, triangle, duduk, felt,
+  glass, kalimba) below −0.3, bold (guitar, saw, square, xylo, synlead,
+  fiddle) above +0.3;
+- journey walk prefers scale tension near 0.375 + 0.225·m, weighted by |m|.
+Wander like bright feel (waves 4.7 / 1.9 min at 1×, speed ¼–4×, range
+5–100% around the start point). Studio: MOOD row under BRIGHT FEEL
+(double-click = neutral). Listen: chill / epic / mood ~. Saved; links carry
+`mood=`, `mw=`, `mws=`, `mwr=`. Checked headless: labels, wander drift, Rise
+journey with wander, no console errors. To tune by ear: the 0.18 tempo and
+0.35 energy factors.
