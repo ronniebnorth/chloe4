@@ -4198,22 +4198,22 @@ export default function Chloe() {
       for (let tc = t0, i = 0; tc < end - 0.02; tc += beat / 2, i++) { // chug
         const acc = i % 4 === 0 ? 100 : 72;
         const sb = lowN(R - 24);
-        o.cello.start({ note: rootMidi + R - 24, velocity: acc, time: tc, duration: beat * 0.4, detune: tune(R - 24) });
-        o.tuba.start({ note: rootMidi + sb, velocity: acc - 8, time: tc, duration: beat * 0.42, detune: tune(sb) });
+        o.cello.start({ note: Math.floor(rootMidi + R - 24), velocity: acc, time: tc, duration: beat * 0.4, detune: tune(R - 24) });
+        o.tuba.start({ note: Math.floor(rootMidi + sb), velocity: acc - 8, time: tc, duration: beat * 0.42, detune: tune(sb) });
       }
       for (let bar = 0; bar < bars; bar++) {
         const tb = t0 + bar * barSec, last = bar === bars - 1;
-        const stab = (notes, t, dur, vel) => notes.forEach(n => o.brass.start({ note: rootMidi + n, velocity: vel, time: t, duration: dur, detune: tune(n) }));
+        const stab = (notes, t, dur, vel) => notes.forEach(n => o.brass.start({ note: Math.floor(rootMidi + n), velocity: vel, time: t, duration: dur, detune: tune(n) }));
         stab(chord, tb, beat * 1.4, 110);                                 // beat 1, long
         stab(chord, tb + 2 * beat, beat * 0.5, 100);                      // beat 3, short
         if (!last) stab(chord, tb + 3.5 * beat, beat * 0.4, 96);          // pickup into next bar
         else stab(crunch, tb + 3 * beat, beat * 1.6, 120);                // final crunch
-        o.timpani.start({ note: Math.min(57, Math.max(38, rootMidi + R - 24)), velocity: 110, time: tb, detune: tune(R - 24) });
-        o.timpani.start({ note: Math.min(57, Math.max(38, rootMidi + R - 24)), velocity: 95, time: tb + 2 * beat, detune: tune(R - 24) });
+        o.timpani.start({ note: Math.min(57, Math.max(38, Math.floor(rootMidi + R - 24))), velocity: 110, time: tb, detune: tune(R - 24) });
+        o.timpani.start({ note: Math.min(57, Math.max(38, Math.floor(rootMidi + R - 24))), velocity: 95, time: tb + 2 * beat, detune: tune(R - 24) });
         o.taiko.start({ note: 40, velocity: 115, time: tb });
       }
       // One soft orchestra hit under the final crunch (two loud ones were too much)
-      o.hit.start({ note: rootMidi + R - 12, velocity: 64, time: t0 + (bars - 1) * barSec + 3 * beat, detune: tune(R - 12) });
+      o.hit.start({ note: Math.floor(rootMidi + R - 12), velocity: 64, time: t0 + (bars - 1) * barSec + 3 * beat, detune: tune(R - 12) });
       o.swell.gain.linearRampToValueAtTime(0.4, end);
       return end - t0;
     };
@@ -4250,7 +4250,8 @@ export default function Chloe() {
           orchDeg = next;
           const semiOf = k => lastBase[((k % L) + L) % L] + 12 * Math.floor(k / L);  // k may go below 0 (downward runs)
           const rootMidi = 60 + OFFS[st.rootIdx];
-          const tune = semi => 1200 * Math.log2(tunedRatio(semi, st.tuning) * st.aRef / 440) - 100 * semi;
+          // Samples take whole MIDI notes: the note is floored and a quarter tone's extra 50 cents rides on detune
+          const tune = semi => 1200 * Math.log2(tunedRatio(semi, st.tuning) * st.aRef / 440) - 100 * Math.floor(semi);
           if (marchNow) {
             lastMarch = ac.currentTime;
             // Auto with the beat ticked: the march brings in the heavy beat
@@ -4277,13 +4278,13 @@ export default function Chloe() {
             const dur = Math.min(2.6, end - tb);
             [0, 2, 4].forEach(k => {
               const semi = semiOf(orchDeg + k) - 12;
-              o.strings.start({ note: rootMidi + semi, velocity: tb === t0 ? 70 : 62, time: tb, duration: dur, ampRelease: 0.5, detune: tune(semi) });
+              o.strings.start({ note: Math.floor(rootMidi + semi), velocity: tb === t0 ? 70 : 62, time: tb, duration: dur, ampRelease: 0.5, detune: tune(semi) });
             });
           }
           const bassSemi = semiOf(orchDeg) - 24;
           // Double bass an octave deeper wherever it stays above its low E (28)
           const bassNote = rootMidi + bassSemi - 12 >= 28 ? rootMidi + bassSemi - 12 : rootMidi + bassSemi;
-          o.bass.start({ note: bassNote, velocity: 85, time: t0, duration: hold * 0.95, loop: true, detune: tune(bassSemi) });
+          o.bass.start({ note: Math.floor(bassNote), velocity: 85, time: t0, duration: hold * 0.95, loop: true, detune: tune(bassSemi) });
 
           // Cellos: driving low ostinato on the chord (root, fifth, octave) in
           // 8ths up to 120 BPM, quarters above; rests on about 1 chord in 5
@@ -4295,7 +4296,7 @@ export default function Chloe() {
             const step = (b <= 120 ? beat / 2 : beat) / (energy > 0.5 ? 2 : 1);
             for (let i = 0, tc = t0; tc < t0 + hold - 0.02; i++, tc += step) {
               const semi = pat[i % 8] - 24;
-              o.cello.start({ note: rootMidi + semi, velocity: (i % 4 === 0 ? 80 : 58) + Math.round(12 * energy), time: tc, duration: step * 0.85, detune: tune(semi) });
+              o.cello.start({ note: Math.floor(rootMidi + semi), velocity: (i % 4 === 0 ? 80 : 58) + Math.round(12 * energy), time: tc, duration: step * 0.85, detune: tune(semi) });
             }
           }
 
@@ -4310,11 +4311,11 @@ export default function Chloe() {
           while (tn > 57) tn -= 12;
           const tTune = tune(tn - rootMidi);
           if (boom || resolve) {
-            o.timpani.start({ note: tn, velocity: 120, time: t0, detune: tTune });
+            o.timpani.start({ note: Math.floor(tn), velocity: 120, time: t0, detune: tTune });
             o.taiko.start({ note: 40, velocity: 120, time: t0 });
             o.taiko.start({ note: 40, velocity: 100, time: t0 + beat * 1.5 });
           } else if (rollIn || Math.random() < 0.55 + 0.35 * energy) {
-            o.timpani.start({ note: tn, velocity: rollIn ? 112 : 92, time: t0, detune: tTune });
+            o.timpani.start({ note: Math.floor(tn), velocity: rollIn ? 112 : 92, time: t0, detune: tTune });
             if (Math.random() < 0.3 + 0.4 * energy) o.taiko.start({ note: 40, velocity: 92, time: t0 });
           }
           // Licks: on ~45% of chords a violin or flute plays a fast scale run
@@ -4336,7 +4337,7 @@ export default function Chloe() {
             ks.forEach((k, i) => {
               const semi = semiOf(k);
               const last = i === ks.length - 1;
-              inst.start({ note: rootMidi + semi, velocity: last ? 88 : 62 + Math.round(20 * i / ks.length), time: ls + i * sp, duration: last ? sp * 4 : sp * 1.1, detune: tune(semi) });
+              inst.start({ note: Math.floor(rootMidi + semi), velocity: last ? 88 : 62 + Math.round(20 * i / ks.length), time: ls + i * sp, duration: last ? sp * 4 : sp * 1.1, detune: tune(semi) });
             });
           }
 
@@ -4345,7 +4346,7 @@ export default function Chloe() {
             // Roll over the last bar (or half the chord), crescendo into the next
             const len = Math.min(240 / b, hold / 2), rs = t0 + hold - len;
             for (let tr = rs; tr < t0 + hold - 0.03; tr += 0.07)
-              o.timpani.start({ note: tn, velocity: Math.round(35 + 65 * (tr - rs) / len), time: tr, detune: tTune });
+              o.timpani.start({ note: Math.floor(tn), velocity: Math.round(35 + 65 * (tr - rs) / len), time: tr, detune: tTune });
           }
         }
       } catch (e) { console.error("orchestra:", e); }
