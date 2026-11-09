@@ -2445,7 +2445,7 @@ const HELP_SECTIONS = [
   { title: "BINARY NOTATION", body: "Each scale is a binary string written root-first (leftmost digit = root), so it reads like the scale. 1 = active, 0 = inactive. Ordinary scales show 12 digits, one per semitone, with their familiar number (Ionian = 2741). Scales with quarter tones show 24 digits, one per quarter tone, and a 24-step number. Search takes either form. The MAQAM group holds Arabic maqamat with quarter tones (Rast, Bayati, Saba, Huzam and their modes, such as Sikah and Iraq); quarter-tone notes are named half-flat, e.g. E½♭. Scales are grouped into families sharing the same interval structure - e.g. hep-6 contains all 7 standard modes." },
   { title: "WORLD SCALES & TUNINGS", body: "Every scale is stored as its pitches in cents above the root (100 cents = a semitone). Four groups sit below the Western ones in the sidebar. MAQAM · DASTGAH · QUARTER TONES: Arabic maqamat (Rast, Bayati, Saba, Huzam and their modes, such as Sikah and Iraq) and Persian dastgahs (Chahargah, Homayun; Shur, Segah and Mahur share notes with Bayati, Sikah and Ionian and show both names), on a 24-step grid, half-flat notes written E½♭. TURKISH MAKAM · 53 COMMAS: Rast, Uşşak, Hicaz, Bûselik and their modes (Hüseynî, Kürdî) in true Turkish pitches; a whole tone is 9 commas, codes show the steps in commas (Rast = 9·8·5·9·9·8·5), and B⁻¹ means B one comma flat. REAL INTONATION · CENTS: Just major and its modes (pure ratios, 3rds 14¢ low). Just major is note for note Ionian with TUNING set to just; the difference is in its modes, which keep that one C-major tuning like a fixed just keyboard, so some have a sour 'wolf' 5th (Just Dorian's is 680¢). For pure intervals on any scale, from its own root, use the TUNING switch (equal / just / pyth) instead., Pythagorean major and its modes, the overtone scale (harmonics 8–14) and Shur as played (measured, Abdoli); notes show their offset, e.g. E−14¢. Search maqam, makam or real to find each group. Sources and details: docs/IDEA_MAQAM.md in the Chloe4 repo." },
   { title: "RESOLUTION", body: "The RESOLUTION slider (Studio, under TUNING) sets how finely the octave is divided when notes are played: every pitch is rounded to the nearest of that many equal steps, from 12 to 1200. 12 = piano: quarter tones, Turkish and cents scales collapse onto it. 24 = quarter tones: maqam and dastgah come alive. 53 = Turkish commas, and just intervals within about a cent. 1200 = cents: exact, every scale as stored. Buttons jump to 12, 24, 31 (Huygens), 41, 53, 72 (Byzantine chant) and 1200. Slide slowly up with Rast or Just major playing to hear the music sharpen into its true shape; in-between values like 64 put some intervals noticeably off, which is why those numbers matter. The wheel shows a tick per step (a fine ring past 150), and the note names follow what you hear. Brightness, the scale list and journeys stay on the exact cents. Saved, and carried in share links (edo=)." },
-  { title: "BRIGHT FEEL (A/B)", body: "Studio, under RESOLUTION (felt on the Listen page): how journeys judge a move toward brighter or darker. ROOT = by each scale's fixed brightness, measured from the root, as always. FELT = also by what you've just heard. Every note leaves a memory in the ear that grows the longer and louder it sounds and fades over about 3 seconds; the drone counts as a root held all the time. A move that changes a note you're holding (a long E dropping to E♭) is felt strongly; the same move when E hasn't sounded lately slips by. Still heading for the journey's target, felt picks hidden moves when it's close and moves you'll feel in the right direction when it's further off. The wheel glows on the notes being held. Toggle between them on the same journey to compare by ear; the difference is biggest with the drone off and a melody that lingers." },
+  { title: "BRIGHT FEEL", body: "Studio, under RESOLUTION: a slider from ROOT to FELT for how journeys judge a move toward brighter or darker. Root (0%) = by each scale's fixed brightness, measured from the root, as always. Felt (100%) = also by what you've just heard: every note leaves a memory in the ear that grows the longer and louder it sounds and fades over about 3 seconds; the drone counts as a root held all the time. A move that changes a note you're holding (a long E dropping to E♭) is felt strongly; the same move when E hasn't sounded lately slips by. Still heading for the journey's target, felt picks hidden moves when it's close and moves you'll feel in the right direction when it's further off. In between blends the two. RANDOM lets Chloe move the slider itself every 30 to 90 seconds, sometimes all the way to root or felt, so it shifts under you. On the Listen page: felt (on/off) and felt ~ (random). The wheel glows on the notes being held, more strongly the further toward felt. The difference is biggest with the drone off and a melody that lingers." },
   { title: "BRIGHTNESS SORTING", body: "Within each family, modes are sorted bright to dark by summing their active semitone positions (raw brightness). Lydian scores highest (raised 4th), Locrian lowest (flatted 2nd and 5th). This mirrors the circle-of-fifths: Lydian → Ionian → Mixolydian → Dorian → Aeolian → Phrygian → Locrian. Positions count in semitones, so quarter tones and cents scales score in between: Rast 37 (beside Mixolydian), Bayati 34.5 (between Aeolian and Phrygian), Just major 37.6. The sidebar and scale list show the raw brightness score (e.g. Dorian = 36). The EEG system uses a separate normalized brightness (0.0–1.0) that adjusts for note count, so pentatonics and tetratonics are comparable to heptatonics — Dorian normalizes to exactly 0.5 as the neutral midpoint." },
   { title: "SCALE WHEEL", body: "The circle shows the 12 chromatic notes, with a small dot for each quarter tone between them (24 positions). Active tones are highlighted and connected by a polygon; a quarter-tone note gets its own labelled dot (E½♭), and a Turkish or cents note lights the nearest dot with its exact name (B⁻¹, E−14¢), drawn at its true angle. Wide polygons = sparse scales. Compact polygons = denser chromatic scales. A perfect regular polygon = equal temperament." },
   { title: "SEARCH & FILTER", body: "The left sidebar has a search box that filters scales by name as you type — results narrow to only matching modes within each family (e.g. searching 'dorian' shows just the Dorian row, not all 7 modes). The NOTES sliders below it set a from–to range of notes per scale (3 to 12): 5–7 shows pentatonic to heptatonic, 5–5 only pentatonics. The range also limits what Auto and the journeys pick (the Persia, Shur and Makam paths keep their own scales), so it sets how many corners the polygon has. Scales with 9 to 12 notes all contain a cluster of semitones, so they are outside scales (Nonatonic, Decatonic, Hendecatonic, Chromatic): switch on outside to see and hear them; with a 9–12 range Auto then picks only those. The sus chip (or searching 'sus' or 'suspended') shows suspended scales: no 3rd, so neither major nor minor, with a 5th and a 2nd or 4th. These compose with each other and with the header filter bar. The header filter accepts comma-separated terms: family ID (hep-6), group prefix (pen, hep, hex), scale name, binary fragment, decimal value, or interval pattern (2-2-1). The star button on any row marks a favourite; the favs button in the header shows starred scales only. Custom names are searchable too." },
@@ -2566,7 +2566,7 @@ function HelpModal({ onClose, K }) {
    VISUALIZER
 ═══════════════════════════════════════════════════════ */
 
-function Visualizer({ analyserRef, playing, rootIdx, active, sys, res = 1200, felt = false, K }) {
+function Visualizer({ analyserRef, playing, rootIdx, active, sys, res = 1200, felt = 0, K }) {
   const sysRef = useRef(sys), resRef = useRef(res), feltRef = useRef(felt);
   useEffect(() => { sysRef.current = sys; resRef.current = res; feltRef.current = felt; }, [sys, res, felt]);
   const canvasRef  = useRef(null);
@@ -2706,7 +2706,7 @@ function Visualizer({ analyserRef, playing, rootIdx, active, sys, res = 1200, fe
         }
 
         // Felt mode: a soft glow on each note the ear is holding (note memory), brighter the stronger
-        if (feltRef.current) {
+        if (feltRef.current > 0) {
           const now = memNow();
           for (let k = 0; k < 24; k++) {
             const w = memAt(((rootOff * 2 + k) % 24 + 24) % 24, now);
@@ -2714,7 +2714,7 @@ function Visualizer({ analyserRef, playing, rootIdx, active, sys, res = 1200, fe
             const a = (k / 24) * Math.PI * 2 - Math.PI / 2;
             ctx.beginPath();
             ctx.arc(cx + wheelR * Math.cos(a), cy + wheelR * Math.sin(a), dotR * (1.2 + Math.min(1, w / 3) * 0.6), 0, Math.PI * 2);
-            ctx.fillStyle = Kc.a; ctx.globalAlpha = Math.min(0.45, 0.1 + w / 8); ctx.fill(); ctx.globalAlpha = 1;
+            ctx.fillStyle = Kc.a; ctx.globalAlpha = feltRef.current * Math.min(0.45, 0.1 + w / 8); ctx.fill(); ctx.globalAlpha = 1;
           }
         }
         // Polygon over 24 quarter-tone positions (semitone s sits at position 2s)
@@ -3744,14 +3744,30 @@ export default function Chloe() {
   const [prePinSel,     setPrePinSel]     = useState(null); // { id, pattern } — A/B comparison A side
   const [listSearch,    setListSearch]    = useState("");   // sidebar name search
   // Notes-per-scale range [lo, hi]; [3, 12] = any
-  // Bright feel (A/B): "root" = brightness from the root only (fixed numbers);
-  // "felt" = moves are also judged by the notes the ear is holding (held notes weigh more)
-  const [brightFeel, setBrightFeel] = useState(() => {
-    const v = new URLSearchParams(window.location.search).get("bf") ?? localStorage.getItem("chloe-bright-feel");
-    return v === "felt" ? "felt" : "root";
+  // Bright feel: how much journeys judge moves by the notes the ear is holding.
+  // 0 = root only (fixed brightness, as always), 1 = full felt; random = Chloe wanders it.
+  const [feltAmt, setFeltAmt] = useState(() => {
+    const q = new URLSearchParams(window.location.search).get("bf"), ls = localStorage.getItem("chloe-felt-amt");
+    const v = q === "felt" ? 1 : q != null && !isNaN(+q) ? +q : ls != null ? +ls : 0;
+    return Math.max(0, Math.min(1, v || 0));
   });
-  const brightFeelRef = useRef(brightFeel);
-  useEffect(() => { brightFeelRef.current = brightFeel; localStorage.setItem("chloe-bright-feel", brightFeel); }, [brightFeel]);
+  const [feltRandom, setFeltRandom] = useState(() => (new URLSearchParams(window.location.search).get("bfr") ?? localStorage.getItem("chloe-felt-random")) === "1");
+  const feltAmtRef = useRef(feltAmt);
+  useEffect(() => { feltAmtRef.current = feltAmt; localStorage.setItem("chloe-felt-amt", String(feltAmt)); }, [feltAmt]);
+  useEffect(() => { localStorage.setItem("chloe-felt-random", feltRandom ? "1" : "0"); }, [feltRandom]);
+  // Random: a new amount every 30-90 s (now and then all the way to root or felt), so
+  // it shifts under you without your choosing
+  useEffect(() => {
+    if (!feltRandom) return;
+    let tm;
+    const next = () => {
+      const r = Math.random();
+      setFeltAmt(r < 0.2 ? 0 : r < 0.4 ? 1 : +(Math.random()).toFixed(2));
+      tm = setTimeout(next, 30000 + Math.random() * 60000);
+    };
+    next();
+    return () => clearTimeout(tm);
+  }, [feltRandom]);
   const [noteRange, setNoteRange] = useState(() => {
     const m = (new URLSearchParams(window.location.search).get("nr") ?? localStorage.getItem("chloe-note-range") ?? "").match(/^(\d+)-(\d+)$/);
     const lo = m ? Math.max(NOTES_MIN, Math.min(NOTES_MAX, +m[1])) : NOTES_MIN, hi = m ? Math.max(lo, Math.min(NOTES_MAX, +m[2])) : NOTES_MAX;
@@ -6976,9 +6992,10 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
           // Felt brightness: still heading for the target, a move that changes the notes
           // the ear is holding is FELT. Close to the target, prefer hidden moves (notes not
           // heard lately); further off, prefer moves felt in the right direction.
-          if (brightFeelRef.current === "felt") {
+          const fa = feltAmtRef.current;
+          if (fa > 0) {
             const gap = jb - normalizedBrightness(cur.pattern), f = feltShift(cur.pattern, e.pat, stRef.current.rootIdx, stRef.current.droneOn);
-            sc += Math.abs(gap) < 0.05 ? 0.3 * Math.abs(f) : -0.3 * f * Math.sign(gap);
+            sc += fa * (Math.abs(gap) < 0.05 ? 0.3 * Math.abs(f) : -0.3 * f * Math.sign(gap));
           }
           return { e, sc };
         }).sort((x, y) => x.sc - y.sc);
@@ -7433,7 +7450,8 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (aRef !== 440) p.set("a", aRef);
     if (resolution !== S24.RES_MAX) p.set("edo", resolution);
     if (noteRangeOn) p.set("nr", noteRange.join("-"));
-    if (brightFeel === "felt") p.set("bf", "felt");
+    if (feltAmt > 0) p.set("bf", feltAmt);
+    if (feltRandom) p.set("bfr", "1");
     if (droneOct)    p.set("do", droneOct);
     if (droneOn)     p.set("dr", "1");
     if (droneWave !== "tanpura") p.set("dw", droneWave);
@@ -7461,7 +7479,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     if (sidebarW !== 520) p.set("sw", sidebarW);
     const qs = p.toString();
     return window.location.origin + window.location.pathname + (qs ? "?" + qs : "");
-  }, [resolution, noteRange, noteRangeOn, brightFeel, drawLine, susPool, rootIdx, timbre, instrument, noteVol, reverbAmt, delayAmt, sustainMult, bpm, filter, sel, aRef, droneOct, droneOn, droneWave, melMode, grouping, blend, tempoGlide, soundBlend, tuning, autoTempo, symphonic, beatStyle, beatWander, world, worldWander, weatherBrain, journey, journeyMins, sleepMins, smooth, autoLocks, sidebarW]);
+  }, [resolution, noteRange, noteRangeOn, feltAmt, feltRandom, drawLine, susPool, rootIdx, timbre, instrument, noteVol, reverbAmt, delayAmt, sustainMult, bpm, filter, sel, aRef, droneOct, droneOn, droneWave, melMode, grouping, blend, tempoGlide, soundBlend, tuning, autoTempo, symphonic, beatStyle, beatWander, world, worldWander, weatherBrain, journey, journeyMins, sleepMins, smooth, autoLocks, sidebarW]);
 
   // Record button: start tapping the master output; stop → download the WAV
   const toggleRec = useCallback(async () => {
@@ -7635,7 +7653,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
         {/* Stage: the light show, with the journey's path and where you are on it */}
         <div style={{ width: "100%", maxWidth: 720, position: "relative", height: 260, borderRadius: 10, overflow: "hidden", border: `1px solid ${K.br}`, background: K.bg2 }}>
           <div style={{ position: "absolute", inset: 0, opacity: playingNow ? 0.85 : 0.25, transition: "opacity 2s" }}>
-            <Visualizer analyserRef={analyserRef} playing={playing} rootIdx={rootIdx} active={selSemis} sys={resSys} res={resolution} felt={brightFeel === "felt"} K={K} />
+            <Visualizer analyserRef={analyserRef} playing={playing} rootIdx={rootIdx} active={selSemis} sys={resSys} res={resolution} felt={feltAmt} K={K} />
           </div>
           <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, width: "100%", height: J === "draw" ? "100%" : 110 }}>
             {big.hill && <path d={big.hill} fill={JOURNEY_COLOR} opacity={0.12} />}
@@ -7738,7 +7756,8 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
           <button onClick={() => { setSymphonic(v => !v); if (!symphonic) getOrchestra(getCtx()); }} style={chip(symphonic)}>orchestra</button>
           <button onClick={() => { const v = beatStyle === "off" ? (J === "endless" ? "brushes" : JOURNEYS[J].epic ? "drive" : "downtempo") : "off"; setBeatStyle(v); if (v !== "off") getKit(getCtx()); }} style={chip(beatStyle !== "off")}>drums</button>
           <button onClick={() => { wake(); setDroneOn(v => !v); }} style={chip(droneOn)}>drone</button>
-          <button onClick={() => setBrightFeel(v => v === "felt" ? "root" : "felt")} title="Felt brightness: judge the journey's moves by the notes you've just heard, held notes weighing most (off = by the root only, as always). Toggle to compare." style={chip(brightFeel === "felt")}>felt</button>
+          <button onClick={() => { setFeltRandom(false); setFeltAmt(v => v > 0 ? 0 : 1); }} title="Felt brightness: judge the journey's moves by the notes you've just heard, held notes weighing most (off = by the root only, as always). The Studio has a slider for how much." style={chip(feltAmt > 0 && !feltRandom)}>felt{feltAmt > 0 && feltAmt < 1 && !feltRandom ? ` ${Math.round(feltAmt * 100)}%` : ""}</button>
+          <button onClick={() => setFeltRandom(v => !v)} title="Felt brightness, random: Chloe changes how much felt counts every 30 to 90 seconds, sometimes all the way to root or felt" style={chip(feltRandom)}>felt ~{feltRandom ? ` ${Math.round(feltAmt * 100)}%` : ""}</button>
         </div>
 
         {/* Drum feel, while drums are on */}
@@ -8603,7 +8622,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
           </div>
           <div style={{ flex: 1, overflow: "hidden" }}>
             {centerTab === "viz"
-              ? <Visualizer analyserRef={analyserRef} playing={playing} rootIdx={rootIdx} active={selSemis} sys={resSys} res={resolution} felt={brightFeel === "felt"} K={K} />
+              ? <Visualizer analyserRef={analyserRef} playing={playing} rootIdx={rootIdx} active={selSemis} sys={resSys} res={resolution} felt={feltAmt} K={K} />
               : <ScaleInfo sel={sel} selName={selName} selIvs={selIvs} selNotes={selNotes} demoKey={demoKey} K={K} />
             }
           </div>
@@ -9064,18 +9083,19 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                 ))}
               </div>
             </div>
-            {/* Bright feel (A/B) — root-only brightness, or felt: weighted by the notes the ear is holding */}
+            {/* Bright feel — slider from root (0) to felt (1), or random */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-              <span title="How journeys judge a move toward brighter or darker. Root = by the scale's fixed brightness, measured from the root (as always). Felt = also by what you've just heard: every note leaves a memory that grows the longer it's held and fades over about 3 seconds (the drone holds the root). A move that changes a held note is felt strongly; one that changes a note you haven't heard lately slips by. Near the target, felt prefers the hidden moves; further off, the ones you'll feel in the right direction. The wheel glows on the notes being held. Switch between them to compare by ear." style={{ color: K.lbl, fontSize: 9, letterSpacing: 2, cursor: "help" }}>BRIGHT FEEL</span>
-              <div style={{ display: "flex", gap: 3, marginLeft: "auto" }}>
-                {[["root", "root"], ["felt", "felt (held notes)"]].map(([v, l]) => (
-                  <button key={v} onClick={() => setBrightFeel(v)} style={{
-                    background: brightFeel === v ? K.a : K.bg3, color: brightFeel === v ? "#000" : K.txt,
-                    border: `1px solid ${brightFeel === v ? K.a : K.br}`, borderRadius: 3, padding: "3px 8px",
-                    fontSize: 9, cursor: "pointer", fontFamily: "inherit", fontWeight: brightFeel === v ? 600 : 400,
-                  }}>{l}</button>
-                ))}
-              </div>
+              <span title="How journeys judge a move toward brighter or darker. Left (root) = by the scale's fixed brightness, measured from the root, as always. Right (felt) = also by what you've just heard: every note leaves a memory that grows the longer it's held and fades over about 3 seconds (the drone holds the root). A move that changes a held note is felt strongly; one that changes a note you haven't heard lately slips by. Near the target, felt prefers the hidden moves; further off, the ones you'll feel in the right direction. In between = a blend. random = Chloe moves the slider itself every 30-90 seconds. The wheel glows on the notes being held." style={{ color: K.lbl, fontSize: 9, letterSpacing: 2, cursor: "help" }}>BRIGHT FEEL</span>
+              <span style={{ color: K.t2, fontSize: 9 }}>root</span>
+              <input type="range" min={0} max={1} step={0.01} value={feltAmt} onChange={e => { setFeltRandom(false); setFeltAmt(+e.target.value); }}
+                style={{ flex: 1, minWidth: 0, accentColor: K.a }} />
+              <span style={{ color: K.t2, fontSize: 9 }}>felt</span>
+              <span style={{ color: K.a, fontSize: 10, minWidth: 30, textAlign: "right" }}>{Math.round(feltAmt * 100)}%</span>
+              <button onClick={() => setFeltRandom(v => !v)} style={{
+                background: feltRandom ? K.a : K.bg3, color: feltRandom ? "#000" : K.txt,
+                border: `1px solid ${feltRandom ? K.a : K.br}`, borderRadius: 3, padding: "3px 8px",
+                fontSize: 9, cursor: "pointer", fontFamily: "inherit", fontWeight: feltRandom ? 600 : 400,
+              }}>random</button>
             </div>
             {/* Symphonic — sampled strings + double bass under the line */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>

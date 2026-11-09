@@ -485,3 +485,8 @@ weighing more, not only on the root.
 - To tune by ear: τ (3 s), drone weight (1.5), the 0.3 factor, the 0.05
   "near target" threshold. Ideas: let SMOOTH use hidden moves; let EEG/override
   picks use felt too (now only the journey walk does).
+- 2026-11-09 (later): A/B toggle replaced by a **slider** root 0% → felt 100%
+  (the felt term is scaled by the amount; the wheel glow too) and a **random**
+  switch that sets a new amount every 30–90 s (20% chance each of exactly 0 or
+  1). Listen page: "felt" (on/off) and "felt ~" (random). Saved
+  (`chloe-felt-amt`, `chloe-felt-random`); links carry `bf=<amount>`, `bfr=1`.
