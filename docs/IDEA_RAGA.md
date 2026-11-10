@@ -66,13 +66,73 @@ Starting points are 5-limit just intonation:
 | komal Ni (n) | 9/5 / 16/9 | 1018 / 996 |
 | Ni (N) | 15/8 | 1088 |
 
-**To verify before building, not from memory:** per-raga intonation.
-Two cases are known to differ. Todi's komal Re and Ga sit *lower* than the
-table (ati-komal), and Darbari's komal Ga and Dha are sung with andolan, a
-slow swing around a low pitch. Sources to look up: Levy 1982, *Intonation in
-North Indian Music*; Jairazbhoy & Stone 1963, "Intonation in present-day
-North Indian classical music". Use measured cents where they exist, as was
-done with Shur and gamelan.
+This table is only the starting point. The measured values and note shapes
+in "Tuning research" below override it.
+
+### Tuning research (2026-11-09)
+
+**The main finding changes the plan:** in raga music a special note is a
+*shape*, not a fixed pitch. Van der Meer & Rao measured komal Dha in five
+ragas sung one after another by the same singer. The averages were nearly
+the same, all near 810¢, but each raga was easy to recognise from how the
+note was approached, how it swung and how it left. They conclude that shruti
+is "a melodic contour", a *toneme*, and that pitch as a fixed point is ruled
+out. So Chloe needs **a shape per raga-note**, and a cents table alone won't
+sound right. The ornaments (meend and andolan) move up the build order (below).
+
+**Measured values found so far:**
+
+| Raga | Note | Cents | Source |
+|---|---|---|---|
+| Todi | komal Re | 95 (Kishori Amonkar 96, Asad Ali Khan 99) | Bel, Melodic Movement Analyser averages |
+| Todi | komal Ga | 294 (Amonkar 288, Khan 290) | same |
+| Todi | tivra Ma | 606 avg (Amonkar 594, Khan 593) | same |
+| Todi | Pa | 702 | same |
+| Todi | komal Dha | **792 in the upper octave, 806 in the lower**: it depends on the octave | same |
+| Todi | Ni | 1107 (Amonkar 1110) | same |
+| Bhairav | komal Dha | avg 809, range 796–828 | van der Meer & Rao |
+| Darbari | komal Dha | avg 811, range 801–826 | same |
+| Bhairavi | komal Dha | avg 810, range 805–823 | same |
+| Jaunpuri | komal Dha | avg 819 | same |
+| Puriya Dhanashri | komal Dha | avg 804, range 793–811 | same |
+
+So Todi's Re and Ga really are low (ati-komal: 95 and 294 against 112 and
+316 in the table above), and its Ni is high (1107 against 1088). But
+**Bhairav's and Darbari's komal Dha are *not* ati-komal.** They sit near
+the Pythagorean 814¢, against the textbook claim. What makes them sound
+special is the movement.
+
+**Shapes described in the sources (to build as note shapes):**
+- **Bhairav Dha:** attacked from above, falls fast then slows down ("opens
+  its parachute"), bounces up slightly and settles, then makes a small hump
+  up before moving on to Pa. The widest spread of the five ragas.
+- **Darbari Dha:** either creeps up from Pa and swings gently 2–3 times, or
+  falls from above (S' N\D N\P).
+- **Darbari Ga:** no single pitch can be measured. In Uday Bhawalkar's
+  rendering it swings very slowly about five times, each swing a little
+  higher (as cited from "Gandhara in Darbari Kanada, the Mother of All
+  Shrutis"; numbers not found yet). It is reached from Ma above. Its
+  centre will have to be set by ear: Ronnie's call.
+- **Bhairavi and Puriya Dhanashri Dha:** straight. The neighbouring notes
+  tell them apart (Bhairavi: komal Ni and Pa; Puriya: Ni and tivra Ma).
+- Van der Meer's guess: when nothing pulls a note one way or the other, it
+  drifts to a middle position, so not every note is "just".
+
+**Still missing:** measured values for Yaman, Bhimpalasi, Bageshri and
+Malkauns. Neither study covers them. Start those from the just table and
+let the shapes and Ronnie's ear do the rest. Two sources weren't readable
+here: Jairazbhoy & Stone 1963 (paywalled, BSOAS 26/1:119–132) and the ITC
+SRA report *Experimental Analysis of Shrutis from the Performances in
+Hindustani Music* (27 singers, Bhairav and Darbari aalap). The arXiv paper
+that cites the ITC report gives only per-singer average errors (~9–10¢), not
+per-note values.
+
+Sources:
+- Bel, "Raga intonation", bolprocessor.org/raga-intonation
+- van der Meer & Rao, "Microtonality in Indian music: myth or reality?"
+  (archive.org researchpapers_201305)
+- "Gandhara in Darbari Kanada, The Mother of All Shrutis" (academia.edu 11187267)
+- arXiv 1502.03679 (shruti distributions; cites the ITC SRA data)
 
 ### First ragas (one per time of day)
 
@@ -81,13 +141,13 @@ still need checking against a source. Pakad phrases are not filled in yet.
 
 | Raga | Time | Aroh (up) | Avroh (down) | Vadi / samvadi | Special |
 |---|---|---|---|---|---|
-| Bhairav | dawn | S r G m P d N S' | S' N d P m G r S | d / r | andolan on r and d |
-| Todi (Miyan ki) | late morning | S r g M d N S' | S' N d P M g r S | d / g | ati-komal r, g; Pa weak |
+| Bhairav | dawn | S r G m P d N S' | S' N d P m G r S | d / r | andolan on r and d (d ~809¢, shaped; see below) |
+| Todi (Miyan ki) | late morning | S r g M d N S' | S' N d P M g r S | d / g | measured: r 95, g 294, N 1107; Pa weak |
 | Bilawal | morning | S R G m P D N S' | S' N D P m G R S | D / G | the "major scale" raga |
 | Bhimpalasi | afternoon | n S g m P n S' | S' n D P m g R S | m / S | pentatonic up, full down |
 | Yaman | evening | N R G M D N S' | S' N D P M G R S | G / N | Sa and Pa skipped going up |
 | Bageshri | night | S g m D n S' | S' n D m g R S | m / S | |
-| Darbari Kanada | late night | S R g m P d n S' | S' d n P m P g m R S | R / P | andolan on g and d; slow, low |
+| Darbari Kanada | late night | S R g m P d n S' | S' d n P m P g m R S | R / P | slow swing on g (no fixed pitch) and d (~811¢, not ati-komal); slow, low |
 | Malkauns | midnight | S g m d n S' | S' n d m g S | m / S | pentatonic; no Pa → tanpura on Ma |
 
 ## New engine work (in order of risk)
@@ -118,14 +178,21 @@ still need checking against a source. Pakad phrases are not filled in yet.
 
 ## Build order
 
-1. Raga data in `src/scale24.js` (cents per raga, aroh/avroh, vadi/samvadi,
-   time), after verifying intonation from the sources above.
+Revised after the tuning research: shapes come before the journey.
+
+1. Raga data in `src/scale24.js`: cents per raga (the measured Todi values,
+   ~810 for komal Dha, just intonation elsewhere), octave-dependent pitch
+   where measured (Todi Dha), aroh/avroh, vadi/samvadi, time of day, and a
+   **shape per special note** (straight / from above + settle + hump /
+   creep up + 2–3 swings / slow rising swings).
 2. The India world with the GM sitar, tanpura and tabla, playable in Studio
    on any raga.
-3. Aroh/avroh and vadi weighting in the line generator.
-4. The `raga` journey: the curve above, the raga picked by clock, `ra=`.
-5. Meend and andolan on the lead.
+3. Note shapes on the lead (meend, andolan, approach direction), driven by
+   step 1's shape data.
+4. Aroh/avroh and vadi weighting in the line generator.
+5. The `raga` journey: the curve above, the raga picked by clock, `ra=`.
 6. The synth sitar (jawari + taraf).
 7. The `day` journey through the ragas.
 
-Ronnie listens and judges after steps 2, 4 and 5.
+Ronnie listens and judges after steps 2, 3 (Darbari Ga's centre is his
+call) and 5.
