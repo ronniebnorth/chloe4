@@ -185,8 +185,8 @@ Revised after the tuning research: shapes come before the journey.
    where measured (Todi Dha), aroh/avroh, vadi/samvadi, time of day, and a
    **shape per special note** (straight / from above + settle + hump /
    creep up + 2–3 swings / slow rising swings).
-2. The India world with the GM sitar, tanpura and tabla, playable in Studio
-   on any raga.
+2. **DONE 2026-11-09 (waiting for Ronnie's ear):** the India world with the GM sitar, tanpura and tabla, playable in Studio
+   on any raga. See "Step 2 as built".
 3. Note shapes on the lead (meend, andolan, approach direction), driven by
    step 1's shape data.
 4. Aroh/avroh and vadi weighting in the line generator.
@@ -225,3 +225,43 @@ call) and 5.
   4/3 gives Ma. The default is unchanged (1.498).
 - Hours: Malkauns 1–4, Bhairav 4–7, Bilawal 7–10, Todi 10–13,
   Bhimpalasi 13–18, Yaman 18–21, Bageshri 21–23, Darbari 23–1.
+
+## Step 2 as built (2026-11-09)
+
+- **`sitar` instrument:** the MusyngKite GM sitar (program 105) through
+  `voiceSf`, the same loader as choir/oohs, but with no loop (plucked; it
+  rings for up to 3 beats, max 4 s). Each note is a whole MIDI note plus
+  detune in cents, so raga pitches are exact. Until the samples load (~1 s),
+  the lute plucks in its place. The samples start loading as soon as the
+  India world or the sitar is picked. Level: `SOUND_GAIN.sitar = 0.6`
+  (measured live: at gain 1 its peak was piano's, −8.8 vs −7.6 dB, but its
+  average over 1.2 s ran 8 dB hotter because it keeps ringing, so it's set
+  4.4 dB down; Ronnie to judge).
+- **India world** (`wo=india`): sitar lead, `tabla` beat, `tanpura` drone,
+  tempo pulled toward 72. **Auto holds the raga of the hour**
+  (`clockRaga()`) instead of picking a new scale every ~15 s (the first
+  test changed raga at every pick, which is wrong for a raga), and doesn't
+  restart the line when the pick is the raga already playing. Wander includes
+  India (sleep 0.5, otherwise 0.7, less when tense).
+- **Tanpura per raga:** whenever the scale is a raga with `drone: "m"`
+  (Malkauns, Bageshri), the tanpura's first string glides to 4/3 (Ma), and
+  back to 1.498 for anything else (`voice.setFirst`). This only applies to
+  raga scales; other scales keep the old tanpura.
+- Headless test (2026-11-09, 22:20): no errors; the samples came from
+  gleitz MusyngKite `sitar-ogg.js`; it picked Bageshri, which is correct
+  for 22:20.
+- **Not done yet, and known:** the sitar is a sample, so it can't bend
+  within a note. Step 3's shapes (meend, andolan) need either per-note detune
+  automation through smplr (check whether its voices expose `detune` as an
+  AudioParam) or the synth sitar (step 6) moved earlier. Rhythm, chord and
+  direction are still Auto's usual random picks (chords and waltz have no place in
+  a raga); step 4's line generator fixes that.
+
+### Ronnie: listen for
+1. Does the GM sitar sound like a sitar, or too much like a cheap keyboard
+   patch? (If it's too cheap, the synth sitar moves up.)
+2. Sitar level against the tabla and the tanpura.
+3. The tanpura on Ma (Malkauns after 1 am, Bageshri 21–23): does the
+   switch sound right?
+4. Todi's low Re/Ga and high Ni, and Darbari's Ga (just 316¢ for now): out of
+   tune, or the right flavour?
