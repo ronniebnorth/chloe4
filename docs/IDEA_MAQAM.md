@@ -664,4 +664,16 @@ on the spiral → gamelan world (slendro/pelog as cents scales, a gong cycle).
   happen at Auto's picks, so the strikes come at each key change, not every
   53rd of the journey. Headless check: strikes at D+4¢ (147.2 Hz) and E+8¢
   (165.6 Hz). The opera gong may replace the tam-tam here later.
+- **Tam-tam accents** (done). `strikeTam` hits the root low (MIDI 36 + key,
+  65–123 Hz), at least 20 s apart. Dry plus the main reverb, or into the
+  orchestra's cathedral (o.bus) when the orchestra is on. It strikes at:
+  - journey peaks, via `journeyPeak` (the point with the most tension, else the
+    brightest), only when the peak is inside the journey (0.1–0.97), so Storm at
+    0.6 and Rise at 0.88; world journeys, Endless, Map, Wait, Wake and Draw are
+    excluded;
+  - orchestra resolutions (`resolve`) and the march's last stab;
+  - the temple world: soft and far (vel 0.16, into its room), first at 60–120 s,
+    then every 2–4 min.
+  The render starts early (journey start, orchestra load, temple start), so the
+  first strike is the real gong. Ideas not done: a strike at Wait's drop.
 
