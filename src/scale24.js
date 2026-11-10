@@ -359,7 +359,17 @@ export const REAL_SEEDS = [
     cents: [[1, 1], [9, 8], [81, 64], [3, 2], [27, 16]].map(([n, d]) => rc(n, d)) },
   { name: "Chinese heptatonic, old (gong with bianzhi and biangong)", tag: "Chinese heptatonic", modes: null,
     cents: [[1, 1], [9, 8], [81, 64], [729, 512], [3, 2], [27, 16], [243, 128]].map(([n, d]) => rc(n, d)) },
+  // Javanese gamelan. No two gamelans are tuned alike (each set is tuned to itself),
+  // so these are typical values, not a standard: slendro's five steps are near
+  // equal (~240¢); pelog's seven are uneven (one gamelan's tuning, as commonly cited:
+  // steps 120 150 270 130 115 165 250). Pelog is played in five-note groups
+  // (pathet): bem on tones 1 2 3 5 6, barang on 2 3 5 6 7.
+  { name: "Slendro (gamelan, typical)", tag: "Slendro", modes: null, cents: [0, 231, 474, 717, 955] },
+  { name: "Pelog (gamelan, one typical tuning)", tag: "Pelog", modes: null, cents: [0, 120, 270, 540, 670, 785, 950] },
+  { name: "Pelog bem (tones 1 2 3 5 6)", tag: "Pelog bem", modes: null, cents: [0, 120, 270, 670, 785] },
+  { name: "Pelog barang (tones 2 3 5 6 7)", tag: "Pelog barang", modes: null, cents: [0, 150, 550, 665, 830] },
 ].map(sd => ({ ...sd, id: fromCents(sd.cents, "cents") }));
+export const GAMELAN = Object.fromEntries(["Slendro", "Pelog", "Pelog bem", "Pelog barang"].map(t => [t, REAL_SEEDS.find(sd => sd.tag === t).id]));
 // Names for every mode of the real-intonation seeds
 export const REAL_NAMES = [];
 for (const sd of REAL_SEEDS) {

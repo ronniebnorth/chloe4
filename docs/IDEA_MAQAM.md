@@ -683,4 +683,15 @@ on the spiral → gamelan world (slendro/pelog as cents scales, a gong cycle).
   by ear from descriptions, not measured. The spiral now marks each move with
   the big opera gong (folded under G3), and the tam-tam an octave under it on
   passing each 12th move (the comma moment). Gamelan world still to come.
+- **Gamelan world** (done). Scales are real-intonation seeds: Slendro 0 231 474 717 955;
+  Pelog 0 120 270 540 670 785 950 (steps 120 150 270 130 115 165 250, one
+  commonly cited gamelan); Pelog bem (1 2 3 5 6) and barang (2 3 5 6 7) as
+  5-note sets. These are typical values, since every gamelan is tuned to itself; check
+  against measured sets (e.g. Surjodiningrat's measurements) if refining. The lead is
+  the tuned gong (bonang). The beat `gamelan`, in lancaran form, has 16 beats a cycle:
+  kethuk on the odd beats (a damped "tuk"), kempul on 6/10/14 (degrees 5, 4, 2, MIDI
+  48), kenong every 4th (degrees 2, 3, 2, 1, MIDI 72), and the gong ageng on 16 (root,
+  MIDI 36, a 6 s ring). The kendhang uses darbuka voices, a simplification, so a real
+  kendhang voice is a possible next step. The drone is sine/pad (gamelan has no
+  drone), at ~80 BPM. Simplified: no balungan (saron) or irama changes yet.
 
