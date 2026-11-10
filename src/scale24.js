@@ -342,6 +342,97 @@ export const TURK_PATH = [
    definition; Persian Shur as measured by Abdoli, quoted on
    microtonaltheory.com ("Persian Dastgahs"). */
 const rc = (n, d) => 1200 * Math.log2(n / d);
+/* ── Ragas (Hindustani) ────────────────────────────────────────────────────
+   See docs/IDEA_RAGA.md. A raga is more than a note set: it has a way up
+   (aroh) and a way down (avroh), a main note and its partner (vadi /
+   samvadi), a time of day, and special notes that are SHAPES, not fixed
+   pitches (van der Meer & Rao: "a melodic contour"). Each raga stores:
+   - notes: sargam letter → cents above Sa. Measured where measured (Bel for
+     Todi; van der Meer & Rao for komal Dha, ~804-819¢), 5-limit just
+     elsewhere (r 16/15, R 9/8, g 6/5, G 5/4, m 4/3, M 45/32, P 3/2, d 8/5,
+     D 5/3, n 16/9, N 15/8). komal Ni is 16/9 = a pure 4th above Ma, which
+     the Ma-centred ragas (Bhimpalasi, Bageshri, Malkauns) lean on.
+   - octave: notes whose pitch depends on the register (Todi's Dha, Bel:
+     806 in the lower octave, 792 in the upper); `high` applies from upper Sa.
+   - aroh / avroh: phrases in sargam, ' = upper octave, . = lower octave.
+     They can zig-zag (vakra, Darbari's avroh). The scale is their union.
+   - shapes: per special note, keyed by approach ("up" = from below, "down" =
+     from above, "any"), a list of [t, cents] keyframes over the note's
+     length (t 0..1, cents offset from the note's pitch). Built from the
+     sources' descriptions; the depths and timings are first guesses for
+     Ronnie's ear, not measurements.
+   - drone: the tanpura's first string (Pa, or Ma when the raga has no Pa).
+   - hours: [from, to) on the listener's clock, may wrap midnight. */
+const SARGAM = ["S", "r", "R", "g", "G", "m", "M", "P", "d", "D", "n", "N"];
+// Shapes, named once and shared
+const SHAPE = {
+  // Andolan: a slow swing down toward the lower neighbour and back, twice
+  andolan: [[0, 0], [0.2, -22], [0.42, 0], [0.62, -22], [0.84, 0], [1, 0]],
+  // Bhairav Dha: struck from above, falls fast then slows ("opens its
+  // parachute"), bounces up a little and settles; a small hump before Pa
+  parachute: [[0, 90], [0.06, 30], [0.18, -8], [0.28, 5], [0.4, 0], [0.82, 0], [0.9, 14], [1, 0]],
+  // Darbari Dha from Pa: creeps up, then swings gently 2-3 times
+  creepSwing: [[0, -70], [0.22, -4], [0.36, -18], [0.5, 0], [0.64, -14], [0.78, 0], [1, 0]],
+  // Darbari Dha from above (S' N\D N\P): falls in and settles
+  fallSettle: [[0, 80], [0.15, 6], [0.3, -6], [0.45, 0], [1, 0]],
+  // Darbari Ga: no fixed pitch; reached from Ma, it swings very slowly about
+  // five times, each swing a little higher, ending on its centre
+  risingSwings: [[0, 70], [0.07, -42], [0.16, -8], [0.26, -36], [0.35, -4], [0.45, -28], [0.54, 0], [0.64, -20], [0.74, 3], [0.85, -12], [1, 0]],
+};
+export const RAGAS = [
+  { key: "bhairav", name: "Bhairav", time: "dawn", hours: [4, 7],
+    notes: { S: 0, r: rc(16, 15), G: rc(5, 4), m: rc(4, 3), P: rc(3, 2), d: 809, N: rc(15, 8) },
+    aroh: "S r G m P d N S'", avroh: "S' N d P m G r S", vadi: "d", samvadi: "r", drone: "P",
+    shapes: { r: { any: SHAPE.andolan }, d: { down: SHAPE.parachute, up: SHAPE.andolan } } },
+  { key: "bilawal", name: "Bilawal", time: "morning", hours: [7, 10],
+    notes: { S: 0, R: rc(9, 8), G: rc(5, 4), m: rc(4, 3), P: rc(3, 2), D: rc(5, 3), N: rc(15, 8) },
+    aroh: "S R G m P D N S'", avroh: "S' N D P m G R S", vadi: "D", samvadi: "G", drone: "P", shapes: {} },
+  { key: "todi", name: "Todi", full: "Miyan ki Todi", time: "late morning", hours: [10, 13],
+    notes: { S: 0, r: 95, g: 294, M: 606, P: 702, d: 806, N: 1107 },
+    octave: { d: { high: 792 } },
+    aroh: "S r g M d N S'", avroh: "S' N d P M g r S", vadi: "d", samvadi: "g", drone: "P", weak: ["P"],
+    shapes: {} },
+  { key: "bhimpalasi", name: "Bhimpalasi", time: "afternoon", hours: [13, 18],
+    notes: { S: 0, R: rc(9, 8), g: rc(6, 5), m: rc(4, 3), P: rc(3, 2), D: rc(5, 3), n: rc(16, 9) },
+    aroh: ".n S g m P n S'", avroh: "S' n D P m g R S", vadi: "m", samvadi: "S", drone: "P", shapes: {} },
+  { key: "yaman", name: "Yaman", time: "evening", hours: [18, 21],
+    notes: { S: 0, R: rc(9, 8), G: rc(5, 4), M: rc(45, 32), P: rc(3, 2), D: rc(5, 3), N: rc(15, 8) },
+    aroh: ".N R G M D N S'", avroh: "S' N D P M G R S", vadi: "G", samvadi: "N", drone: "P", shapes: {} },
+  { key: "bageshri", name: "Bageshri", time: "night", hours: [21, 23],
+    notes: { S: 0, R: rc(9, 8), g: rc(6, 5), m: rc(4, 3), D: rc(5, 3), n: rc(16, 9) },
+    aroh: "S g m D n S'", avroh: "S' n D m g R S", vadi: "m", samvadi: "S", drone: "m", shapes: {} },
+  // Darbari's Ga centre is Ronnie's call by ear; it starts from just 6/5 and
+  // its shape swings up into it from below
+  { key: "darbari", name: "Darbari", full: "Darbari Kanada", time: "late night", hours: [23, 1],
+    notes: { S: 0, R: rc(9, 8), g: rc(6, 5), m: rc(4, 3), P: rc(3, 2), d: 811, n: rc(16, 9) },
+    aroh: "S R g m P d n S'", avroh: "S' d n P m P g m R S", vadi: "R", samvadi: "P", drone: "P", slow: true,
+    shapes: { g: { down: SHAPE.risingSwings, up: SHAPE.risingSwings }, d: { up: SHAPE.creepSwing, down: SHAPE.fallSettle } } },
+  { key: "malkauns", name: "Malkauns", time: "midnight", hours: [1, 4],
+    notes: { S: 0, g: rc(6, 5), m: rc(4, 3), d: rc(8, 5), n: rc(16, 9) },
+    aroh: "S g m d n S'", avroh: "S' n d m g S", vadi: "m", samvadi: "S", drone: "m", shapes: {} },
+].map(r => {
+  // Phrases → [{ n: letter, o: octave -1/0/1, c: cents incl. octave }]
+  const parse = (s) => s.trim().split(/\s+/).map(tok => {
+    const o = tok.startsWith(".") ? -1 : tok.endsWith("'") ? 1 : 0, n = tok.replace(/[.']/g, "");
+    if (!(n in r.notes)) throw new Error(`raga ${r.key}: ${n} not in its notes`);
+    return { n, o, c: r.notes[n] + 1200 * o };
+  });
+  const order = Object.keys(r.notes).sort((a, b) => SARGAM.indexOf(a) - SARGAM.indexOf(b));
+  return { ...r, full: r.full || r.name, order, cents: order.map(n => r.notes[n]), up: parse(r.aroh), down: parse(r.avroh) };
+});
+export const ragaByKey = (k) => RAGAS.find(r => r.key === k);
+// Pitch of a raga note in a given octave (0 = middle), with register-dependent notes
+export const ragaCents = (r, n, o = 0) => (o >= 1 && r.octave?.[n]?.high != null ? r.octave[n].high : r.notes[n]) + 1200 * o;
+// The raga for an hour of the day (0-23.99), from the listener's clock
+export const ragaForHour = (h) => RAGAS.find(r => {
+  const [a, b] = r.hours;
+  return a < b ? h >= a && h < b : h >= a || h < b;
+}) || RAGAS[0];
+// Seeds for the real-intonation list. A raga whose notes are exactly an
+// existing seed (Bilawal = Just major) is not added again; it gets a second
+// name instead (see REAL_NAMES).
+const RAGA_SEEDS = RAGAS.map(r => ({ name: `Raga ${r.full} (${r.time})`, tag: `Raga ${r.name}`, modes: null, cents: r.cents, raga: r.key }));
+
 const MODE_NAMES = ["Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"];
 export const REAL_SEEDS = [
   { name: "Just major (= Ionian, tuning just)", tag: "Just", modes: MODE_NAMES,   // note for note the TUNING switch on Ionian; its modes keep C-major tuning (wolf 5ths)
@@ -369,6 +460,13 @@ export const REAL_SEEDS = [
   { name: "Pelog bem (tones 1 2 3 5 6)", tag: "Pelog bem", modes: null, cents: [0, 120, 270, 670, 785] },
   { name: "Pelog barang (tones 2 3 5 6 7)", tag: "Pelog barang", modes: null, cents: [0, 150, 550, 665, 830] },
 ].map(sd => ({ ...sd, id: fromCents(sd.cents, "cents") }));
+// Ragas join the list unless their notes already exist under another name
+const RAGA_ALIAS = [];
+for (const sd of RAGA_SEEDS) {
+  const id = fromCents(sd.cents, "cents"), same = REAL_SEEDS.find(x => x.id === id);
+  if (same) RAGA_ALIAS.push([id, sd.name]); else REAL_SEEDS.push({ ...sd, id });
+}
+for (const r of RAGAS) r.id = fromCents(r.cents, "cents");
 export const GAMELAN = Object.fromEntries(["Slendro", "Pelog", "Pelog bem", "Pelog barang"].map(t => [t, REAL_SEEDS.find(sd => sd.tag === t).id]));
 // Names for every mode of the real-intonation seeds
 export const REAL_NAMES = [];
@@ -380,6 +478,7 @@ for (const sd of REAL_SEEDS) {
     if (name) REAL_NAMES.push([id, name]);
   });
 }
+for (const [id, name] of RAGA_ALIAS) { const e = REAL_NAMES.find(x => x[0] === id); if (e) e[1] = `${e[1]} · ${name}`; }
 export const CHINESE_PENTA = REAL_SEEDS.find(sd => sd.tag === "Chinese pentatonic").id;
 export const CHINESE_HEPTA = REAL_SEEDS.find(sd => sd.tag === "Chinese heptatonic").id;
 // A pure fifth in cents. Stacked fifths never close the octave: 12 miss by

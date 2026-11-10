@@ -603,10 +603,11 @@ function synthDrone(ac, freq, type, opts) {
     });
 
   } else if (type === "tanpura") {
-    // Indian tanpura: root, P5, oct, 2oct — each string slowly pulsing
+    // Indian tanpura: root, P5, oct, 2oct — each string slowly pulsing.
+    // opts.first retunes the first string (4/3 = Ma, for ragas with no Pa)
     master.gain.value = 0.055;
     const mix = ac.createGain(); mix.gain.value = 1; mix.connect(master);
-    [[1, -2, 0.23, 0.35, 0.65], [1.498, 1, 0.19, 0.28, 0.50], [2, 0, 0.27, 0.30, 0.55], [4, 2, 0.17, 0.22, 0.40]]
+    [[1, -2, 0.23, 0.35, 0.65], [opts?.first ?? 1.498, 1, 0.19, 0.28, 0.50], [2, 0, 0.27, 0.30, 0.55], [4, 2, 0.17, 0.22, 0.40]]
       .forEach(([mult, detune, rate, depth, base]) => {
         const o = mk(freq * mult, "sine", detune);
         const ampEnv = ac.createGain(); ampEnv.gain.value = base;

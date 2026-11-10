@@ -180,7 +180,7 @@ still need checking against a source. Pakad phrases are not filled in yet.
 
 Revised after the tuning research: shapes come before the journey.
 
-1. Raga data in `src/scale24.js`: cents per raga (the measured Todi values,
+1. **DONE 2026-11-09:** `RAGAS` in `src/scale24.js` (details under "Step 1 as built"). Raga data in `src/scale24.js`: cents per raga (the measured Todi values,
    ~810 for komal Dha, just intonation elsewhere), octave-dependent pitch
    where measured (Todi Dha), aroh/avroh, vadi/samvadi, time of day, and a
    **shape per special note** (straight / from above + settle + hump /
@@ -196,3 +196,32 @@ Revised after the tuning research: shapes come before the journey.
 
 Ronnie listens and judges after steps 2, 3 (Darbari Ga's centre is his
 call) and 5.
+
+## Step 1 as built (2026-11-09)
+
+- `RAGAS` in `src/scale24.js`: the eight ragas above, each with `notes`
+  (sargam → cents), `aroh`/`avroh` parsed into `up`/`down` (note, octave,
+  cents), `vadi`/`samvadi`, `time`/`hours`, `drone` (P, or m for Bageshri and
+  Malkauns), `shapes` and `id`. Helpers: `ragaByKey`, `ragaForHour(h)`,
+  `ragaCents(r, note, octave)` (applies Todi's upper-octave Dha, 792).
+- **Tuning choices:** Todi measured (r 95, g 294, M 606, P 702, d 806 / 792
+  from upper Sa, N 1107). komal Dha 809 in Bhairav and 811 in Darbari (van der
+  Meer & Rao). Malkauns' d is just 8/5 (814). komal Ni is **16/9 (996)**, a
+  pure 4th above Ma, because the Ma-centred ragas lean on it. Everything else
+  is 5-limit just, with Pa an exact 3/2. **Darbari Ga starts at just 6/5
+  (316), waiting for Ronnie's ear.**
+- **Shapes** are keyframes `[t, cents offset]` over a note's length, keyed by
+  approach (`up` / `down` / `any`): Bhairav r andolan; Bhairav d parachute
+  from above, andolan from below; Darbari d creeping swing from Pa and a
+  fall-and-settle from above; Darbari g with five slow swings, each higher.
+  Depths and timings are first guesses from the descriptions.
+- The ragas joined `REAL_SEEDS` (appended, so the `rel-1…10` family IDs are
+  unchanged), and they show in Studio under REAL INTONATION as
+  "Raga Yaman (evening)" etc. **Bilawal = Just major** note for note, so it
+  isn't a separate scale: Just major's name gains "· Raga Bilawal (morning)".
+- The 24-grid stand-ins (`approx`) are all clean 7-note (or 5/6-note) sets;
+  no two notes land on the same quarter tone.
+- The tanpura drone takes `opts.first` (a ratio) for its first string:
+  4/3 gives Ma. The default is unchanged (1.498).
+- Hours: Malkauns 1–4, Bhairav 4–7, Bilawal 7–10, Todi 10–13,
+  Bhimpalasi 13–18, Yaman 18–21, Bageshri 21–23, Darbari 23–1.
