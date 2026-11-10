@@ -191,7 +191,7 @@ Revised after the tuning research: shapes come before the journey.
    step 1's shape data.
 4. Aroh/avroh and vadi weighting in the line generator.
 5. The `raga` journey: the curve above, the raga picked by clock, `ra=`.
-6. The synth sitar (jawari + taraf).
+6. **DONE 2026-11-09 (moved up, see "The synth sitar"):** the synth sitar (jawari + taraf).
 7. The `day` journey through the ragas.
 
 Ronnie listens and judges after steps 2, 3 (Darbari Ga's centre is his
@@ -265,3 +265,46 @@ call) and 5.
    switch sound right?
 4. Todi's low Re/Ga and high Ni, and Darbari's Ga (just 316¢ for now): out of
    tune, or the right flavour?
+
+## The synth sitar (2026-11-09, moved up from step 6)
+
+Ronnie on the GM sample: "sounds cheap keyboard patch... lacks depth...
+Sitar strings don't keep steady like keys, but there's a lot of sympathetic
+strings." So the sample is gone, and `sitar` is now synthesised.
+
+- **`src/sitar.js`** is plain JS with no Web Audio, so node can test it.
+  `renderString` is Karplus-Strong with 4-point Lagrange reads (every note
+  within ~1¢, measured at 131-880 Hz) and a loop low-pass.
+- **Jawari:** a first try that modulated the delay length did nothing
+  measurable. What's in now is a *level-relative* one-sided bridge: the
+  swing toward the bridge is held back past (1 - jaw) of the string's own
+  current swing, so it keeps buzzing as the note dies. On top of that sits a
+  buzz band: the part of the swing past half the swing level, band-passed,
+  its centre gliding 3.5 → 1.5 kHz over ~0.8 s.
+- **Taraf:** 13 strings on the scale's notes from Sa (an octave below the
+  lead's Sa) upward (`tarafTuning`). `tarafCoupling` is the overlap of
+  partials within ~10¢; strings under 0.08 stay silent. They swell in over
+  60 ms, ring for 5 s, and a string set going again damps its old ring.
+- **Pitch moves** through playbackRate: the pluck starts +5¢ and settles in
+  0.2 s; a raga note with a shape takes it (direction = from above or below
+  the last note); otherwise there's a 30% meend (10% when fast) from the last
+  note when it's within 320¢ and under 2 s ago. A new note stops the last
+  one on the string, except notes starting together (chords).
+- **Listening A/B:** two WAVs of the same Bhairav phrase, buzz 0.5 vs 1.5.
+  Ronnie: "A sounds more real". So buzz = 0.5 (the default).
+- **Cost and cache:** a string takes ~3-25 ms to render, so each pitch is
+  rendered once and cached (LRU: 32 main strings at 3.8 s, 26 taraf strings
+  at 5 s, ~50 MB at most). While India or the sitar is on, the scale's
+  strings are rendered ahead in the background, one every 40 ms.
+- **Level:** `SOUND_GAIN.sitar = 4`. Measured live: at 0.6 it peaked at
+  −26 dB against piano −7.6, so it's now ~−9.6 peak / −20.5 RMS.
+- Live India run at 22:39: held Bageshri, no errors.
+- **Seen in that run:** Auto still moves the key (C → D). A raga keeps its
+  Sa, so the India world should lock the key: add that in step 4 along with
+  the rhythm and chord fixes.
+
+### Ronnie: listen for (in the India world, or the sitar on any scale)
+1. Does it still sound real in the full mix with tabla and tanpura?
+2. Level against the tabla.
+3. Too much or too little ringing from the sympathetic strings?
+4. Darbari (23:00-01:00): the slow swings on Ga and Dha.
