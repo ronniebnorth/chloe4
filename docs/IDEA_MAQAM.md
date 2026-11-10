@@ -694,4 +694,21 @@ on the spiral → gamelan world (slendro/pelog as cents scales, a gong cycle).
   MIDI 36, a 6 s ring). The kendhang uses darbuka voices, a simplification, so a real
   kendhang voice is a possible next step. The drone is sine/pad (gamelan has no
   drone), at ~80 BPM. Simplified: no balungan (saron) or irama changes yet.
+- **Kendhang, saron, irama** (done).
+  - **Balungan:** 16 degrees per gongan, a step-wise walk with strong tones on
+    the kenong beats, ending home; a new one every 2–3 gongan.
+  - **Saron** (new instrument `saron`, level 1.1): a bronze bar, 4 partial pairs,
+    a mallet click, damped at the next note. It plays the balungan at MIDI 72. The
+    peking (saron at 84) plays each note twice, the next one early (nacah-like):
+    2 a beat in lancar, 4 in dadi.
+  - **Gongs:** kenong (MIDI 60), kempul (48) and the gong ageng (root, 36) strike
+    the balungan's notes on their beats.
+  - **Kendhang:** a synthesised drum. Strokes: dhung (118→84 Hz), tung (262 Hz),
+    tak (a 2.6 kHz slap), dhang (dhung + tak, with the gong). Simplified per-beat
+    patterns for odd and even beats plus a fill on beat 15; not real kendhang
+    patterns (ladrang/ciblon), so worth checking against a source.
+  - **Irama:** lancar (4 steps a beat) or dadi (8). Calm (energy < 0.25 or MOOD
+    < −0.3) asks for dadi and tension for lancar. The kendhang fill on beat 15
+    signals the change, which takes effect at the next gong. Headless at
+    MOOD −0.7: lancar → dadi → dadi.
 
