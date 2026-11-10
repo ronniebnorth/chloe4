@@ -14,6 +14,10 @@
    - Breath. Air noise that pulses with each cycle of the reed, more of it in
      soft playing and at the onset.
    - Phrase ends sigh: the level falls and the pitch sinks a few cents.
+   - Breath that varies: each phrase gets its own amount of air (0.6-1.4×),
+     drifting slowly within the phrase.
+   - gain (per note) is the loudness only: it doesn't darken the tone, so a
+     volume control doesn't change the colour.
 
    Use: const v = new DudukVoice(sr, opts); v.noteOn(hz, vel, legato);
    v.noteOff(); v.render(outFloat32, start, count) adds into out. */
@@ -34,10 +38,13 @@ function biquad(type, sr, f, Q, gainDb = 0) {
 }
 
 export const DUDUK_DEFAULTS = {
-  breath: 0.22,      // air noise level
-  dark: 2.3,         // spectral tilt when soft (higher = darker)
-  bright: 1.15,      // spectral tilt when loud
-  even: 0.45,        // even partials relative to odd (cylindrical bore: odd strong)
+  // Version "A" of the 2026-11-09 listening test (Ronnie: "A for sure"; the
+  // brighter, cleaner B "sounded more like a big ocarina"; a breathier A2
+  // was "maybe too breathy, but sometimes there is more or less breath")
+  breath: 0.26,      // air noise level (each phrase takes its own share, see breathMul)
+  dark: 2.5,         // spectral tilt when soft (higher = darker)
+  bright: 1.35,      // spectral tilt when loud
+  even: 0.5,         // even partials relative to odd (cylindrical bore: odd strong)
   vibRate: 5.1,      // Hz, centre of the drift
   vibDepth: 16,      // cents, typical bloom depth
   vibDelay: 0.35,    // s after a note starts before vibrato blooms
@@ -56,6 +63,7 @@ export class DudukVoice {
     this.amp = 0; this.tgtAmp = 0; this.ampTau = 0.08;
     this.on = false; this.noteT = 0; this.vibD = 0; this.vibTgt = 0;
     this.rateDrift = 0; this.depthDrift = 1;
+    this.breathMul = 1; this.breathDrift = 0; this.gain = 0; this.tgtGain = 0;
     this.jit = 0; this.shim = 0; this.onsetAir = 0; this.sighCents = 0; this.swell = 1;
     this.fTau = this.o.glide;
     this.form = this.o.formants.map(([f, q, g]) => biquad("peak", sr, f, q, g));
@@ -64,13 +72,16 @@ export class DudukVoice {
     this.hp = 0; this.hpIn = 0;
   }
   // A note: hz, vel 0..1, legato = slide from the current note (the phrase goes on)
-  noteOn(hz, vel = 0.7, legato = this.on) {
+  noteOn(hz, vel = 0.7, legato = this.on, gain = 1) {
+    this.tgtGain = gain;
     const L = Math.log2(hz);
     if (!legato || this.amp < 0.02) {
       this.logF = L - this.o.scoop * (0.6 + 0.8 * this.rnd()) / 1200;   // scoop up from below
       this.fTau = 0.06 + 0.05 * this.rnd();
       this.ampTau = 0.09; this.onsetAir = 1;
       this.vibD = 0;
+      this.breathMul = 0.6 + 0.8 * this.rnd();   // this phrase's own amount of air
+      if (this.amp < 0.02) this.gain = gain;
     } else {
       this.fTau = this.o.glide * (0.7 + 0.6 * this.rnd());
       this.ampTau = 0.15;
@@ -95,11 +106,13 @@ export class DudukVoice {
       // control (smoothed every sample; cheap enough)
       this.logF += kF * (this.tgtLogF - this.logF);
       this.amp += kA * (this.tgtAmp - this.amp);
+      this.gain += 0.002 * (this.tgtGain - this.gain);
       this.noteT += dt;
       if (this.on) this.swell += (1 - this.swell) * dt / 1.2;
       // vibrato: blooms after vibDelay, rate and depth drift slowly
       this.rateDrift += kD * ((r() * 2 - 1) * 0.6 - this.rateDrift);
       this.depthDrift += kD * ((0.75 + 0.5 * r()) - this.depthDrift);
+      this.breathDrift += kD * 0.5 * ((r() * 2 - 1) - this.breathDrift);
       const want = this.on && this.noteT > o.vibDelay ? this.vibTgt * this.depthDrift : this.vibD * 0.98;
       this.vibD += kV * (want - this.vibD);
       this.vibPh += TAU * (o.vibRate + this.rateDrift) * dt;
@@ -121,14 +134,14 @@ export class DudukVoice {
       // breath: noise pulsing with the reed's cycle, more when soft and at onsets
       this.onsetAir *= 1 - dt / 0.12;
       const pulse = 0.55 + 0.45 * Math.max(0, Math.sin(TAU * this.phase));
-      const airAmt = o.breath * (0.5 + 0.7 * (1 - Math.min(1, lvl)) + 1.6 * this.onsetAir);
+      const airAmt = o.breath * this.breathMul * (1 + 0.6 * this.breathDrift) * (0.5 + 0.7 * (1 - Math.min(1, lvl)) + 1.6 * this.onsetAir);
       const a = this.air((r() * 2 - 1)) * airAmt * pulse;
       let y = s * lvl + a * Math.sqrt(lvl);
       for (const F of this.form) y = F(y);
       y = this.lp(y);
       // DC / rumble blocker
       this.hp = y - this.hpIn + 0.995 * this.hp; this.hpIn = y;
-      out[i] += this.hp * 0.3;
+      out[i] += this.hp * 0.3 * this.gain;
     }
   }
 }
