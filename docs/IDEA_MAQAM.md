@@ -676,4 +676,11 @@ on the spiral → gamelan world (slendro/pelog as cents scales, a gong cycle).
     then every 2–4 min.
   The render starts early (journey start, orchestra load, temple start), so the
   first strike is the real gong. Ideas not done: a strike at Wait's drop.
+- **Opera gong** (done, `opera`). Notes under G3 play the big daluo, sliding
+  down 160–240¢ over about 0.5 s; higher notes the small xiaoluo, sliding up
+  120–180¢ over about 0.3 s with a hard-beater click. A few uneven partials slide
+  together; the ring is 3 s (big) or 1.6 s (small). Level 0.61. Slide amounts are
+  by ear from descriptions, not measured. The spiral now marks each move with
+  the big opera gong (folded under G3), and the tam-tam an octave under it on
+  passing each 12th move (the comma moment). Gamelan world still to come.
 
