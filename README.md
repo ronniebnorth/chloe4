@@ -109,6 +109,35 @@ The earliest verifiable public record of Chloe's binary encoding is a [Facebook 
 
 The brightest-to-darkest order of the seven diatonic modes is long-standing music-theory teaching. What is original to Chloe — applying a brightness score to order the modes of all 124 scale families, the courage framework, the brave frog metaphor, the environment-based emotional framing, and the interactive exploration approach — is documented in [chloe_scale_explorer_provenance.docx](docs/provenance/chloe_scale_explorer_provenance.docx).
 
+### Related work (searched November 2026)
+
+**The number order is the brightness order.** Sort the seven diatonic modes by their 12-bit scale numbers and they come out in exact brightness order, in either bit order:
+
+| Mode | Ian Ring value (root = lowest bit) | Root-first value (root = highest bit) | Brightness sum |
+|---|---|---|---|
+| Lydian | 2773 | 2741 | 39 |
+| Ionian | 2741 | 2773 | 38 |
+| Mixolydian | 1717 | 2774 | 37 |
+| Dorian | 1709 | 2902 | 36 |
+| Aeolian | 1453 | 2906 | 35 |
+| Phrygian | 1451 | 3418 | 34 |
+| Locrian | 1387 | 3434 | 33 |
+
+With the root as the lowest bit (Chloe's values), bigger means brighter; with the root as the highest bit, smaller means brighter. Beyond the diatonic modes the number order is an approximation. Over every pair of 7-note scales, both bit orders agree with the brightness sum on 82.2% of pairs, and within a single family they agree on about 87% of the pairs the sum separates. The misses happen because a numeric sort is decided by one end of the scale first. With Chloe's values, the highest note decides: `{0,1,2,4,11}` outranks `{0,7,8,9,10}` because of its major 7th, though it sits much lower overall. That is why Chloe scores brightness with the sum rather than the raw number.
+
+A November 2026 web search found no publication stating that sorting 12-bit scale numbers gives the brightness order. The nearest prior art:
+
+- **Xenharmonic Wiki, "Scale Codes"** (user page by Xenoindex, en.xen.wiki/w/User:Xenoindex/Scale_Codes): encodes scales with two step sizes as binary (large step = 1, small = 0) and states that a mode is brighter the larger its code is relative to the other modes. The same "bigger number = brighter" idea, but with a different code (steps, not the 12 semitones), and only for two-step-size scales. The page blocks automated access, so its date was not checked.
+- **Rich Cochrane**, *Scale and Arpeggio Resources* (2012), ch. 18, and **William Zeitler**, [allthescales.org](https://allthescales.org/intro.php): number all 12-bit scales and list modes in numeric order, without mentioning brightness.
+- **Ian Ring**, [A Study of Scales](https://ianring.com/musictheory/scales/) (2009): the same numbering Chloe uses. No brightness sort was found.
+- **Arthur Fox**, ["The Dorian Brightness Quotient"](https://mynewmicrophone.com/?p=656) (2018): +1 per raised degree and −1 per lowered degree, relative to Dorian. Brightness as a count, with no numbering.
+- **"Modal Color Theory"** and the [musicMCT](https://rdrr.io/cran/musicMCT/man/brightnessgraph.html) R package: "sum brightness", the same measure as Chloe's score, plus a voice-leading brightness order between modes.
+- **Ethan Hein**, ["Modes from light to dark around the chromatic circle"](https://www.ethanhein.com/wp/2021/modes-from-light-to-dark-around-the-chromatic-circle/) (2021): the diatonic order shown on the circle.
+
+Fair framing: the diatonic bright-to-dark order is long-standing teaching, and so is the sum measure. That a plain sort of the scale numbers produces the order was found independently for Chloe in 2017; it is close to the Xenharmonic step-code observation, and others who number scales may well have noticed it without writing it down. Claim it as independent discovery, not as a first. The web search could not cover books or old forum archives.
+
+**Felt brightness (BRIGHT FEEL).** Judging a move by the notes the ear is still holding, not only by the root, has relatives in music cognition: echoic-memory models of tonal context in which each pitch fades over a second or two (Marc Leman), pitch salience (Richard Parncutt), and expectation built from recent notes (David Huron, *Sweet Anticipation*, 2006). Smooth one-note moves between scales are studied as voice leading (Dmitri Tymoczko, *A Geometry of Music*, 2011). No source was found that combines these the way Chloe does: brightness measured against a fading memory of the melody, a journey that prefers hidden moves near its target and felt ones far from it, and a root-to-felt slider that can wander on its own.
+
 ## Support
 
 If you find Chloe useful, consider leaving a tip:
