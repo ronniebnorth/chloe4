@@ -13,6 +13,7 @@ export const video = {
   mix: 0.7, invert: false,               // mix: 1 = all light, 0 = all motion
   line: defaultLine(),
   rec: null,                             // the save-with-music recorder while it runs
+  saved: null,                           // the last saved file: { url, name, size }
 };
 
 const W = 64, H = 36;
@@ -115,9 +116,12 @@ export function startVideoRec(el, ac, masterOut) {
   };
 }
 
+// Starts the download, and keeps the file in video.saved so the page can show a
+// link to it too (Chrome sometimes holds back a download the page starts itself)
 export const download = (blob, name) => {
+  if (video.saved) URL.revokeObjectURL(video.saved.url);
+  const url = URL.createObjectURL(blob);
+  video.saved = { url, name, size: blob.size };
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
 };

@@ -4117,7 +4117,7 @@ export default function Chloe() {
           el.currentTime = 0;
           if (video.wantSave) {
             video.wantSave = false;
-            try { video.rec = startVideoRec(el, getCtx(), masterOut); setVideoBusy("saving: recording as it plays…"); }
+            try { video.rec = startVideoRec(el, getCtx(), masterOut); setVideoBusy("saving: recording as it plays… keep this tab in front"); }
             catch (e) { setVideoBusy(e.message); }
           }
           el.play().catch(() => {});
@@ -4133,6 +4133,11 @@ export default function Chloe() {
     const tick = () => {
       if (journeyRef.current !== J || J.ending) return;
       const vel = j.video ? videoElRef.current : null;
+      // Saving: Chrome pauses a muted video in a hidden tab, which would stall the take
+      if (vel && video.rec) {
+        if (document.hidden) setVideoBusy("saving is paused: come back to this tab and it carries on");
+        else if (vel.paused && !vel.ended) { vel.play().catch(() => {}); setVideoBusy("saving: recording as it plays… keep this tab in front"); }
+      }
       const el = vel && video.duration ? vel.currentTime * 1000 : Date.now() - J.startMs;
       // Endless never arrives; f is just where it is in the drawn window. Video: the video's own clock
       const f = j.endless ? (el % ENDLESS_WINDOW) / ENDLESS_WINDOW : j.live ? 1 : vel && video.duration ? (vel.ended ? 1 : Math.min(1, el / (video.duration * 1000))) : Math.min(1, el / (J.mins * 60000));
@@ -4223,7 +4228,7 @@ export default function Chloe() {
     const blob = await r.stop();
     const ext = r.mime.includes("mp4") ? "mp4" : "webm";
     download(blob, `${(video.name || "video").replace(/\.[^.]+$/, "")}-chloe.${ext}`);
-    setVideoBusy(`saved ${ext.toUpperCase()} to your downloads${ext === "webm" ? " (this browser can't make MP4; convert it if your app wants MP4)" : ""}`);
+    setVideoBusy(`saved ${ext.toUpperCase()}${ext === "webm" ? " (this browser can't make MP4; convert it if your app wants MP4)" : ""}. If it isn't in your Downloads, use the link below.`);
     track("video/saved");
   };
 
@@ -8753,6 +8758,9 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
               </div>
             )}
             {videoBusy && <div style={{ color: K.t1, fontSize: 11, marginTop: 8 }}>{videoBusy}</div>}
+            {video.saved && !video.rec && <div style={{ marginTop: 8 }}>
+              <a href={video.saved.url} download={video.saved.name} style={{ ...chip(true), display: "inline-block", textDecoration: "none", border: `1px solid ${JOURNEY_COLOR}`, color: JOURNEY_COLOR }}>⬇ download {video.saved.name} ({(video.saved.size / 1e6).toFixed(1)} MB)</a>
+            </div>}
             <div style={{ color: K.t2, fontSize: 10, lineHeight: 1.5, marginTop: 10 }}>
               Chloe looks at 60 moments of the video: how bright each is and how much is moving. That becomes the line above, and the music follows it for exactly as long as the video. The video stays on your computer; nothing is uploaded. Short videos change sound, tempo and space more than whole scales. Music made this way is yours to use.
             </div>
