@@ -11,7 +11,7 @@ const lerp = (a, b, x) => a + (b - a) * x;
 const round1 = x => Math.round(x * 10) / 10;
 
 // The live state the journey reads (like drawn.js's line): set by the page
-export const wind = { speed: null, gust: null, dir: null, time: null, interval: 900, fetched: null, place: null, lat: null, lon: null, invert: false, gusts: false, error: "", from: null, glideStart: 0 };
+export const wind = { speed: null, gust: null, dir: null, time: null, interval: 900, fetched: null, place: null, lat: null, lon: null, invert: false, gusts: false, useDir: true, error: "", from: null, glideStart: 0 };
 const GLIDE_MS = 10 * 60000;   // a new reading takes 10 minutes to blow in
 
 export const WIND_REFRESH_MS = 5 * 60000;    // Open-Meteo's current values change every 15 min; check every 5
@@ -44,13 +44,28 @@ export const windInst = (ms) => {
 export const windVals = (ms) => {
   const x = windInst(ms), g = gustiness();
   return {
-    b: wind.invert ? lerp(0.72, 0.3, x) : lerp(0.3, 0.72, x),
+    b: clamp01((wind.invert ? lerp(0.72, 0.3, x) : lerp(0.3, 0.72, x)) + dirShade()),
     t: lerp(0.75, 1.25, x),
     rv: lerp(0.88, 0.45, x),
     su: lerp(1.6, 0.8, x),
     e: clamp01(g * x),
     tn: clamp01(g * 0.7),
   };
+};
+
+// Direction (where the wind comes FROM), as if facing north on a map:
+// west wind leans the mix left, east right (up to 0.35); north wind a little
+// darker, south a little brighter (up to 0.07 of brightness). Off = how much only.
+const dirOn = () => wind.useDir && wind.dir !== null && wind.speed !== null;
+const rad = () => wind.dir * Math.PI / 180;
+export const windPanNow = () => dirOn() ? 0.35 * Math.sin(rad()) * clamp01(level(wind.speed) * 2) : 0;   // calm air barely leans
+const dirShade = () => dirOn() ? -0.07 * Math.cos(rad()) * clamp01(level(wind.speed) * 2) : 0;
+export const windDirWords = () => {
+  if (!dirOn()) return "";
+  const p = windPanNow(), d = dirShade(), out = [];
+  if (Math.abs(p) > 0.05) out.push(p < 0 ? "leaning left" : "leaning right");
+  if (Math.abs(d) > 0.01) out.push(d < 0 ? "a little darker" : "a little brighter");
+  return out.join(", ");
 };
 
 // The stage line: what the wind has played recently (oldest left, now at the right)
@@ -103,6 +118,7 @@ export const loadPlace = () => {
     if (p && typeof p.lat === "number") Object.assign(wind, { lat: p.lat, lon: p.lon, place: p.place });
     wind.invert = localStorage.getItem("chloe-wind-invert") === "1";
     wind.gusts = localStorage.getItem("chloe-wind-gusts") === "1";
+    wind.useDir = localStorage.getItem("chloe-wind-dir") !== "0";
   } catch {}
 };
 loadPlace();
