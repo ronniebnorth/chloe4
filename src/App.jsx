@@ -2883,7 +2883,7 @@ JOURNEYS.wind = { label: "wind", live: true, steady: true, home: up12(1709),
 // Video: Chloe watches a video and plays its light and motion as a drawn line (video.js),
 // for exactly the video's length, the video playing on the stage
 JOURNEYS.video = { label: "video", drawn: true, video: true, steady: true, home: up12(1709),
-  tip: "Chloe scores your video: choose a video and Chloe watches it, turning its light and motion into a line, then plays it while the video plays. Bright and busy is brighter, faster, drier; dark and still is darker, slower, deeper (or the other way round with invert). Save with music downloads the video with Chloe's sound on it. The video never leaves your computer.",
+  tip: "Chloe scores your video. Choose or drop a video and Chloe watches it: its light and motion become the line (bright and busy = brighter, faster, drier; dark and still = darker, slower, deeper; invert flips it), every cut gets a hit (the biggest the gong), and it listens to the video's own sound: while people talk the music makes room for them, and their tone of voice steers it (lively = brighter, calm = darker). The video's sound plays along. Press play on the video; save with music downloads the video with everything on it. Each part has its own on/off switch. The video never leaves your computer.",
   at: (f) => drawnVals(video.line, f) };
 const ENDLESS_WINDOW = 40 * 60000;   // how much of Endless a card or the stage draws
 const JOURNEY_MINS  = [5, 15, 30, 60];
@@ -8640,7 +8640,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       wake: "Climbs fast and keeps breaking its own pattern, so you can't settle. For staying awake.",
       draw: "Your own journey. Draw a line on the stage above: high is bright, low is dark.",
       wind: "Played by the real wind where you are, like a wind chime. Never ends.",
-      video: "Chloe scores your video: its light and motion become the music. Save it with the sound on.",
+      video: "Chloe scores your video: light, motion, cuts and voices become the music. Save it with the music on.",
       persia: "Persian classical music: a tour of its modes (the dastgahs), with notes between the piano keys.",
       shur: "Inside Shur, Iran's most loved mode: the notes stay, the home note climbs and comes back.",
       makam: "Turkish classical music, in its own finer tuning, with a darbuka playing Turkish rhythms.",
