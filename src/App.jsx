@@ -4,7 +4,7 @@ import { BRIGHTNESS_CONFIG, brightnessScore, normalizedBrightness, targetBrightn
 import { isSuspended, isSusQuery, susChord, susCoverage, SUS_INTERVAL, nextSusStop } from "./suspended.js";
 import { NOISE_TYPES, noiseBuffer } from "./noise.js";
 import { defaultLine, drawnVals, paintLine, smoothLine, encodeLine, decodeLine } from "./drawn.js";
-import { wind, windVals, windHistoryAt, pushWindHistory, fetchWind, findPlace, setPlace, compass, WIND_REFRESH_MS } from "./wind.js";
+import { wind, windVals, windHistoryAt, pushWindHistory, fetchWind, findPlace, setPlace, compass, windTimes, WIND_REFRESH_MS } from "./wind.js";
 import { waitVals, waitPhase, waitPattern, waitDroneMix, waitThirdFreq, waitJetNow, jetWhineBase, WAIT_VOICE, WAIT_DROP_MIN, WAIT_DROP_MAX } from "./wait.js";
 import * as S24 from "./scale24.js";
 import { renderString, renderTarafString, tarafCoupling, tarafTuning } from "./sitar.js";
@@ -8628,7 +8628,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
               {windBusy && <span style={{ color: K.t2, fontSize: 11 }}>{windBusy}</span>}
             </div>
             <div style={{ color: K.t2, fontSize: 10, lineHeight: 1.5, marginTop: 10 }}>
-              Real wind from <a href="https://open-meteo.com/" target="_blank" rel="noopener" style={{ color: K.a }}>Open-Meteo</a>, updated about every 15 minutes{wind.time ? ` (last ${wind.time.slice(11, 16)} local)` : ""}. The gusts in between are Chloe's, as strong as the real gusts allow.
+              The numbers are the real wind from <a href="https://open-meteo.com/" target="_blank" rel="noopener" style={{ color: K.a }}>Open-Meteo</a>, which updates every 15 minutes{windTimes() ? ` (this reading ${windTimes().last}, next around ${windTimes().next}, local time there)` : ""}, so they hold still in between. The line keeps moving because Chloe plays gusts and lulls around the real speed, as strong as the real gusts allow.
               Your location is rounded to about 10 km and kept only in this browser; links you share don't include it.
             </div>
           </div>

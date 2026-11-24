@@ -10,9 +10,9 @@ const lerp = (a, b, x) => a + (b - a) * x;
 const round1 = x => Math.round(x * 10) / 10;
 
 // The live state the journey reads (like drawn.js's line): set by the page
-export const wind = { speed: null, gust: null, dir: null, time: null, place: null, lat: null, lon: null, invert: false, error: "" };
+export const wind = { speed: null, gust: null, dir: null, time: null, interval: 900, fetched: null, place: null, lat: null, lon: null, invert: false, error: "" };
 
-export const WIND_REFRESH_MS = 10 * 60000;   // Open-Meteo's current values change every 15 min
+export const WIND_REFRESH_MS = 5 * 60000;    // Open-Meteo's current values change every 15 min; check every 5
 export const WIND_HISTORY = 120;             // stage line: one point every 5 s = the last 10 minutes
 const history = [];
 
@@ -60,7 +60,7 @@ export async function fetchWind() {
     const r = await fetch(u);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const c = (await r.json()).current;
-    Object.assign(wind, { speed: c.wind_speed_10m, gust: Math.max(c.wind_gusts_10m, c.wind_speed_10m), dir: c.wind_direction_10m, time: c.time, error: "" });
+    Object.assign(wind, { speed: c.wind_speed_10m, gust: Math.max(c.wind_gusts_10m, c.wind_speed_10m), dir: c.wind_direction_10m, time: c.time, interval: c.interval || 900, fetched: Date.now(), error: "" });
     return true;
   } catch (e) {
     wind.error = "couldn't reach the weather service; trying again in 10 minutes";
@@ -94,3 +94,10 @@ export const loadPlace = () => {
   } catch {}
 };
 loadPlace();
+
+// "11:15", and when the next reading is due ("11:30"), in the place's local time
+export const windTimes = () => {
+  if (!wind.time) return null;
+  const hm = wind.time.slice(11, 16), [h, m] = hm.split(":").map(Number), n = h * 60 + m + Math.round(wind.interval / 60);
+  return { last: hm, next: `${String(Math.floor(n / 60) % 24).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}` };
+};
