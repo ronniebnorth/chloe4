@@ -1,8 +1,9 @@
 // Wind: a journey played by the real wind where you are, like a wind chime.
 // Open-Meteo (free, no key) gives the current wind speed, gusts and direction,
-// updated about every 15 minutes. Between updates the music moves around the real
-// speed by as much as the real gusts allow; the gust timing itself is Chloe's, and
-// the page says so. Location is rounded to 0.1° (about 10 km) before any request
+// updated about every 15 minutes. By default the music follows only those real
+// readings, gliding from one to the next. The "gusts" switch (off by default) adds
+// gusts and lulls around the real speed, as big as the real gusts allow; their
+// timing is Chloe's invention, and the page says so. Location is rounded to 0.1° (about 10 km) before any request
 // and kept only in this browser.
 
 const clamp01 = x => Math.min(1, Math.max(0, x));
@@ -10,7 +11,8 @@ const lerp = (a, b, x) => a + (b - a) * x;
 const round1 = x => Math.round(x * 10) / 10;
 
 // The live state the journey reads (like drawn.js's line): set by the page
-export const wind = { speed: null, gust: null, dir: null, time: null, interval: 900, fetched: null, place: null, lat: null, lon: null, invert: false, error: "" };
+export const wind = { speed: null, gust: null, dir: null, time: null, interval: 900, fetched: null, place: null, lat: null, lon: null, invert: false, gusts: false, error: "", from: null, glideStart: 0 };
+const GLIDE_MS = 10 * 60000;   // a new reading takes 10 minutes to blow in
 
 export const WIND_REFRESH_MS = 5 * 60000;    // Open-Meteo's current values change every 15 min; check every 5
 export const WIND_HISTORY = 120;             // stage line: one point every 5 s = the last 10 minutes
@@ -23,10 +25,18 @@ const gustiness = () => wind.speed === null ? 0.2 : clamp01((wind.gust - wind.sp
 // Smooth wobble in -1..1 from overlapping waves 4 to 23 s long: gusts, lulls
 const wobble = (ms) => (Math.sin(2 * Math.PI * ms / 9000) + 0.6 * Math.sin(2 * Math.PI * ms / 23000 + 1.3) + 0.4 * Math.sin(2 * Math.PI * ms / 4100 + 2.1)) / 2;
 
-// The wind right now, 0..1, including the gust motion
+// The real speed now: gliding from the last reading to the newest
+const speedNow = () => {
+  if (wind.speed === null) return 8;             // no reading yet: a gentle breeze (the page says it's waiting)
+  if (wind.from === null) return wind.speed;
+  const x = clamp01((Date.now() - wind.glideStart) / GLIDE_MS);
+  return lerp(wind.from, wind.speed, (1 - Math.cos(Math.PI * x)) / 2);
+};
+
+// The wind right now, 0..1; Chloe's gusts only when the switch is on
 export const windInst = (ms) => {
-  const base = level(wind.speed ?? 8);           // no reading yet: a gentle breeze
-  return clamp01(base + gustiness() * 0.35 * wobble(ms));
+  const base = level(speedNow());
+  return wind.gusts ? clamp01(base + gustiness() * 0.35 * wobble(ms)) : base;
 };
 
 // Journey values from the wind: more wind = brighter (or darker, inverted), faster,
@@ -60,6 +70,7 @@ export async function fetchWind() {
     const r = await fetch(u);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const c = (await r.json()).current;
+    if (wind.speed !== null && c.time !== wind.time) { wind.from = speedNow(); wind.glideStart = Date.now(); }
     Object.assign(wind, { speed: c.wind_speed_10m, gust: Math.max(c.wind_gusts_10m, c.wind_speed_10m), dir: c.wind_direction_10m, time: c.time, interval: c.interval || 900, fetched: Date.now(), error: "" });
     return true;
   } catch (e) {
@@ -82,7 +93,7 @@ export async function findPlace(q) {
 }
 
 export const setPlace = ({ lat, lon, place }) => {
-  Object.assign(wind, { lat: round1(lat), lon: round1(lon), place, speed: null, gust: null, dir: null, time: null });
+  Object.assign(wind, { lat: round1(lat), lon: round1(lon), place, speed: null, gust: null, dir: null, time: null, from: null });
   try { localStorage.setItem("chloe-wind-place", JSON.stringify({ lat: wind.lat, lon: wind.lon, place })); } catch {}
 };
 
@@ -91,6 +102,7 @@ export const loadPlace = () => {
     const p = JSON.parse(localStorage.getItem("chloe-wind-place") || "null");
     if (p && typeof p.lat === "number") Object.assign(wind, { lat: p.lat, lon: p.lon, place: p.place });
     wind.invert = localStorage.getItem("chloe-wind-invert") === "1";
+    wind.gusts = localStorage.getItem("chloe-wind-gusts") === "1";
   } catch {}
 };
 loadPlace();
