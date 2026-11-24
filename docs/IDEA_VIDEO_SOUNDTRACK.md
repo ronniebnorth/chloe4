@@ -92,9 +92,22 @@ not just what's seen. Three layers, built in this order:
    Also fixed: a damaged frame (that film short at 2.6 s) killed the browser's
    decoder and hung the analysis; frames are now read with a 4 s limit and the video
    reopened past a bad spot.
-2. **How it's said:** voice pitch, loudness and excitement steer brightness, reusing
-   the Tone Translator (xpozur: speech melody → Chloe brightness). Needs only the
-   sound, so any language.
+2. **How it's said** (BUILT 2026-11-24, toggle "voice tone", remembered): while
+   someone talks, every 0.5 s gets a liveliness score (0 calm .. 1 lively) from 1 s
+   of talking, measured against that video's own talking: pitch above the speaker's
+   median (YIN as in the Tone Translator's tone_probe.py, threshold loosened to 0.35
+   for noisy video sound, readings an octave off the median dropped), pitch movement
+   (10-90% spread), loudness above median. Lively = brightness up to +0.15 and
+   shorter notes; calm = down to -0.15 and longer. The talk marks are colored blue
+   (calm) to orange (lively); the stage says "voice: calm/even/lively". It reads
+   energy, not mood (happy and angry both lively). The Tone Translator's scale-fit
+   brightness wasn't used: its notes say it didn't repeat across takes, while
+   pitch/step/range did.
+   - Tested: a clean synthetic voice, first half pitched down and softer, second up
+     and louder: 0.02-0.18 then 0.64-0.90; the same with Ronnie's noisy mic-test
+     voice: 0-0.19 then 0.35-1.0; playback stage read calm, then lively.
+     meloficent.mp4 (Ronnie's test clip): only "Go away" (0.85→0.59) and "Go"
+     (0.31→0.05) heard; the quiet "Hello" at the start is missed by the talk detector.
 3. **What's said:** load the `.srt` from `transcribe --srt` (translated to English if
    needed) alongside the video; each line's mood (sad/tense → darker, happy →
    brighter) shapes the line, and chosen words trigger moments (a "boom" strikes the

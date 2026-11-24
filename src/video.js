@@ -20,11 +20,13 @@ export const video = {
   sound: null,                           // AudioBuffer, or null (no sound track)
   talk: [],                              // [[start, end], ...] seconds where someone speaks
   talkErr: "",                           // set when the talking detector couldn't load
+  tone: null,                            // { at: Float32Array per 0.5 s, NaN = no talking; 0 calm .. 1 lively }
+  toneOn: true,                          // let the tone of voice steer the music
   soundOn: true, duck: true,             // play the video's sound; make room while they talk
 };
 
 window.__chloeVideo = video;   // console / tests
-try { video.cutHits = localStorage.getItem("chloe-video-cuthits") !== "0"; } catch {}
+try { video.cutHits = localStorage.getItem("chloe-video-cuthits") !== "0"; video.toneOn = localStorage.getItem("chloe-video-tone") !== "0"; } catch {}
 
 const W = 64, H = 36;
 // One seek, giving up after 4 s (a frame the browser can't decode kills the element,
@@ -168,12 +170,17 @@ const SR = 16000;
 export async function listenVideo(file, onProgress) {
   const raw = await file.arrayBuffer();
   const dec = await new OfflineAudioContext(1, 1, 44100).decodeAudioData(raw);   // throws when there's no sound track
-  let talk = [], talkErr = "";
+  let talk = [], talkErr = "", tone = null;
+  const pcm = await mono16k(dec);
   try {
     const { speechProbs, talkSegments } = await import("./vad.js");
-    talk = talkSegments(await speechProbs(await mono16k(dec), onProgress));
+    talk = talkSegments(await speechProbs(pcm, onProgress));
   } catch (e) { talkErr = "couldn't load the talking detector"; console.warn("vad:", e); }
-  return { sound: dec, talk, talkErr };
+  if (talk.length) {
+    const { voiceTone } = await import("./voicetone.js");
+    tone = voiceTone(pcm, talk);
+  }
+  return { sound: dec, talk, talkErr, tone };
 }
 
 async function mono16k(buf) {
@@ -182,6 +189,12 @@ async function mono16k(buf) {
   return (await oc.startRendering()).getChannelData(0);
 }
 
+// Liveliness of the voice at t (0 calm .. 1 lively), or null when nobody's talking
+export const toneAt = (t) => {
+  const a = video.tone?.at, k = Math.round(t / 0.5);
+  return a && k >= 0 && k < a.length && !isNaN(a[k]) ? a[k] : null;
+};
+export const toneWord = (v) => v === null ? "" : v > 0.65 ? "lively" : v < 0.35 ? "calm" : "even";
 export const talkingAt = (t) => video.talk.some(([a, b]) => t >= a && t <= b);
 export const talkSeconds = () => video.talk.reduce((s, [a, b]) => s + b - a, 0);
 
