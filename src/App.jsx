@@ -4,6 +4,7 @@ import { BRIGHTNESS_CONFIG, brightnessScore, normalizedBrightness, targetBrightn
 import { isSuspended, isSusQuery, susChord, susCoverage, SUS_INTERVAL, nextSusStop } from "./suspended.js";
 import { NOISE_TYPES, noiseBuffer } from "./noise.js";
 import { defaultLine, drawnVals, paintLine, smoothLine, encodeLine, decodeLine } from "./drawn.js";
+import { video, watchVideo, makeLine, startVideoRec, saveType, download } from "./video.js";
 import { wind, windVals, windHistoryAt, pushWindHistory, fetchWind, findPlace, setPlace, compass, windTimes, windPanNow, windDirWords, WIND_REFRESH_MS } from "./wind.js";
 import { waitVals, waitPhase, waitPattern, waitDroneMix, waitThirdFreq, waitJetNow, jetWhineBase, WAIT_VOICE, WAIT_DROP_MIN, WAIT_DROP_MAX } from "./wait.js";
 import * as S24 from "./scale24.js";
@@ -2846,6 +2847,11 @@ JOURNEYS.draw = { label: "draw", drawn: true, steady: true, home: up12(1709),
 JOURNEYS.wind = { label: "wind", live: true, steady: true, home: up12(1709),
   tip: "Played by the real wind where you are, like a wind chime: more wind is brighter, faster and drier, calm is darker, slower and deeper (or the other way round with invert). Gusty wind brings energy and a little tension. Never ends.",
   at: (ms) => windVals(ms) };
+// Video: Chloe watches a video and plays its light and motion as a drawn line (video.js),
+// for exactly the video's length, the video playing on the stage
+JOURNEYS.video = { label: "video", drawn: true, video: true, steady: true, home: up12(1709),
+  tip: "Chloe scores your video: choose a video and Chloe watches it, turning its light and motion into a line, then plays it while the video plays. Bright and busy is brighter, faster, drier; dark and still is darker, slower, deeper (or the other way round with invert). Save with music downloads the video with Chloe's sound on it. The video never leaves your computer.",
+  at: (f) => drawnVals(video.line, f) };
 const ENDLESS_WINDOW = 40 * 60000;   // how much of Endless a card or the stage draws
 const JOURNEY_MINS  = [5, 15, 30, 60];
 // Sleep timer: stop after this many minutes, fading out over the last SLEEP_FADE seconds
@@ -2956,7 +2962,7 @@ const HELP_SECTIONS = [
   { title: "SOUND", body: "When a journey or world plays its own sound (Makam: oud and ney; Persia and Shur: santur and kamancheh; Byzantine: chant and choir; Ocean: whale…), that instrument gets a dashed outline in the row, while your own choice stays solid. The instruments are synthesised in the browser using Web Audio, except choir and oohs, which are sampled. piano = detuned triangle oscillators with harmonic decay. guitar = Karplus-Strong style noise burst. xylo = marimba-ratio harmonic partials. space = detuned sines with LFO vibrato. lute and fiddle = Mongolian strings. dx7 = an FM electric piano. duduk = the Armenian duduk, played like a singer: one breath carries a whole phrase, the notes sliding into each other, its colour dark when soft and reedy as it swells, never quite still (the small wobbles of a voice, a vibrato that blooms late and drifts), the air in it pulsing with the reed and changing from phrase to phrase, and a little sigh in pitch as a phrase ends. whale = low, gliding whale song. kalimba = a thumb piano. felt = a felt piano. hang = a handpan. shaku = a shakuhachi-style bamboo flute. glass = a glass harmonica. dulcimer = a hammered dulcimer. pan = a steel pan. whistle = a tin whistle. synlead = a big saw lead. choir = a sampled choir singing “ah” (the chant voice stands in for it for the few seconds it takes to load). oohs = sampled voices on a soft “oo”. chant = a few men singing the line together, each with his own vibrato, the vowel following MOOD (“oo” when chill, “ah” when epic) and opening through long notes, scooping up into notes or gliding from the last; synthesised, so every microtone lands exactly. gong = a tuned gong, as in the gong circles of Thailand, Burma and Java: a soft mallet, a clear note over metal's uneven overtones, and a long ring that beats slowly. tamtam = the big flat Chinese gong: a hum under well over a hundred overtones, blooming from dark to shimmering over a second or two after the strike, then ringing out for 10–20 s (the oldest of more than four rings is damped; the tuned gong stands in for the second it takes to prepare). The tam-tam also sounds on its own at the big moments: the peaks of Storm and Rise, the orchestra's big resolutions and the last stab of its march, now and then in the Temple world, and on every 12th move of Spiral, never closer than 20 s. opera = the Chinese opera gong, whose pitch slides after the strike: notes under G3 play the big one (daluo), dropping, higher ones the small one (xiaoluo), rising with a bright “jing”. saron = the gamelan metallophone: a bronze bar struck with a wooden mallet, a bright clang, damped by the next note. sitar = the sitar of North India, synthesised from the physics of its strings: the buzz of the jawari bridge (the main string brushing a wide curved bridge), the sympathetic strings tuned to the scale that ring on their own when a note matches them, the pluck going a touch sharp and settling, notes now and then pulled into from the last (meend), and in a raga its special notes swinging or falling into place as the sources describe; every pitch exact to the cent. Or choose a raw wave: sine, triangle, square or sawtooth. VOL sets note volume. REV adds convolution reverb. DEL sets delay wet level. D.T sets delay time in seconds (try 0.125, 0.25, 0.375, 0.5 for rhythmic values). A= sets concert pitch (432–440 Hz). BPM sets tempo." },
   { title: "SHARE / URL", body: "The share button encodes all settings into the URL and copies it to clipboard. Paste or bookmark to restore the exact session: scale, root, instrument, BPM, tuning, chord mode, and more." },
   { title: "⟲ AUTO MODE", body: "Auto mode explores scales automatically without needing an API key. It randomly picks from the pool you choose (named scales, all scales, or suspended, which travels through every suspended scale before repeating any), with a new pick every 12–16 seconds. A pick can change the arpeggio direction, chord voicing, sound, BPM, reverb, delay level and delay time. Rhythm and groups can't blend, so they change on only about 1 pick in 4. The key changes on about 1 pick in 8, mostly up a 4th or a 5th, but not in The Wait, Endless, Map or Rise (Celtic has its own lift of a whole step). AUTO TEMPO sets how the tempo moves: drift wanders in small steps, and bursts holds your BPM with a short push or pull now and then. The ⚙ menu has a tick for each thing Auto may change. Each choice is logged in the demo log panel; click any entry to jump back to that scale. Use Loop to freeze on a scale you like, and Save to capture it." },
-  { title: "◇ JOURNEYS", body: "JOURNEY in the playback controls gives Auto a destination instead of wandering. Dawn = dark to bright; Dusk = bright to dark, slowing, with longer notes and deeper reverb; Descent = bright, down into the dark and back up; Storm = calm, a storm of clashing scales and faster tempo peaking about 60% of the way in (the orchestra at full energy if it's on), then calm; Rise = epic and energizing, a build to a big bright peak with one breath on the way, starting at its own 116 BPM, bold sounds, the orchestra driving and marching (choosing it in Listen turns on the orchestra and a drive beat); Wait = a steady pulse through suspended scales, then the drums fall away and one suspended scale holds with no 3rd, slowing and widening, until late in the journey the 3rd arrives, major or minor, and the pulse returns (it turns on a drone and, if there's no beat, a downtempo one. The drone travels too: a didgeridoo under the pulse, slowly becoming an airy pad over a low root, then blooming into strings at the drop, with the same 3rd. Untick Drone Type in ⚙ to keep your own drone instead. A very faint jet crosses during the pulse, and a high, distant one approaches through the last minute of the wait and passes overhead at the drop; untick Jet in ⚙ to leave them out). Wake = built to keep you awake: it climbs fast from 102 toward 162 BPM, never dips, and keeps breaking its own pattern at uneven times, every minute or so at first and every 15 to 35 seconds by the end, with sudden stops, drums dropping out and slamming back, tempo lurches, key jumps, flips between line and arpeggio, and new drum styles. It turns Smooth off and, if there's no beat, brings in a drive beat. On arrival it holds at the top and keeps surprising you until you stop it; Draw = your own journey: draw a line on the Listen stage, high for bright, faster and drier, low for dark, slower and deeper; a gentle slope changes scales a note at a time and a steep cliff jumps; copy link shares it; Endless = no destination, a slow, calm wander that leans dark, with soft sounds, long notes, deep reverb and slow echoes, no tempo surprises or key changes, and percussion coming and going on its own. It never arrives, so it plays until you stop it (or the sleep timer does); Wind = played live by the real wind where you are, like a wind chime: type a zip code or city (or use your location) and more wind is brighter, faster and drier, calm darker, slower and deeper; gusty wind brings energy and a little tension; invert flips it so windy is dark. With direction on (the default), where the wind comes from counts too, as if facing north on a map: from the west the music leans left, from the east right, a north wind a little darker and cooler, a south wind a little brighter and warmer; direction off = only how much wind. The wind comes from Open-Meteo, updated about every 15 minutes, and the music glides from one real reading to the next; the gusts switch (off unless you turn it on) adds gusts and lulls in between, invented by Chloe but sized by the real gusts. Your location is rounded to about 10 km and stays in your browser. It never ends; Map = for measuring with a headband: brightness, tempo, energy and tension each move around their whole range on clocks of their own, the drums come and go and the worlds take turn about, so everything gets heard early and late in the session and ◇ patterns can compare them fairly. Best at 30 or 60 minutes, sitting still; it keeps shuffling until you stop it; Persia = a tour of the Persian dastgahs: opens on Shur, climbs through Homayun, Segah and Chahargah to a bright peak on Mahur, then comes back down to Shur, santur and kamancheh taking turns, no key changes; Shur = inside one dastgah, as a performance moves: the notes stay the same while the home note climbs (Shur → Abu Ata on the half-flat 2nd, the key sitting on the quarter tone → Bayat-e Tork on the 3rd → Afshari on the 4th → Dashti on the 5th) and the forud brings it home; the key follows the home note; Makam = Turkish, in true 53-comma pitches: Rast, then Hüseynî and Uşşak on Dügah, Hicaz at the peak, back down to Rast, oud and ney taking turns; it turns on the makam darbuka beat, whose usul changes with each section (Düyek, Sofyan, Semai, Aksak 9/8 at the peak, Curcuna 10/8); Byzantine = chant in 72 moria: Plagal 4th on Ni, the First mode on Pa, the Second mode's soft chromatic on Di, the Plagal 2nd's hard chromatic at the peak, then home, sung by the chant voice and the choir taking turns over the ison, low voices holding the mode's base note (it turns the drone on and sets it to ison; untick Drone Type in ⚙ to keep your own). Spiral = the Chinese pentatonic in pure Pythagorean fifths, its home note moving up a pure fifth at a time (xuangong, “rotating the gong”), yangqin, flute and a tuned gong taking turns, the big opera gong (its pitch sliding down) struck on each new home note and the tam-tam every 12 moves, the old heptatonic's two changing tones coming in now and then. Pure fifths never close the octave, so the key drifts off the piano's notes: after 12 moves it's back on its first note but 23.5 cents sharp, and the journey's 53 moves end only 3.6 cents from home (Jing Fang, 1st century BC). After that it walks on along Qian Lezhi's chain of 360 fifths (5th century) until you stop it; the key shows in cents with its place on the chain (it sets RESOLUTION to 1200, exact). When a journey moves the key between the piano's notes (Shur's Abu Ata, Makam's Dügah 9 commas above Rast, Spiral), the root shows it (A½♭, C+23¢) and everything follows, drone, orchestra and drums included; stopping the journey puts the key back on the semitones. Persia, Shur, Makam and Byzantine lean briefly into related scales about once a minute and come back. In Draw, a scales row on the Listen page picks which scales your line may use: all scales, western, maqam · dastgah, turkish or real intonation (the link carries it). LENGTH sets 5, 15, 30 or 60 minutes. Choosing a journey starts Auto, and all but Endless and Map switch to Melody (untick Melody Mode in ⚙ to choose your own). Near the target, scales change one note at a time (a note moves, or one is added or dropped), and tempo, reverb and note length follow the shape; everything else ticked in ⚙ still changes. Progress shows next to BRIGHT. On arrival it holds at the destination and keeps playing, unless ⏺ rec is running: then it settles on a home scale, fades out over 10 seconds and saves the WAV. Share links carry jo= and jm=." },
+  { title: "◇ JOURNEYS", body: "JOURNEY in the playback controls gives Auto a destination instead of wandering. Dawn = dark to bright; Dusk = bright to dark, slowing, with longer notes and deeper reverb; Descent = bright, down into the dark and back up; Storm = calm, a storm of clashing scales and faster tempo peaking about 60% of the way in (the orchestra at full energy if it's on), then calm; Rise = epic and energizing, a build to a big bright peak with one breath on the way, starting at its own 116 BPM, bold sounds, the orchestra driving and marching (choosing it in Listen turns on the orchestra and a drive beat); Wait = a steady pulse through suspended scales, then the drums fall away and one suspended scale holds with no 3rd, slowing and widening, until late in the journey the 3rd arrives, major or minor, and the pulse returns (it turns on a drone and, if there's no beat, a downtempo one. The drone travels too: a didgeridoo under the pulse, slowly becoming an airy pad over a low root, then blooming into strings at the drop, with the same 3rd. Untick Drone Type in ⚙ to keep your own drone instead. A very faint jet crosses during the pulse, and a high, distant one approaches through the last minute of the wait and passes overhead at the drop; untick Jet in ⚙ to leave them out). Wake = built to keep you awake: it climbs fast from 102 toward 162 BPM, never dips, and keeps breaking its own pattern at uneven times, every minute or so at first and every 15 to 35 seconds by the end, with sudden stops, drums dropping out and slamming back, tempo lurches, key jumps, flips between line and arpeggio, and new drum styles. It turns Smooth off and, if there's no beat, brings in a drive beat. On arrival it holds at the top and keeps surprising you until you stop it; Draw = your own journey: draw a line on the Listen stage, high for bright, faster and drier, low for dark, slower and deeper; a gentle slope changes scales a note at a time and a steep cliff jumps; copy link shares it; Endless = no destination, a slow, calm wander that leans dark, with soft sounds, long notes, deep reverb and slow echoes, no tempo surprises or key changes, and percussion coming and going on its own. It never arrives, so it plays until you stop it (or the sleep timer does); Wind = played live by the real wind where you are, like a wind chime: type a zip code or city (or use your location) and more wind is brighter, faster and drier, calm darker, slower and deeper; gusty wind brings energy and a little tension; invert flips it so windy is dark. With direction on (the default), where the wind comes from counts too, as if facing north on a map: from the west the music leans left, from the east right, a north wind a little darker and cooler, a south wind a little brighter and warmer; direction off = only how much wind. The wind comes from Open-Meteo, updated about every 15 minutes, and the music glides from one real reading to the next; the gusts switch (off unless you turn it on) adds gusts and lulls in between, invented by Chloe but sized by the real gusts. Your location is rounded to about 10 km and stays in your browser. It never ends; Video = Chloe scores your video: choose or drop a video and Chloe looks at 60 moments of it, how bright each is and how much is moving, and makes that a line (the follows slider mixes light and motion; invert makes a bright picture dark music); play runs the music for exactly the video's length with the video on the stage (muted), and save with music plays it from the top and downloads the video with Chloe's sound on it (MP4 where the browser can, otherwise WebM; it takes as long as the video, keep the tab in front). The video never leaves your computer; Map = for measuring with a headband: brightness, tempo, energy and tension each move around their whole range on clocks of their own, the drums come and go and the worlds take turn about, so everything gets heard early and late in the session and ◇ patterns can compare them fairly. Best at 30 or 60 minutes, sitting still; it keeps shuffling until you stop it; Persia = a tour of the Persian dastgahs: opens on Shur, climbs through Homayun, Segah and Chahargah to a bright peak on Mahur, then comes back down to Shur, santur and kamancheh taking turns, no key changes; Shur = inside one dastgah, as a performance moves: the notes stay the same while the home note climbs (Shur → Abu Ata on the half-flat 2nd, the key sitting on the quarter tone → Bayat-e Tork on the 3rd → Afshari on the 4th → Dashti on the 5th) and the forud brings it home; the key follows the home note; Makam = Turkish, in true 53-comma pitches: Rast, then Hüseynî and Uşşak on Dügah, Hicaz at the peak, back down to Rast, oud and ney taking turns; it turns on the makam darbuka beat, whose usul changes with each section (Düyek, Sofyan, Semai, Aksak 9/8 at the peak, Curcuna 10/8); Byzantine = chant in 72 moria: Plagal 4th on Ni, the First mode on Pa, the Second mode's soft chromatic on Di, the Plagal 2nd's hard chromatic at the peak, then home, sung by the chant voice and the choir taking turns over the ison, low voices holding the mode's base note (it turns the drone on and sets it to ison; untick Drone Type in ⚙ to keep your own). Spiral = the Chinese pentatonic in pure Pythagorean fifths, its home note moving up a pure fifth at a time (xuangong, “rotating the gong”), yangqin, flute and a tuned gong taking turns, the big opera gong (its pitch sliding down) struck on each new home note and the tam-tam every 12 moves, the old heptatonic's two changing tones coming in now and then. Pure fifths never close the octave, so the key drifts off the piano's notes: after 12 moves it's back on its first note but 23.5 cents sharp, and the journey's 53 moves end only 3.6 cents from home (Jing Fang, 1st century BC). After that it walks on along Qian Lezhi's chain of 360 fifths (5th century) until you stop it; the key shows in cents with its place on the chain (it sets RESOLUTION to 1200, exact). When a journey moves the key between the piano's notes (Shur's Abu Ata, Makam's Dügah 9 commas above Rast, Spiral), the root shows it (A½♭, C+23¢) and everything follows, drone, orchestra and drums included; stopping the journey puts the key back on the semitones. Persia, Shur, Makam and Byzantine lean briefly into related scales about once a minute and come back. In Draw, a scales row on the Listen page picks which scales your line may use: all scales, western, maqam · dastgah, turkish or real intonation (the link carries it). LENGTH sets 5, 15, 30 or 60 minutes. Choosing a journey starts Auto, and all but Endless and Map switch to Melody (untick Melody Mode in ⚙ to choose your own). Near the target, scales change one note at a time (a note moves, or one is added or dropped), and tempo, reverb and note length follow the shape; everything else ticked in ⚙ still changes. Progress shows next to BRIGHT. On arrival it holds at the destination and keeps playing, unless ⏺ rec is running: then it settles on a home scale, fades out over 10 seconds and saves the WAV. Share links carry jo= and jm=." },
   { title: "SMOOTH", body: "The SMOOTH slider in Auto's ⚙ menu hides where Auto's changes happen. At 0 every setting changes together on each pick. Turned up, each setting changes at its own moment between picks, fewer change each time (about 4 in 10 at 100%), reverb, delay and drone levels glide, the sound crossfade stretches to 12 seconds, scales morph note by note at up to half speed, the drone fades in and out, and the beat fades instead of cutting. Now and then Auto rests the beat: it fades out and comes back in a little later, or with the tabla, thins out to a few soft strokes and fills back in (untick Beat Style in ⚙ to stop that). Links carry it as sm= (0-100)." },
   { title: "WORLDS", body: "A world brings a lead, a rhythm, a drone and its own leanings (scales, tempo, reverb) that belong together, and many add their own surroundings. Steppe: Mongolian fiddle and lute, shaman drums, throat singing or jaw harp. Desert: the duduk, a daf, the dam drone, Hijaz and friends. Ocean: whale song over waves, gulls and a buoy bell, no drums. Jungle: a kalimba over tuned log drums, insects, monkeys, gibbon songs, birds and frogs. Thunderstorm: a felt piano indoors while it rains; the storm builds with the music's tension, or with your mind through WEATHER if a headband is on (see EEG HEADBAND). Cave: a handpan, water drips tuned to the scale, the wind's breath, no drums. Temple: a bamboo flute, the wooden fish, monks chanting, singing bowls, the great bell, a far tam-tam every few minutes. Arctic: a glass harmonica, wind over the ice, singing ice, wolves now and then. Mountain: a hammered dulcimer, birds, leaves, a brook, cowbells, an alphorn. Carnival: a steel pan over a samba drum section, the whistle, the crowd. Celtic: tin whistle and fiddle reels over a bodhrán in 6/8. Night drive: synthwave, a big saw lead, arpeggios, four on the floor. Fire circle: kalimba and wooden flute, a circle of hand drums, the didgeridoo, the fire, crickets. India: the sitar (synthesised, with its buzzing bridge and sympathetic strings) playing a raga over the tanpura and the tabla; the raga is the one for the time of day on your clock (Bhairav at dawn, Bilawal in the morning, Todi late morning, Bhimpalasi in the afternoon, Yaman in the evening, Bageshri at night, Darbari late at night, Malkauns after midnight), tuned in cents (measured values where they exist), and it holds until the clock moves into the next one; for Malkauns and Bageshri, which have no Pa, the tanpura tunes its first string to Ma. Gamelan: Javanese gamelan in slendro and pelog (exact cents, typical tunings: every real gamelan is tuned to itself), the bonang (the tuned gong) on the line, the saron and peking playing the balungan (core melody), and a 16-beat gong cycle on the balungan's own notes, the great gong ageng ending each cycle, the kendhang drum keeping time; calm settles into irama dadi (the core melody at half speed, everything around it twice as dense). New wave: a DX7 electric piano, 1980s drums and synth bass, the Juno pad. Picking one sets its beat and drone; change them afterwards and the world stays, keeping its lead. WANDER drifts from world to world. WORLD is in the Studio's controls and on the Listen page." },
   { title: "ORCHESTRA", body: "WANDER (Studio, beside off / orchestra; orchestra ~ on the Listen page) lets the orchestra come and go on its own: in for 1½ to 4 minutes, out for 1 to 3, staying longer when MOOD leans epic; when it leaves, the chords sounding ring out, and it swells back in. SYMPHONIC in the Studio, orchestra on the Listen page, adds an orchestra under the line: a string section swells on chords built from the current scale, cellos drive a low pulse, a double bass holds the roots, timpani and taiko hit the changes, violin and flute weave fast runs through it, and toward the epic end of MOOD (and at the big resolutions) a choir sings the chords with the strings, all in a cathedral reverb. It uses real recorded samples, a one-time download of about 30 MB in all the first time you switch it on. It follows the music's energy, so it's at its fullest at the peak of Storm, and choosing Rise on the Listen page turns it on and marches it." },
@@ -3558,6 +3564,19 @@ export default function Chloe() {
   const [drawTouched, setDrawTouched] = useState(() => !!decodeLine(new URLSearchParams(window.location.search).get("jl")));
   const [linkCopied, setLinkCopied] = useState("");   // Listen page: "", "copied" or "couldn't copy"
   const drawLast = useRef(null);
+  // Video: the element on the stage, and a tick to re-render when the line changes
+  const videoElRef = useRef(null);
+  const [videoTick, setVideoTick] = useState(0);
+  const [videoBusy, setVideoBusy] = useState("");
+  const videoLoad = async (file) => {
+    if (!file) return;
+    if (!file.type.startsWith("video/")) { setVideoBusy("that isn't a video file"); return; }
+    setVideoBusy("watching… 0%");
+    try {
+      await watchVideo(file, p => setVideoBusy(`watching… ${Math.round(p * 100)}%`));
+      setVideoBusy(""); setVideoTick(t => t + 1); track("video/loaded");
+    } catch (e) { setVideoBusy(e.message || "couldn't read that video"); }
+  };
   // Wind: where, and the latest reading (wind.js holds it; this re-renders the page)
   const [windTick, setWindTick] = useState(0);
   const [windQuery, setWindQuery] = useState("");
@@ -4045,6 +4064,8 @@ export default function Chloe() {
   useEffect(() => {
     if (!autoOn || journey === "off") {
       if (journeyRef.current) { journeyRef.current = null; setJourneyNow(null); if (!arcRef.current) setLeadTarget(null); windLean(ctxRef.current, 0); }
+      videoElRef.current?.pause();
+      if (video.rec) finishVideoSave();   // stopped by hand while saving: keep what there is
       setKeyCents(0); setSpiralPos(0);   // the key goes back onto the semitones
       // Stopped by hand during the ending fade: cancel it and bring the level back
       if (endTimersRef.current.length) {
@@ -4089,18 +4110,32 @@ export default function Chloe() {
         if (autoLocksRef.current.grouping) setGrouping(0);
         if (autoLocksRef.current.beat && stRef.current.beatStyle === "off") { setBeatStyle("downtempo"); getKit(getCtx()); }
       }
+      if (j.video) {
+        // The video starts with the music, from the top; saving starts recording now
+        const el = videoElRef.current;
+        if (el && video.url) {
+          el.currentTime = 0;
+          if (video.wantSave) {
+            video.wantSave = false;
+            try { video.rec = startVideoRec(el, getCtx(), masterOut); setVideoBusy("saving: recording as it plays…"); }
+            catch (e) { setVideoBusy(e.message); }
+          }
+          el.play().catch(() => {});
+        }
+      }
       if (j.wake) {
         setSmooth(0);   // no hidden seams: changes land at once
         if (autoLocksRef.current.beat && stRef.current.beatStyle === "off") { setBeatStyle("drive"); getKit(getCtx()); }
       }
     }
     const J = journeyRef.current;
-    J.mins = journeyMins;
+    J.mins = j.video && video.duration ? video.duration / 60 : journeyMins;
     const tick = () => {
       if (journeyRef.current !== J || J.ending) return;
-      const el = Date.now() - J.startMs;
-      // Endless never arrives; f is just where it is in the drawn window
-      const f = j.endless ? (el % ENDLESS_WINDOW) / ENDLESS_WINDOW : j.live ? 1 : Math.min(1, el / (J.mins * 60000));
+      const vel = j.video ? videoElRef.current : null;
+      const el = vel && video.duration ? vel.currentTime * 1000 : Date.now() - J.startMs;
+      // Endless never arrives; f is just where it is in the drawn window. Video: the video's own clock
+      const f = j.endless ? (el % ENDLESS_WINDOW) / ENDLESS_WINDOW : j.live ? 1 : vel && video.duration ? (vel.ended ? 1 : Math.min(1, el / (video.duration * 1000))) : Math.min(1, el / (J.mins * 60000));
       J.vals = j.endless ? j.at(el) : j.live ? j.at(Date.now()) : j.survey ? j.at(el, J.seed) : journeyAt(j, f, J);
       if (j.live && (J.n = (J.n ?? -1) + 1) % 5 === 0) pushWindHistory(J.vals.b);
       windLean(ctxRef.current, j.live ? windPanNow() : 0);
@@ -4108,17 +4143,20 @@ export default function Chloe() {
       // The peak (Storm's storm, Rise's summit): the tam-tam, once
       if (J.peakAt === undefined) J.peakAt = journeyPeak(j);
       if (J.peakAt !== null && !J.peakStruck && f >= J.peakAt) { J.peakStruck = true; strikeTam(0.32); }
-      if (!j.endless && !j.live && f >= 1 && !J.arrived) {
+      // A video fades out over its last 1.5 s, so the music ends with the picture
+      const vEnd = vel && video.duration > 6 && el >= video.duration * 1000 - 1500;
+      if (!j.endless && !j.live && (f >= 1 || vEnd) && !J.arrived) {
         J.arrived = true;
-        if (recordingRef.current) endJourney(J, j);
+        if (j.video) endVideo(J);
+        else if (recordingRef.current) endJourney(J, j);
       }
       setJourneyNow({ el, f, arrived: J.arrived, ending: J.ending, endless: !!j.endless || !!j.live, live: !!j.live, survey: !!j.survey });
     };
     tick();
-    const id = setInterval(tick, 1000);
+    const id = setInterval(tick, j.video ? 250 : 1000);   // reels are short: follow the video closely
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoOn, journey, journeyMins]);
+  }, [autoOn, journey, journeyMins, videoTick]);
 
   // Wake's surprises. Each respects the ⚙ tick for what it changes, except the stop,
   // which only touches the level. Gaps shorten as the journey goes on.
@@ -4163,6 +4201,31 @@ export default function Chloe() {
     return () => { clearTimeout(t); delete window.__chloeWake; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoOn, journey]);
+
+  // The video ended: fade out over 1.5 s, stop, and (saving) download it
+  const endVideo = (J) => {
+    J.ending = true;
+    setJourneyNow(p => p && { ...p, ending: true });
+    const ac = getCtx(), g = ac.__masterTap?.gain;
+    if (g) { g.cancelScheduledValues(ac.currentTime); g.setValueAtTime(g.value, ac.currentTime); g.linearRampToValueAtTime(0, ac.currentTime + 1.5); }
+    endTimersRef.current.push(setTimeout(async () => {
+      endTimersRef.current = [];
+      await finishVideoSave();
+      journeyRef.current = null; setJourneyNow(null);
+      setAutoOn(false); setArpOn(false); setLoopOn(false);
+      if (g) setTimeout(() => { g.cancelScheduledValues(ac.currentTime); g.setValueAtTime(0, ac.currentTime); g.linearRampToValueAtTime(0.82, ac.currentTime + 0.3); }, 800);
+    }, 1700));
+  };
+  const finishVideoSave = async () => {
+    const r = video.rec;
+    if (!r) return;
+    video.rec = null;
+    const blob = await r.stop();
+    const ext = r.mime.includes("mp4") ? "mp4" : "webm";
+    download(blob, `${(video.name || "video").replace(/\.[^.]+$/, "")}-chloe.${ext}`);
+    setVideoBusy(`saved ${ext.toUpperCase()} to your downloads${ext === "webm" ? " (this browser can't make MP4; convert it if your app wants MP4)" : ""}`);
+    track("video/saved");
+  };
 
   // Recorded journeys end the piece: settle on the home scale for a couple of
   // bars, fade the master out over 10 s, save the WAV, stop, restore the level
@@ -4511,6 +4574,7 @@ export default function Chloe() {
     if (!ctxRef.current || ctxRef.current.state === "closed") {
       ctxRef.current = new (window.AudioContext || window.webkitAudioContext)();
       recordingRef.current?.rec.attach(ctxRef.current);   // a take runs on across the swap
+      video.rec?.attach(ctxRef.current);                   // and so does a video being saved
     }
     if (ctxRef.current.state === "suspended") ctxRef.current.resume();
     return ctxRef.current;
@@ -8508,6 +8572,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
       wake: "Climbs fast and keeps breaking its own pattern, so you can't settle. For staying awake.",
       draw: "Your own journey. Draw a line on the stage above: high is bright, low is dark.",
       wind: "Played by the real wind where you are, like a wind chime. Never ends.",
+      video: "Chloe scores your video: its light and motion become the music. Save it with the sound on.",
       persia: "Persian classical music: a tour of its modes (the dastgahs), with notes between the piano keys.",
       shur: "Inside Shur, Iran's most loved mode: the notes stay, the home note climbs and comes back.",
       makam: "Turkish classical music, in its own finer tuning, with a darbuka playing Turkish rhythms.",
@@ -8516,6 +8581,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
     };
     const play = () => {
       wake();
+      if (J === "video" && !video.url) { setVideoBusy("choose a video first"); return; }
       track(`listen/play/${J}`);
       if (journey === "off") setJourney(J);
       if (J === "endless") {
@@ -8551,13 +8617,17 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
         </div>
 
         {/* Stage: the light show, with the journey's path and where you are on it */}
-        <div style={{ width: "100%", maxWidth: 720, position: "relative", height: 260, borderRadius: 10, overflow: "hidden", border: `1px solid ${K.br}`, background: K.bg2 }}>
-          <div style={{ position: "absolute", inset: 0, opacity: playingNow ? 0.85 : 0.25, transition: "opacity 2s" }}>
+        <div style={{ width: "100%", maxWidth: 720, position: "relative", height: 260, borderRadius: 10, overflow: "hidden", border: `1px solid ${K.br}`, background: K.bg2 }}
+          onDragOver={J === "video" ? e => e.preventDefault() : undefined}
+          onDrop={J === "video" ? e => { e.preventDefault(); videoLoad(e.dataTransfer.files?.[0]); } : undefined}>
+          {J === "video" && video.url && <video ref={videoElRef} src={video.url} muted playsInline preload="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", background: "#000" }} />}
+          {J === "video" && !video.url && <div style={{ position: "absolute", top: "40%", width: "100%", textAlign: "center", color: K.txt, fontSize: 13, textShadow: "0 1px 4px #000", pointerEvents: "none" }}>drop a video here, or choose one below</div>}
+          <div style={{ position: "absolute", inset: 0, opacity: J === "video" && video.url ? 0 : playingNow ? 0.85 : 0.25, transition: "opacity 2s" }}>
             <Visualizer analyserRef={analyserRef} playing={playing} rootIdx={rootIdx} keyCents={keyCents} active={selSemis} sys={resSys} res={resolution} felt={feltAmt} K={K} />
           </div>
           <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, width: "100%", height: J === "draw" ? "100%" : 110 }}>
             {big.hill && <path d={big.hill} fill={JOURNEY_COLOR} opacity={0.12} />}
-            <path d={big.line} fill="none" stroke={JOURNEY_COLOR} strokeWidth={2} opacity={J === "draw" ? 0.9 : 0.35} vectorEffect="non-scaling-stroke" />
+            <path d={big.line} fill="none" stroke={JOURNEY_COLOR} strokeWidth={2} opacity={J === "draw" || J === "video" ? 0.9 : 0.35} vectorEffect="non-scaling-stroke" />
             {dotB !== null && <circle cx={10 + (W - 20) * f} cy={big.y(dotB)} r={5} fill={JOURNEY_COLOR} />}
           </svg>
           {/* Draw: paint the line straight on the stage, any time, even while it plays */}
@@ -8578,7 +8648,7 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
               {playingNow && sel ? (morphSemis ? <><span style={{ color: JOURNEY_COLOR }}>→ </span>{selName || sel.id}</> : (selName || sel.id)) : ""}
             </span>
             <span style={{ color: JOURNEY_COLOR, fontVariantNumeric: "tabular-nums" }}>
-              {journeyNow ? (journeyNow.live ? `${mmss(journeyNow.el)} · live wind${wind.speed !== null ? ` ${Math.round(wind.speed)} km/h` : ""}` : journeyNow.endless ? `${mmss(journeyNow.el)} · endless` : journeyNow.ending ? "ending…" : journeyNow.arrived ? (journeyNow.survey ? `${mmss(journeyNow.el)} · still shuffling` : "arrived") : `${mmss(journeyNow.el)} / ${journeyMins}:00`) : ""}
+              {journeyNow && J === "video" ? (journeyNow.ending ? "ending…" : `${mmss(journeyNow.el)} / ${mmss(video.duration * 1000)}`) : journeyNow ? (journeyNow.live ? `${mmss(journeyNow.el)} · live wind${wind.speed !== null ? ` ${Math.round(wind.speed)} km/h` : ""}` : journeyNow.endless ? `${mmss(journeyNow.el)} · endless` : journeyNow.ending ? "ending…" : journeyNow.arrived ? (journeyNow.survey ? `${mmss(journeyNow.el)} · still shuffling` : "arrived") : `${mmss(journeyNow.el)} / ${journeyMins}:00`) : ""}
               {sleepLeft !== null && (sleepLeft <= SLEEP_FADE * 1000 ? " · fading out…" : ` · sleep in ${mmss(sleepLeft)}`)}
             </span>
           </div>
@@ -8651,6 +8721,44 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
           </div>
         )}
 
+        {/* Video: choose one, how the line is made, save with music */}
+        {J === "video" && (
+          <div style={{ width: "100%", maxWidth: 720, marginTop: 14, padding: "12px 14px", border: `1px solid ${JOURNEY_COLOR}55`, borderRadius: 8, background: K.bg2 }} data-video={videoTick}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+              <span style={{ color: JOURNEY_COLOR, fontSize: 11, letterSpacing: 2 }}>VIDEO</span>
+              <span style={{ color: K.t1, fontSize: 12 }}>{video.url ? `${video.name} · ${mmss(video.duration * 1000)}${video.cuts.length ? ` · ${video.cuts.length} cut${video.cuts.length === 1 ? "" : "s"}` : ""}` : "Choose a video (a reel or short works best)."}</span>
+              <span style={{ flex: 1 }} />
+              <label style={{ ...chip(!video.url), display: "inline-block" }}>
+                {video.url ? "another video" : "choose a video"}
+                <input type="file" accept="video/*" style={{ display: "none" }} onChange={e => { videoLoad(e.target.files?.[0]); e.target.value = ""; }} />
+              </label>
+              {video.url && <button onClick={() => { video.invert = !video.invert; makeLine(); setVideoTick(t => t + 1); }}
+                title="Normally a bright, busy picture plays bright music. Inverted, it plays dark." style={chip(video.invert)}>{video.invert ? "inverted: bright = dark" : "bright = bright"}</button>}
+              {video.url && <button disabled={!!video.rec || !saveType()} onClick={() => {
+                  if (autoOn) { setAutoOn(false); setTimeout(() => { video.wantSave = true; play(); }, 300); }
+                  else { video.wantSave = true; play(); }
+                  track("video/save");
+                }}
+                title={saveType() ? "Plays it from the top and records the video with Chloe's sound; it downloads when the video ends. It takes as long as the video. Keep this tab in front." : "This browser can't record video; try Chrome"}
+                style={{ ...chip(!!video.rec), border: `1px solid ${JOURNEY_COLOR}`, color: JOURNEY_COLOR }}>{video.rec ? "● saving…" : "save with music"}</button>}
+            </div>
+            {video.url && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginTop: 10 }}>
+                <span style={{ color: K.t2, fontSize: 11 }} title="What the line follows: the light in the picture, how much is moving, or a mix">follows</span>
+                <span style={{ color: K.t1, fontSize: 11 }}>motion</span>
+                <input type="range" min={0} max={1} step={0.05} value={video.mix} aria-label="Light or motion"
+                  onChange={e => { video.mix = +e.target.value; makeLine(); setVideoTick(t => t + 1); }} style={{ width: 160, accentColor: JOURNEY_COLOR }} />
+                <span style={{ color: K.t1, fontSize: 11 }}>light</span>
+                <span style={{ color: K.t2, fontSize: 11 }}>{Math.round(video.mix * 100)}% light, {Math.round((1 - video.mix) * 100)}% motion</span>
+              </div>
+            )}
+            {videoBusy && <div style={{ color: K.t1, fontSize: 11, marginTop: 8 }}>{videoBusy}</div>}
+            <div style={{ color: K.t2, fontSize: 10, lineHeight: 1.5, marginTop: 10 }}>
+              Chloe looks at 60 moments of the video: how bright each is and how much is moving. That becomes the line above, and the music follows it for exactly as long as the video. The video stays on your computer; nothing is uploaded. Short videos change sound, tempo and space more than whole scales. Music made this way is yours to use.
+            </div>
+          </div>
+        )}
+
         {/* World */}
         <div style={{ width: "100%", maxWidth: 720, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginTop: 14 }}>
           <span title="A world brings a lead, a rhythm, a drone and its own leanings (scales, tempo, reverb) that belong together. Steppe: Mongolian fiddle and lute, shaman drums, throat singing. Desert: the duduk, a daf, the dam drone, Hijaz and friends. Ocean: whale song over waves, gulls and a buoy bell, no drums. Jungle: a kalimba over tuned log drums, insects, howler monkeys, whooping gibbon songs, birds and frogs. Thunderstorm: a felt piano indoors while it rains; the storm builds with the music's tension, thunder closer at the peak, brighter scales once it passes. Cave: a handpan, water drips tuned to the scale echoing, the wind's breath at the mouth, no drums. Temple: a bamboo flute in long breaths, the wooden fish, monks chanting, singing bowls, the great bell, wind chimes. Arctic: a glass harmonica over wind across the ice, singing ice, wolves howling a chord now and then. Mountain: a summer day: a hammered dulcimer, birds everywhere, leaves rustling, a brook, cowbells and an alphorn. Carnival: a steel pan over a samba drum section, the whistle and the crowd. Celtic: tin whistle and fiddle reels in 6/8 over a bodhrán. Night drive: synthwave, a big saw lead, arpeggios, four on the floor. Fire circle: kalimba and a wooden flute around a fire at night, a circle of hand drums (players joining as it builds), the didgeridoo, the fire, crickets, the circle humming along. New wave: a DX7 electric piano, 1980s LinnDrum and synth bass, the Juno pad. India: the sitar playing a raga over the tanpura and the tabla; the raga is the one for the time of day on your clock (Bhairav at dawn, Bilawal in the morning, Todi late morning, Bhimpalasi in the afternoon, Yaman in the evening, Bageshri at night, Darbari late at night, Malkauns after midnight), tuned in cents (measured values where they exist), and it holds until the clock moves into the next one; for Malkauns and Bageshri, which have no Pa, the tanpura tunes its first string to Ma. Gamelan: Javanese gamelan in slendro and pelog (exact cents, typical tunings: every real gamelan is tuned to itself), the bonang (the tuned gong) on the line, the saron and peking playing the balungan (core melody), and a 16-beat gong cycle on the balungan's own notes, the great gong ageng ending each cycle, the kendhang drum keeping time; calm settles into irama dadi (the core melody at half speed, everything around it twice as dense). Change the drums or drone after and the world keeps its lead. WANDER drifts from world to world." style={{ color: K.t2, fontSize: 11, marginRight: 4, cursor: "help" }}>world</span>
@@ -8681,7 +8789,8 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
 
         {/* Length + extras */}
         <div style={{ width: "100%", maxWidth: 720, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginTop: 18 }}>
-          {J === "endless" || J === "wind" ? <span style={{ color: K.t2, fontSize: 11 }}>∞ plays until you stop it</span>
+          {J === "video" ? <span style={{ color: K.t2, fontSize: 11 }}>{video.url ? `as long as the video: ${mmss(video.duration * 1000)}` : "as long as the video"}</span>
+            : J === "endless" || J === "wind" ? <span style={{ color: K.t2, fontSize: 11 }}>∞ plays until you stop it</span>
             : JOURNEY_MINS.map(m => <button key={m} onClick={() => setJourneyMins(m)} style={chip(journeyMins === m)}>{m} min</button>)}
           {J === "draw" && <button onClick={() => { showLine(defaultLine()); setDrawTouched(false); }} title="Back to the gentle hill" style={chip(false)}>clear</button>}
           {J === "draw" && <span style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }} title="Which scales your drawn journey may use">
