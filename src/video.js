@@ -85,7 +85,7 @@ export const saveType = () => MIMES.find(m => window.MediaRecorder?.isTypeSuppor
 
 export function startVideoRec(el, ac, masterOut) {
   const mime = saveType();
-  if (!mime || !el.captureStream) throw new Error("this browser can't save video (try Chrome)");
+  if (!mime) throw new Error("this browser can't record video (try Chrome or Firefox)");
   const rc = new AudioContext({ sampleRate: ac.sampleRate });
   const out = rc.createMediaStreamDestination();
   const taps = [];
@@ -97,7 +97,20 @@ export function startVideoRec(el, ac, masterOut) {
     taps.push({ pac, d, s });
   };
   attach(ac);
-  const vs = el.captureStream();
+  // The picture: Chrome can capture the video element itself; elsewhere (Firefox)
+  // it's copied frame by frame onto a canvas, which every browser can capture
+  let vs, stopDraw = () => {};
+  if (el.captureStream) vs = el.captureStream();
+  else {
+    const cv = document.createElement("canvas");
+    cv.width = el.videoWidth || 1280; cv.height = el.videoHeight || 720;
+    const cx = cv.getContext("2d");
+    let on = true;
+    const draw = () => { if (!on) return; cx.drawImage(el, 0, 0, cv.width, cv.height); requestAnimationFrame(draw); };
+    draw();
+    stopDraw = () => { on = false; };
+    vs = cv.captureStream(30);
+  }
   const stream = new MediaStream([...vs.getVideoTracks(), ...out.stream.getAudioTracks()]);
   const mr = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 6e6, audioBitsPerSecond: 192000 });
   const chunks = [];
@@ -107,6 +120,7 @@ export function startVideoRec(el, ac, masterOut) {
     mime, attach,
     stop: () => new Promise(res => {
       mr.onstop = () => {
+        stopDraw();
         taps.forEach(t => { try { t.pac.__masterTap.disconnect(t.d); } catch {} t.s.disconnect(); });
         rc.close();
         res(new Blob(chunks, { type: mime.split(";")[0] }));

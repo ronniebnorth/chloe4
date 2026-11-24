@@ -35,7 +35,11 @@ All in the browser; the video never leaves your computer.
 5. **Save with music:** records the video and Chloe's sound together with
    MediaRecorder and downloads `<name>-chloe.mp4`. H.264 video always (Chrome);
    AAC sound where Chrome can make it (Mac/Windows), Opus sound on Linux. Real
-   time: a 30 s video takes 30 s to save. The music fades over the last 1.5 s so
+   time: a 30 s video takes 30 s to save. **Firefox** (Ronnie's default browser) has no
+   video-element capture and can't record MP4: the picture is copied onto a canvas
+   and saved as WebM (VP8 + Opus); tested in headless Firefox 136, 2026-11-24.
+   A download link appears after saving, in case the browser holds back the
+   automatic download. The music fades over the last 1.5 s so
    it ends with the picture.
 
 Tested 2026-11-24 (headless Chrome, 12 s test clip: dark half, cut, bright busy
