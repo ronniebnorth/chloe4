@@ -9,7 +9,9 @@ const clamp01 = x => Math.min(1, Math.max(0, x));
 
 export const video = {
   url: null, name: "", duration: 0,
-  light: null, motion: null, cuts: [],   // raw, 0..1 per point
+  light: null, motion: null, cuts: [],   // raw, 0..1 per point; cuts = point indexes
+  cutTimes: [],                          // [{ t: seconds, s: 0..1 strength }], pinned to within a frame or two
+  cutHits: true,                         // a hit on every cut (the biggest gets the gong)
   mix: 0.7, invert: false,               // mix: 1 = all light, 0 = all motion
   line: defaultLine(),
   rec: null,                             // the save-with-music recorder while it runs
@@ -22,31 +24,61 @@ export const video = {
 };
 
 window.__chloeVideo = video;   // console / tests
+try { video.cutHits = localStorage.getItem("chloe-video-cuthits") !== "0"; } catch {}
 
 const W = 64, H = 36;
-const seek = (el, t) => new Promise((res, rej) => {
-  const done = () => { el.removeEventListener("seeked", done); el.removeEventListener("error", bad); res(); };
-  const bad = () => { el.removeEventListener("seeked", done); el.removeEventListener("error", bad); rej(new Error("seek failed")); };
+// One seek, giving up after 4 s (a frame the browser can't decode kills the element,
+// and later seeks would wait forever)
+const seekOnce = (el, t) => new Promise((res, rej) => {
+  let timer;
+  const end = (ok) => { clearTimeout(timer); el.removeEventListener("seeked", done); el.removeEventListener("error", bad); ok ? res() : rej(new Error("seek failed")); };
+  const done = () => end(true), bad = () => end(false);
   el.addEventListener("seeked", done); el.addEventListener("error", bad);
+  timer = setTimeout(() => end(false), 4000);
   el.currentTime = t;
 });
+const openEl = async (url) => {
+  const el = document.createElement("video");
+  el.muted = true; el.preload = "auto"; el.playsInline = true; el.src = url;
+  await new Promise((res, rej) => { el.onloadeddata = res; el.onerror = () => rej(new Error("this browser can't open that video")); });
+  return el;
+};
+// A reader that survives a damaged frame: it reopens the video and steps a little
+// past the bad spot. Returns false when that moment can't be read at all.
+const reader = async (url) => {
+  const r = { el: await openEl(url) };
+  r.seek = async (t) => {
+    for (const dt of [0, 0.12, 0.3]) {
+      try {
+        if (r.el.error) r.el = await openEl(url);
+        await seekOnce(r.el, Math.min(r.el.duration - 0.05, t + dt));
+        return true;
+      } catch { try { r.el = await openEl(url); } catch { return false; } }
+    }
+    return false;
+  };
+  return r;
+};
 
 // Read a file: returns true when the line is ready. onProgress(0..1) while it watches.
 export async function watchVideo(file, onProgress) {
   if (video.url) URL.revokeObjectURL(video.url);
   const url = URL.createObjectURL(file);
-  const el = document.createElement("video");
-  el.muted = true; el.preload = "auto"; el.playsInline = true; el.src = url;
-  await new Promise((res, rej) => { el.onloadeddata = res; el.onerror = () => rej(new Error("this browser can't open that video")); });
-  const dur = el.duration;
+  const rd = await reader(url);
+  const dur = rd.el.duration;
   if (!isFinite(dur) || dur <= 0) throw new Error("couldn't tell how long that video is");
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const cx = cv.getContext("2d", { willReadFrequently: true });
   const light = [], motion = [];
   let prev = null;
+  let bad = 0;
   for (let i = 0; i < DRAW_POINTS; i++) {
-    await seek(el, Math.min(dur - 0.05, (i + 0.5) / DRAW_POINTS * dur));
-    cx.drawImage(el, 0, 0, W, H);
+    if (!(await rd.seek(Math.min(dur - 0.05, (i + 0.5) / DRAW_POINTS * dur))) && prev) {
+      // That moment can't be read: carry the last one forward
+      bad++; light.push(light.at(-1)); motion.push(0); onProgress?.((i + 1) / DRAW_POINTS); continue;
+    }
+    if (bad > 30) throw new Error("this browser can't read that video's pictures");
+    cx.drawImage(rd.el, 0, 0, W, H);
     const px = cx.getImageData(0, 0, W, H).data, g = new Float32Array(W * H);
     let sum = 0;
     for (let p = 0; p < W * H; p++) { g[p] = (0.2126 * px[p * 4] + 0.7152 * px[p * 4 + 1] + 0.0722 * px[p * 4 + 2]) / 255; sum += g[p]; }
@@ -58,16 +90,74 @@ export async function watchVideo(file, onProgress) {
     onProgress?.((i + 1) / DRAW_POINTS);
   }
   motion[0] = motion[1] ?? 0;
-  // A cut: the picture changes far more than usual
-  const sorted = [...motion].sort((a, b) => a - b), med = sorted[Math.floor(sorted.length / 2)];
-  const cuts = motion.map((m, i) => (m > Math.max(0.12, med * 4) ? i : -1)).filter(i => i > 0);
+  const cutTimes = await findCuts(rd, dur, cx, p => onProgress?.(p, "cuts"));
+  // The line's cut points: which of the 60 moments each cut falls in
+  const cuts = [...new Set(cutTimes.map(c => Math.min(DRAW_POINTS - 1, Math.floor(c.t / dur * DRAW_POINTS))))];
   // Then listen, before the page sees any of it (so it never shows "no sound" while still listening)
   onProgress?.(1, "listening");
   let heard = { sound: null, talk: [], talkErr: "" };
   try { heard = await listenVideo(file, p => onProgress?.(p, "listening")); } catch {}   // no sound track is fine
-  Object.assign(video, { url, name: file.name, duration: dur, light, motion, cuts, ...heard });
+  Object.assign(video, { url, name: file.name, duration: dur, light, motion, cuts, cutTimes, ...heard });
   makeLine();
   return true;
+}
+
+// ── Cuts ──
+// Look 4 times a second (fewer on long videos). Each look keeps a small gray
+// picture and a color mix (8 levels each of red, green, blue). A camera pan
+// changes the pixels but keeps the colors; a cut changes both. A cut = a jump far
+// above the jumps around it. Each is then pinned down by halving the gap.
+const look = (rd, cx) => {
+  cx.drawImage(rd.el, 0, 0, W, H);
+  const px = cx.getImageData(0, 0, W, H).data, g = new Float32Array(W * H), h = new Float32Array(24);
+  for (let p = 0; p < W * H; p++) {
+    const r = px[p * 4], gr = px[p * 4 + 1], b = px[p * 4 + 2];
+    g[p] = (0.2126 * r + 0.7152 * gr + 0.0722 * b) / 255;
+    h[r >> 5]++; h[8 + (gr >> 5)]++; h[16 + (b >> 5)]++;
+  }
+  for (let k = 0; k < 24; k++) h[k] /= 3 * W * H;
+  return { g, h };
+};
+const jump = (a, b) => {
+  let d = 0, e = 0;
+  for (let p = 0; p < a.g.length; p++) d += Math.abs(a.g[p] - b.g[p]);
+  for (let k = 0; k < 24; k++) e += Math.abs(a.h[k] - b.h[k]);
+  return { pix: d / a.g.length, col: e / 2 };   // both 0..1
+};
+async function findCuts(rd, dur, cx, onProgress) {
+  const step = Math.max(0.25, dur / 240), n = Math.floor(dur / step);
+  const looks = [], times = [];
+  for (let i = 0; i <= n; i++) {
+    const t = Math.min(dur - 0.05, i * step);
+    if (!(await rd.seek(t))) { looks.push(looks.at(-1) ?? null); times.push(t); continue; }
+    looks.push(look(rd, cx)); times.push(t);
+    if (i % 10 === 0) onProgress?.(i / n);
+  }
+  const score = looks.map((l, i) => {
+    if (!i || !l || !looks[i - 1] || l === looks[i - 1]) return 0;
+    const j = jump(looks[i - 1], l);
+    return j.col * 0.6 + j.pix * 0.4;
+  });
+  window.__chloeCutScores = score.map((x, i) => [+times[i].toFixed(2), +x.toFixed(3)]);   // tests
+  const found = [];
+  for (let i = 1; i < score.length; i++) {
+    const near = score.slice(Math.max(1, i - 6), i).concat(score.slice(i + 1, i + 7)).sort((a, b) => a - b);
+    const med = near[Math.floor(near.length / 2)] ?? 0;
+    if (score[i] > 0.12 && score[i] > 3 * med + 0.03 && score[i] >= (score[i - 1] ?? 0) && score[i] >= (score[i + 1] ?? 0)) found.push(i);
+  }
+  const biggest = Math.max(...found.map(i => score[i]), 1e-9), out = [];
+  for (const i of found) {
+    let lo = times[i - 1], hi = times[i];
+    const A = looks[i - 1], B = looks[i];
+    for (let k = 0; k < 6; k++) {
+      const mid = (lo + hi) / 2;
+      if (!(await rd.seek(mid))) break;
+      const m = look(rd, cx), a = jump(m, A), b = jump(m, B);
+      if (a.col + a.pix < b.col + b.pix) lo = mid; else hi = mid;
+    }
+    out.push({ t: hi, s: score[i] / biggest });
+  }
+  return out;
 }
 
 // ── Its sound: where people talk ──

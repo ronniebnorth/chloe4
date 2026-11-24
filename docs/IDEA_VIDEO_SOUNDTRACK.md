@@ -79,6 +79,19 @@ not just what's seen. Three layers, built in this order:
      still reads the words. Works in Chrome (MP4) and Firefox (WebM).
    - Fixed on the way: the recorder now starts once the video is playing (Chrome
      gave no picture track before then, so one save had sound only).
+   **Cuts trigger hits** (BUILT 2026-11-24, toggle "hit on cuts", remembered): a cut
+   scan looks 4×/s (fewer on long videos), comparing each look's color mix (8 levels
+   of R, G, B) and gray picture with the last; a cut = a jump > 3× the jumps around
+   it, then pinned by halving the gap 6 times. Each cut gets a soft low boom with a
+   shimmer into the reverb (its own sound, so it plays with the drums off), bigger
+   for bigger cuts; the biggest strikes the gong (when there's more than one cut).
+   White marks under the line. Tested: test clip cut 6.00 s → found 6.04, hit lands
+   5.9-6.0 s in the saved file; a 42 s film short: 11 found, 8 on ffmpeg's cuts to
+   the frame, 2-3 real shot changes ffmpeg's threshold skipped, 4 missed; Ronnie's
+   dog and stage-light clips: no false cuts (the light's pulses don't count).
+   Also fixed: a damaged frame (that film short at 2.6 s) killed the browser's
+   decoder and hung the analysis; frames are now read with a 4 s limit and the video
+   reopened past a bad spot.
 2. **How it's said:** voice pitch, loudness and excitement steer brightness, reusing
    the Tone Translator (xpozur: speech melody → Chloe brightness). Needs only the
    sound, so any language.
