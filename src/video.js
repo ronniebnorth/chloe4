@@ -14,7 +14,14 @@ export const video = {
   line: defaultLine(),
   rec: null,                             // the save-with-music recorder while it runs
   saved: null,                           // the last saved file: { url, name, size }
+  // Its own sound: decoded once, played in step with the picture, saved with the music
+  sound: null,                           // AudioBuffer, or null (no sound track)
+  talk: [],                              // [[start, end], ...] seconds where someone speaks
+  talkErr: "",                           // set when the talking detector couldn't load
+  soundOn: true, duck: true,             // play the video's sound; make room while they talk
 };
+
+window.__chloeVideo = video;   // console / tests
 
 const W = 64, H = 36;
 const seek = (el, t) => new Promise((res, rej) => {
@@ -54,10 +61,56 @@ export async function watchVideo(file, onProgress) {
   // A cut: the picture changes far more than usual
   const sorted = [...motion].sort((a, b) => a - b), med = sorted[Math.floor(sorted.length / 2)];
   const cuts = motion.map((m, i) => (m > Math.max(0.12, med * 4) ? i : -1)).filter(i => i > 0);
-  Object.assign(video, { url, name: file.name, duration: dur, light, motion, cuts });
+  // Then listen, before the page sees any of it (so it never shows "no sound" while still listening)
+  onProgress?.(1, "listening");
+  let heard = { sound: null, talk: [], talkErr: "" };
+  try { heard = await listenVideo(file, p => onProgress?.(p, "listening")); } catch {}   // no sound track is fine
+  Object.assign(video, { url, name: file.name, duration: dur, light, motion, cuts, ...heard });
   makeLine();
   return true;
 }
+
+// ── Its sound: where people talk ──
+// The sound is decoded, mixed to 16 kHz mono, and Silero VAD (vad.js) marks the
+// stretches of talking. If the detector can't load, the sound still plays; there's
+// just no making room.
+const SR = 16000;
+export async function listenVideo(file, onProgress) {
+  const raw = await file.arrayBuffer();
+  const dec = await new OfflineAudioContext(1, 1, 44100).decodeAudioData(raw);   // throws when there's no sound track
+  let talk = [], talkErr = "";
+  try {
+    const { speechProbs, talkSegments } = await import("./vad.js");
+    talk = talkSegments(await speechProbs(await mono16k(dec), onProgress));
+  } catch (e) { talkErr = "couldn't load the talking detector"; console.warn("vad:", e); }
+  return { sound: dec, talk, talkErr };
+}
+
+async function mono16k(buf) {
+  const oc = new OfflineAudioContext(1, Math.ceil(buf.duration * SR), SR), src = oc.createBufferSource();
+  src.buffer = buf; src.connect(oc.destination); src.start();
+  return (await oc.startRendering()).getChannelData(0);
+}
+
+export const talkingAt = (t) => video.talk.some(([a, b]) => t >= a && t <= b);
+export const talkSeconds = () => video.talk.reduce((s, [a, b]) => s + b - a, 0);
+
+// Playing the sound in step with the picture, in a context of its own (Chloe swaps
+// hers every few minutes). The recorder taps the same output.
+let sctx = null, sOut = null, sNode = null;
+const soundCtx = () => {
+  if (!sctx || sctx.state === "closed") { sctx = new AudioContext(); sOut = sctx.createGain(); sOut.connect(sctx.destination); }
+  if (sctx.state === "suspended") sctx.resume();
+  return sctx;
+};
+export function soundPlay(t) {
+  soundStop();
+  if (!video.sound || !video.soundOn) return;
+  const ac = soundCtx();
+  sNode = ac.createBufferSource(); sNode.buffer = video.sound; sNode.connect(sOut);
+  sNode.start(ac.currentTime + 0.02, Math.max(0, t));
+}
+export function soundStop() { if (sNode) { try { sNode.stop(); } catch {} sNode.disconnect(); sNode = null; } }
 
 // Stretch to 0..1; a nearly flat signal stays nearly flat (around the middle)
 const stretch = (a, minSpan) => {
@@ -97,11 +150,18 @@ export function startVideoRec(el, ac, masterOut) {
     taps.push({ pac, d, s });
   };
   attach(ac);
+  // The video's own sound, when it's playing
+  let sTap = null;
+  if (video.sound && video.soundOn) {
+    const sa = soundCtx(), d = sa.createMediaStreamDestination();
+    sOut.connect(d);
+    const s = rc.createMediaStreamSource(d.stream); s.connect(out);
+    sTap = { d, s };
+  }
   // The picture: Chrome can capture the video element itself; elsewhere (Firefox)
   // it's copied frame by frame onto a canvas, which every browser can capture
-  let vs, stopDraw = () => {};
-  if (el.captureStream) vs = el.captureStream();
-  else {
+  let vs = el.captureStream?.(), stopDraw = () => {};
+  if (!vs || !vs.getVideoTracks().length) {
     const cv = document.createElement("canvas");
     cv.width = el.videoWidth || 1280; cv.height = el.videoHeight || 720;
     const cx = cv.getContext("2d");
@@ -121,6 +181,7 @@ export function startVideoRec(el, ac, masterOut) {
     stop: () => new Promise(res => {
       mr.onstop = () => {
         stopDraw();
+        if (sTap) { try { sOut.disconnect(sTap.d); } catch {} sTap.s.disconnect(); }
         taps.forEach(t => { try { t.pac.__masterTap.disconnect(t.d); } catch {} t.s.disconnect(); });
         rc.close();
         res(new Blob(chunks, { type: mime.split(";")[0] }));

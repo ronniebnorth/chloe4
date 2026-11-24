@@ -56,12 +56,45 @@ saved file was H.264 + Opus, 12.1 s, sound at about −25 dB average.
   it; if not, `ffmpeg -i in.mp4 -c:v copy -c:a aac out.mp4` fixes it in a second.
 - No beat-sync to the video yet: the music's beats don't land on cuts or motion.
 
+## Listening to what's said (plan, 2026-11-24)
+
+Ronnie's thought: his `transcribe` tool (whisper.cpp, local, translates to English)
+already turns a video's speech into timed words, so Chloe can follow what's said,
+not just what's seen. Three layers, built in this order:
+
+1. **Talking detection** (BUILT 2026-11-24): find where people speak in the video's
+   own sound and make room: the music drops ~7 dB and gets a 6 dB dip at 1.5 kHz
+   while they talk (in 80 ms, out 250 ms), then comes back between lines. Talking
+   shows as blue marks under the line. The video's own sound now plays along and is
+   saved with the music ("video's sound" button; "make room for talking" button).
+   - **Detector: Silero VAD** (MIT, 2.2 MB, `public/models/silero_vad.onnx`) via
+     `onnxruntime-web` (wasm, single thread), loaded only when a video with sound is
+     chosen (~3.8 MB gzipped engine). A loudness/flicker detector was tried first and
+     failed: Ronnie's guitar and voice look the same to it (missed his talking in a
+     room-mic clip, marked guitar as talking 27 times in another).
+   - Checked against whisper timestamps: roommictest talking 7.0-14.7 s, Silero
+     6.9-14.2 s, guitar not marked; Ed's clip talking ~21-29/52-62/77-81 s, Silero
+     23.6/53-58/77-81 s, none of the guitar; a Segovia guitar video and the stage
+     light: nothing marked. Saved file: music down ~5 dB under the voice, whisper
+     still reads the words. Works in Chrome (MP4) and Firefox (WebM).
+   - Fixed on the way: the recorder now starts once the video is playing (Chrome
+     gave no picture track before then, so one save had sound only).
+2. **How it's said:** voice pitch, loudness and excitement steer brightness, reusing
+   the Tone Translator (xpozur: speech melody → Chloe brightness). Needs only the
+   sound, so any language.
+3. **What's said:** load the `.srt` from `transcribe --srt` (translated to English if
+   needed) alongside the video; each line's mood (sad/tense → darker, happy →
+   brighter) shapes the line, and chosen words trigger moments (a "boom" strikes the
+   gong). Local first (Ronnie's tool, nothing uploaded); in-browser speech recognition
+   for everyone else is a tens-of-MB download, so later. A translated transcript
+   means a video in any language can be scored by meaning.
+
 ## Later
 
 - Cuts start a new phrase or strike a cymbal/tam-tam; beats line up with cuts.
 - Color: warm/cool picture → scale leaning (like wind direction's brighter/darker).
 - Motion → tempo directly, separate from brightness.
-- Faces or speech detected → duck the music under talking.
-- Use the video's own sound (volume, speech) as another line.
+- Faces detected → the music leans toward whoever's on screen (later; speech is planned above).
+- The video's own loudness as another line (beyond speech).
 - Faster-than-real-time export (render offline).
 - A "re-roll" button: same line, different seed, pick the take you like.
