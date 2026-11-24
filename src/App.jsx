@@ -8690,6 +8690,10 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
           onDrop={J === "video" ? e => { e.preventDefault(); videoLoad(e.dataTransfer.files?.[0]); } : undefined}>
           {J === "video" && video.url && <video ref={videoElRef} src={video.url} muted playsInline preload="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", background: "#000" }} />}
           {J === "video" && !video.url && <div style={{ position: "absolute", top: "40%", width: "100%", textAlign: "center", color: K.txt, fontSize: 13, textShadow: "0 1px 4px #000", pointerEvents: "none" }}>drop a video here, or choose one below</div>}
+          {/* Video: play right on the picture (big while stopped, a small stop in the corner while it plays) */}
+          {J === "video" && video.url && !video.rec && (playingNow
+            ? <button onClick={stopAuto} title="Stop" aria-label="Stop" style={{ position: "absolute", right: 14, bottom: 28, zIndex: 3, width: 40, height: 40, borderRadius: "50%", border: `2px solid ${JOURNEY_COLOR}`, background: JOURNEY_COLOR, color: "#000", fontSize: 15, cursor: "pointer", fontFamily: "inherit", lineHeight: 1, opacity: 0.85 }}>■</button>
+            : <button onClick={play} title="Play the video with Chloe's music" aria-label="Play" style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", zIndex: 3, width: 72, height: 72, borderRadius: "50%", border: `2px solid ${JOURNEY_COLOR}`, background: "rgba(0,0,0,0.55)", color: JOURNEY_COLOR, fontSize: 26, cursor: "pointer", fontFamily: "inherit", lineHeight: 1 }}>▶</button>)}
           <div style={{ position: "absolute", inset: 0, opacity: J === "video" && video.url ? 0 : playingNow ? 0.85 : 0.25, transition: "opacity 2s" }}>
             <Visualizer analyserRef={analyserRef} playing={playing} rootIdx={rootIdx} keyCents={keyCents} active={selSemis} sys={resSys} res={resolution} felt={feltAmt} K={K} />
           </div>
