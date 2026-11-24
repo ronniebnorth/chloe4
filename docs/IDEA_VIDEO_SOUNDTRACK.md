@@ -50,7 +50,7 @@ saved file was H.264 + Opus, 12.1 s, sound at about −25 dB average.
 - Cuts make the line jump, but don't yet trigger a musical event (a hit, a new phrase).
 - On Linux the MP4's sound is Opus, not AAC. Not yet checked that FB/TikTok accept
   it; if not, `ffmpeg -i in.mp4 -c:v copy -c:a aac out.mp4` fixes it in a second.
-- Music this way is only as long as Chloe's slow habits allow: no beat-sync to the video yet.
+- No beat-sync to the video yet: the music's beats don't land on cuts or motion.
 
 ## Later
 
