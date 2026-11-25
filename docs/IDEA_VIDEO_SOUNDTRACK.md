@@ -115,6 +115,18 @@ not just what's seen. Three layers, built in this order:
    for everyone else is a tens-of-MB download, so later. A translated transcript
    means a video in any language can be scored by meaning.
 
+## Timeline export, for biofeedback (built 2026-11-25)
+
+"save timeline" in the VIDEO panel downloads `<video>-timeline.json`: the analysis
+(60 light/motion frames, the line, cuts with strength, talk segments, tone per
+0.5 s) plus every play since the video was loaded, each logged every 250 ms as
+`[clockMs, videoT, brightness, voiceTone|null, talking, musicDucked, paused]`,
+and each cut hit as `[clockMs, cutT, strength, gong]`. clockMs is ms since 1970
+UTC, so it lines up with nerve's `protocol_runner.py` `wall` column (seconds,
+added the same day) and the MRS logger's `wall_time`. Plan and method:
+nerve/docs/IN_AND_OUT.md. Tested headless: 2 plays logged, cut hit logged
+13 ms before its video-time position (hits are scheduled 15 ms early).
+
 ## Later
 
 - Cuts start a new phrase or strike a cymbal/tam-tam; beats line up with cuts.

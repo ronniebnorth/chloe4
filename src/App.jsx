@@ -4,7 +4,7 @@ import { BRIGHTNESS_CONFIG, brightnessScore, normalizedBrightness, targetBrightn
 import { isSuspended, isSusQuery, susChord, susCoverage, SUS_INTERVAL, nextSusStop } from "./suspended.js";
 import { NOISE_TYPES, noiseBuffer } from "./noise.js";
 import { defaultLine, drawnVals, paintLine, smoothLine, encodeLine, decodeLine } from "./drawn.js";
-import { video, watchVideo, makeLine, startVideoRec, saveType, download, talkingAt, talkSeconds, soundPlay, soundStop, toneAt, toneWord } from "./video.js";
+import { video, watchVideo, makeLine, startVideoRec, saveType, download, talkingAt, talkSeconds, soundPlay, soundStop, toneAt, toneWord, saveTimeline } from "./video.js";
 import { wind, windVals, windHistoryAt, pushWindHistory, fetchWind, findPlace, setPlace, compass, windTimes, windPanNow, windDirWords, WIND_REFRESH_MS } from "./wind.js";
 import { waitVals, waitPhase, waitPattern, waitDroneMix, waitThirdFreq, waitJetNow, jetWhineBase, WAIT_VOICE, WAIT_DROP_MIN, WAIT_DROP_MAX } from "./wait.js";
 import * as S24 from "./scale24.js";
@@ -4098,6 +4098,7 @@ export default function Chloe() {
     if (!autoOn || journey === "off") {
       if (journeyRef.current) { journeyRef.current = null; setJourneyNow(null); if (!arcRef.current) setLeadTarget(null); windLean(ctxRef.current, 0); }
       videoElRef.current?.pause(); soundStop(); videoDuck(ctxRef.current, false);
+      const lastRun = video.runs.at(-1); if (lastRun && !lastRun.end) { lastRun.end = Date.now(); setVideoTick(t => t + 1); }
       if (video.rec) finishVideoSave();   // stopped by hand while saving: keep what there is
       setKeyCents(0); setSpiralPos(0);   // the key goes back onto the semitones
       // Stopped by hand during the ending fade: cancel it and bring the level back
@@ -4151,8 +4152,13 @@ export default function Chloe() {
           const save = video.wantSave;
           video.wantSave = false;
           journeyRef.current.cutsDone = new Set();
+          // A new play on the timeline (logged from when the video really starts moving)
+          const run = { start: null, end: null, settings: { mix: video.mix, invert: video.invert, cutHits: video.cutHits, toneOn: video.toneOn, soundOn: video.soundOn, duck: video.duck, saving: !!save }, samples: [], hits: [] };
+          video.runs.push(run);
+          journeyRef.current.run = run;
           // Recording starts once it's playing: Chrome only gives the video's picture to a recorder then
           el.play().then(() => {
+            run.start = Date.now();
             if (save) {
               try { video.rec = startVideoRec(el, getCtx(), masterOut); setVideoBusy("saving: recording as it plays… keep this tab in front"); }
               catch (e) { setVideoBusy(e.message); }
@@ -4176,7 +4182,8 @@ export default function Chloe() {
         if (document.hidden) setVideoBusy("saving is paused: come back to this tab and it carries on");
         else if (vel.paused && !vel.ended) { vel.play().then(() => soundPlay(vel.currentTime)).catch(() => {}); setVideoBusy("saving: recording as it plays… keep this tab in front"); }
       }
-      if (vel) videoDuck(ctxRef.current, !!(video.duck && video.soundOn && video.sound && talkingAt(vel.currentTime + 0.15)));
+      const ducked = !!(vel && video.duck && video.soundOn && video.sound && talkingAt(vel.currentTime + 0.15));
+      if (vel) videoDuck(ctxRef.current, ducked);
       // Cuts coming up in the next 300 ms: hit right on them (the biggest cut, if big, strikes the gong)
       if (vel && !vel.paused && video.cutHits && J.cutsDone) {
         const now = vel.currentTime;
@@ -4186,8 +4193,10 @@ export default function Chloe() {
           setTimeout(() => {
             if (journeyRef.current !== J || J.ending) return;
             const ac = getCtx();
-            if (c.s >= 0.999 && video.cutTimes.length > 1) strikeTam(0.3);
+            const gong = c.s >= 0.999 && video.cutTimes.length > 1;
+            if (gong) strikeTam(0.3);
             cutHit(ac, c.s, getOrCreateReverb(ac).convolver);
+            J.run?.hits.push([Date.now(), Math.round(c.t * 1000) / 1000, Math.round(c.s * 1000) / 1000, gong ? 1 : 0]);
           }, Math.max(0, (c.t - now) * 1000 - 15));
         });
       }
@@ -4206,6 +4215,10 @@ export default function Chloe() {
           J.vals = { ...J.vals, b: Math.min(1, Math.max(0, J.vals.b + 0.3 * (v - 0.5))), su: (J.vals.su ?? 1) * (1 - 0.4 * (v - 0.5)) };
         }
       }
+      if (vel && J.run?.start) {
+        const r3 = x => Math.round(x * 1000) / 1000;
+        J.run.samples.push([Date.now(), r3(vel.currentTime), r3(J.vals.b), J.tone === null ? null : r3(J.tone), talkingAt(vel.currentTime) ? 1 : 0, ducked ? 1 : 0, vel.paused ? 1 : 0]);
+      }
       windLean(ctxRef.current, j.live ? windPanNow() : 0);
       setLeadTarget(J.vals.b);
       // The peak (Storm's storm, Rise's summit): the tam-tam, once
@@ -4215,7 +4228,7 @@ export default function Chloe() {
       const vEnd = vel && video.duration > 6 && el >= video.duration * 1000 - 1500;
       if (!j.endless && !j.live && (f >= 1 || vEnd) && !J.arrived) {
         J.arrived = true;
-        if (j.video) endVideo(J);
+        if (j.video) { if (J.run) J.run.end = Date.now(); endVideo(J); }
         else if (recordingRef.current) endJourney(J, j);
       }
       setJourneyNow({ el, f, tone: J.tone, arrived: J.arrived, ending: J.ending, endless: !!j.endless || !!j.live, live: !!j.live, survey: !!j.survey });
@@ -8828,6 +8841,9 @@ Diatonic neighborhood: currentState.diatonicNeighborhood shows which standard di
                 }}
                 title={saveType() ? "Plays it from the top and records the video with Chloe's sound; it downloads when the video ends. It takes as long as the video. Keep this tab in front." : "This browser can't record video; try Chrome"}
                 style={{ ...chip(!!video.rec), border: `1px solid ${JOURNEY_COLOR}`, color: JOURNEY_COLOR }}>{video.rec ? "● saving…" : "save with music"}</button>}
+              {video.url && <button disabled={!video.runs.some(r => r.start)} onClick={() => { saveTimeline(); track("video/timeline"); }}
+                title="For biofeedback: downloads a small file (JSON) with what's in the video (light, motion, cuts, talking, tone of voice) and every play since you loaded it, stamped with the computer's clock, so it lines up with EEG, skin or heart logs recorded at the same time. Play the video first."
+                style={chip(false)}>{`save timeline${video.runs.some(r => r.start) ? ` (${video.runs.filter(r => r.start).length} play${video.runs.filter(r => r.start).length === 1 ? "" : "s"})` : ""}`}</button>}
             </div>
             {video.url && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginTop: 10 }}>

@@ -23,6 +23,9 @@ export const video = {
   tone: null,                            // { at: Float32Array per 0.5 s, NaN = no talking; 0 calm .. 1 lively }
   toneOn: true,                          // let the tone of voice steer the music
   soundOn: true, duck: true,             // play the video's sound; make room while they talk
+  // Timeline: every play since this video was loaded, logged against the computer's
+  // clock so it can be lined up with biofeedback logs (nerve/docs/IN_AND_OUT.md)
+  runs: [],                              // [{ start, end, settings, samples: [[ms, t, b, tone, talk, duck, paused]], hits: [[ms, t, s, gong]] }]
 };
 
 window.__chloeVideo = video;   // console / tests
@@ -99,7 +102,7 @@ export async function watchVideo(file, onProgress) {
   onProgress?.(1, "listening");
   let heard = { sound: null, talk: [], talkErr: "" };
   try { heard = await listenVideo(file, p => onProgress?.(p, "listening")); } catch {}   // no sound track is fine
-  Object.assign(video, { url, name: file.name, duration: dur, light, motion, cuts, cutTimes, ...heard });
+  Object.assign(video, { url, name: file.name, duration: dur, light, motion, cuts, cutTimes, runs: [], ...heard });
   makeLine();
   return true;
 }
@@ -303,3 +306,33 @@ export const download = (blob, name) => {
   const a = document.createElement("a");
   a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
 };
+
+// The timeline file: what the video holds (the analysis, by video time) and what
+// happened on each play (by clock time, ms since 1970 UTC, plus the video time at
+// that moment), so EEG, GSR or any other log with clock times lines up with it.
+const r3 = x => Math.round(x * 1000) / 1000;
+export function timeline() {
+  const d = video.duration, at = (i) => r3((i + 0.5) / video.light.length * d);
+  return {
+    what: "Chloe video timeline", version: 1,
+    video: video.name, duration: r3(d),
+    exported: new Date().toISOString(), tzOffsetMin: -new Date().getTimezoneOffset(),
+    analysis: {
+      // light, motion: 0..1 at evenly spaced moments; line: the brightness Chloe follows (after mix/invert)
+      frames: video.light.map((l, i) => ({ t: at(i), light: r3(l), motion: r3(video.motion[i]) })),
+      line: video.line.map(r3),
+      cuts: video.cutTimes.map(c => ({ t: r3(c.t), s: r3(c.s) })),
+      talk: video.talk.map(([a, b]) => [r3(a), r3(b)]),
+      tone: video.tone ? { step: 0.5, pitchHz: Math.round(video.tone.pitchHz), at: Array.from(video.tone.at, v => isNaN(v) ? null : r3(v)) } : null,
+    },
+    runsFormat: { samples: ["clockMs", "videoT", "brightness", "voiceTone|null", "talking", "musicDucked", "paused"], hits: ["clockMs", "cutT", "strength", "gong"] },
+    runs: video.runs,
+  };
+}
+export function saveTimeline() {
+  const blob = new Blob([JSON.stringify(timeline())], { type: "application/json" });
+  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = `${(video.name || "video").replace(/\.[^.]+$/, "")}-timeline.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
