@@ -739,7 +739,7 @@ function musicMute(ac, on) {
 // dest/send: where it goes (default the chime bus); the Temple world passes its own bus
 function chimeStrike(ac, hz, v, pan, t, dest, send) {
   const out = ac.createGain(), p = ac.createStereoPanner(), ring = Math.pow(700 / hz, 0.35);
-  out.gain.value = 0.05 * v; p.pan.value = Math.max(-0.9, Math.min(0.9, pan));
+  out.gain.value = 0.05 * v * Math.min(1.6, Math.pow(700 / hz, 0.25)); p.pan.value = Math.max(-0.9, Math.min(0.9, pan));   // low tubes sound quieter: a little lift
   out.connect(p); p.connect(dest || chimeBus(ac));
   if (send) p.connect(send);
   let end = t;
@@ -766,12 +766,13 @@ function chimeStrike(ac, hz, v, pan, t, dest, send) {
   setTimeout(() => { try { p.disconnect(); out.disconnect(); } catch {} }, (end - ac.currentTime + 0.5) * 1000);
 }
 // The chime's tubes: five notes of the current scale, every other degree from the
-// root up (a pentatonic gives all five), around C6
+// root up (a pentatonic gives all five), from middle C up: big, low tubes like a
+// deep garden chime (Ronnie's own chimes have low notes; C6 was too shrill)
 function chimeTubes(st) {
   const semis = st.sel ? toSemis(st.sel.pattern) : [0, 2, 4, 7, 9], L = semis.length, out = [];
   for (let k = 0; k < 5; k++) {
     const d = L <= 5 ? k : 2 * k, semi = semis.at(d % L) + 12 * Math.floor(d / L);
-    out.push(st.aRef * 2 ** ((79 + OFFS[st.rootIdx] - 69) / 12) * tunedRatio(semi, st.tuning));
+    out.push(st.aRef * 2 ** ((60 + OFFS[st.rootIdx] - 69) / 12) * tunedRatio(semi, st.tuning));
   }
   return out;
 }
