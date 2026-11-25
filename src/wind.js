@@ -12,7 +12,7 @@ const lerp = (a, b, x) => a + (b - a) * x;
 const round1 = x => Math.round(x * 10) / 10;
 
 // The live state the journey reads (like drawn.js's line): set by the page
-export const wind = { speed: null, gust: null, dir: null, time: null, interval: 900, fetched: null, place: null, lat: null, lon: null, invert: false, gusts: false, useDir: true, chimes: true, chimeCount: 0, error: "", from: null, glideStart: 0 };
+export const wind = { speed: null, gust: null, dir: null, time: null, interval: 900, fetched: null, place: null, lat: null, lon: null, invert: false, gusts: false, useDir: true, chimes: true, chimeOnly: false, chimeCount: 0, error: "", from: null, glideStart: 0 };
 if (typeof window !== "undefined") window.__chloeWind = wind;   // console / tests
 const GLIDE_MS = 10 * 60000;   // a new reading takes 10 minutes to blow in
 
@@ -155,6 +155,7 @@ export const loadPlace = () => {
     wind.gusts = localStorage.getItem("chloe-wind-gusts") === "1";
     wind.useDir = localStorage.getItem("chloe-wind-dir") !== "0";
     wind.chimes = localStorage.getItem("chloe-wind-chimes") !== "0";
+    wind.chimeOnly = localStorage.getItem("chloe-wind-chimeonly") === "1";
   } catch {}
 };
 loadPlace();
