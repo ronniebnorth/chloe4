@@ -3,7 +3,8 @@
 // updated about every 15 minutes. By default the music follows only those real
 // readings, gliding from one to the next. The "gusts" switch (off by default) adds
 // gusts and lulls around the real speed, as big as the real gusts allow; their
-// timing is Chloe's invention, and the page says so. Location is rounded to 0.1° (about 10 km) before any request
+// timing is Chloe's invention, and the page says so. A wind chime (on by default)
+// rings tubes tuned to the scale, struck as often as the real wind would. Location is rounded to 0.1° (about 10 km) before any request
 // and kept only in this browser.
 
 const clamp01 = x => Math.min(1, Math.max(0, x));
@@ -11,7 +12,8 @@ const lerp = (a, b, x) => a + (b - a) * x;
 const round1 = x => Math.round(x * 10) / 10;
 
 // The live state the journey reads (like drawn.js's line): set by the page
-export const wind = { speed: null, gust: null, dir: null, time: null, interval: 900, fetched: null, place: null, lat: null, lon: null, invert: false, gusts: false, useDir: true, error: "", from: null, glideStart: 0 };
+export const wind = { speed: null, gust: null, dir: null, time: null, interval: 900, fetched: null, place: null, lat: null, lon: null, invert: false, gusts: false, useDir: true, chimes: true, chimeCount: 0, error: "", from: null, glideStart: 0 };
+if (typeof window !== "undefined") window.__chloeWind = wind;   // console / tests
 const GLIDE_MS = 10 * 60000;   // a new reading takes 10 minutes to blow in
 
 export const WIND_REFRESH_MS = 5 * 60000;    // Open-Meteo's current values change every 15 min; check every 5
@@ -51,6 +53,39 @@ export const windVals = (ms) => {
     e: clamp01(g * x),
     tn: clamp01(g * 0.7),
   };
+};
+
+// The wind chime: which tubes the wind strikes in the next dt seconds. How often
+// follows the real wind (calm: one now and then; a strong wind: a steady ringing),
+// and gusts set off bursts where several tubes ring together; the bigger the real
+// gusts over the steady speed, the more often and fuller. Exactly when each strike
+// lands is chance, as with a real chime. Returns [{ at: s from now, tube: 0..n-1, v: 0..1 }].
+let burstAt = 0;
+export const windChimes = (dt, tubes = 5) => {
+  const ms = Date.now(), x = windInst(ms), g = gustiness(), out = [];
+  const calm = wind.speed !== null && wind.speed < 1;
+  const rate = calm ? 0.02 : 0.04 + 1.8 * x * x;          // strikes a second: ~1 in 9 s at 2 km/h, ~2/s at 50
+  let last = -1;
+  const strike = (at, v) => {
+    let tube = Math.floor(Math.random() * tubes);
+    if (tube === last) tube = (tube + 1 + Math.floor(Math.random() * (tubes - 1))) % tubes;   // the clapper swings on
+    last = tube;
+    out.push({ at, tube, v: Math.min(1, v) });
+  };
+  for (let t = -Math.log(1 - Math.random()) / rate; t < dt; t += -Math.log(1 - Math.random()) / rate)
+    strike(t, (0.35 + 0.5 * Math.random()) * (0.6 + 0.4 * x));
+  // Gust bursts: a run of strikes over 1-2.5 s, louder
+  if (!calm) {
+    const burstRate = (0.01 + 0.05 * g) * (0.3 + x);        // one every ~25-100 s, more when it's gusty
+    if (!burstAt) burstAt = ms + 1000 * -Math.log(1 - Math.random()) / burstRate;
+    if (burstAt <= ms + dt * 1000) {
+      const at0 = Math.max(0, (burstAt - ms) / 1000), n = 3 + Math.round(3 * x + 5 * g * Math.random()), span = 1 + 1.5 * Math.random();
+      for (let k = 0; k < n; k++) strike(at0 + span * Math.pow(Math.random(), 1.6), (0.55 + 0.45 * Math.random()) * (0.7 + 0.3 * x));
+      burstAt = ms + 1000 * (dt + -Math.log(1 - Math.random()) / burstRate);
+    }
+  }
+  wind.chimeCount += out.length;
+  return out.sort((a, b) => a.at - b.at);
 };
 
 // Direction (where the wind comes FROM), as if facing north on a map:
@@ -119,6 +154,7 @@ export const loadPlace = () => {
     wind.invert = localStorage.getItem("chloe-wind-invert") === "1";
     wind.gusts = localStorage.getItem("chloe-wind-gusts") === "1";
     wind.useDir = localStorage.getItem("chloe-wind-dir") !== "0";
+    wind.chimes = localStorage.getItem("chloe-wind-chimes") !== "0";
   } catch {}
 };
 loadPlace();
