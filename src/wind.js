@@ -7,6 +7,8 @@
 // rings tubes tuned to the scale, struck as often as the real wind would. Location is rounded to 0.1° (about 10 km) before any request
 // and kept only in this browser.
 
+import { tempest, tempestLive } from "./tempest.js";
+
 const clamp01 = x => Math.min(1, Math.max(0, x));
 const lerp = (a, b, x) => a + (b - a) * x;
 const round1 = x => Math.round(x * 10) / 10;
@@ -22,13 +24,19 @@ const history = [];
 
 // Speed to 0..1: square root, so light breezes are heard and a gale isn't needed to reach the top
 const level = (kmh) => clamp01(Math.sqrt(Math.max(0, kmh) / 50));
-const gustiness = () => wind.speed === null ? 0.2 : clamp01((wind.gust - wind.speed) / 25);
+// A live Tempest station (tempest.js) takes over: its ~30 s average for the music, its
+// own gust and lull for gustiness, its 3-second readings for the chime
+const gustiness = () => {
+  if (tempestLive() && tempest.gust !== null) return clamp01((tempest.gust - (tempest.avg ?? tempest.smooth)) / 25);
+  return wind.speed === null ? 0.2 : clamp01((wind.gust - wind.speed) / 25);
+};
 
 // Smooth wobble in -1..1 from overlapping waves 4 to 23 s long: gusts, lulls
 const wobble = (ms) => (Math.sin(2 * Math.PI * ms / 9000) + 0.6 * Math.sin(2 * Math.PI * ms / 23000 + 1.3) + 0.4 * Math.sin(2 * Math.PI * ms / 4100 + 2.1)) / 2;
 
 // The real speed now: gliding from the last reading to the newest
 const speedNow = () => {
+  if (tempestLive()) return tempest.smooth;
   if (wind.speed === null) return 8;             // no reading yet: a gentle breeze (the page says it's waiting)
   if (wind.from === null) return wind.speed;
   const x = clamp01((Date.now() - wind.glideStart) / GLIDE_MS);
@@ -38,6 +46,7 @@ const speedNow = () => {
 // The wind right now, 0..1; Chloe's gusts only when the switch is on
 export const windInst = (ms) => {
   const base = level(speedNow());
+  if (tempestLive()) return base;           // real gusts come from the station; none invented
   return wind.gusts ? clamp01(base + gustiness() * 0.35 * wobble(ms)) : base;
 };
 
@@ -60,10 +69,10 @@ export const windVals = (ms) => {
 // and gusts set off bursts where several tubes ring together; the bigger the real
 // gusts over the steady speed, the more often and fuller. Exactly when each strike
 // lands is chance, as with a real chime. Returns [{ at: s from now, tube: 0..n-1, v: 0..1 }].
-let burstAt = 0;
+let burstAt = 0, lastRealBurst = 0;
 export const windChimes = (dt, tubes = 7) => {
-  const ms = Date.now(), x = windInst(ms), g = gustiness(), out = [];
-  const calm = wind.speed !== null && wind.speed < 1;
+  const live = tempestLive(), ms = Date.now(), x = live ? level(tempest.speed) : windInst(ms), g = gustiness(), out = [];
+  const calm = live ? tempest.speed < 1 : wind.speed !== null && wind.speed < 1;
   const rate = calm ? 0.02 : 0.04 + 1.8 * x * x;          // strikes a second: ~1 in 9 s at 2 km/h, ~2/s at 50
   let last = -1;
   const strike = (at, v) => {
@@ -75,7 +84,14 @@ export const windChimes = (dt, tubes = 7) => {
   for (let t = -Math.log(1 - Math.random()) / rate; t < dt; t += -Math.log(1 - Math.random()) / rate)
     strike(t, (0.35 + 0.5 * Math.random()) * (0.6 + 0.4 * x));
   // Gust bursts: a run of strikes over 1-2.5 s, louder
-  if (!calm) {
+  if (live) {
+    // A real gust: the 3-second wind jumps well above the half-minute average
+    if (!calm && tempest.speed > tempest.smooth * 1.3 + 3 && ms - lastRealBurst > 8000) {
+      lastRealBurst = ms;
+      const n = 3 + Math.round(3 * x + 4 * clamp01((tempest.speed - tempest.smooth) / 15)), span = 1 + 1.5 * Math.random();
+      for (let k = 0; k < n; k++) strike(span * Math.pow(Math.random(), 1.6), (0.55 + 0.45 * Math.random()) * (0.7 + 0.3 * x));
+    }
+  } else if (!calm) {
     const burstRate = (0.01 + 0.05 * g) * (0.3 + x);        // one every ~25-100 s, more when it's gusty
     if (!burstAt) burstAt = ms + 1000 * -Math.log(1 - Math.random()) / burstRate;
     if (burstAt <= ms + dt * 1000) {
@@ -91,10 +107,11 @@ export const windChimes = (dt, tubes = 7) => {
 // Direction (where the wind comes FROM), as if facing north on a map:
 // west wind leans the mix left, east right (up to 0.35); north wind a little
 // darker, south a little brighter (up to 0.07 of brightness). Off = how much only.
-const dirOn = () => wind.useDir && wind.dir !== null && wind.speed !== null;
-const rad = () => wind.dir * Math.PI / 180;
-export const windPanNow = () => dirOn() ? 0.35 * Math.sin(rad()) * clamp01(level(wind.speed) * 2) : 0;   // calm air barely leans
-const dirShade = () => dirOn() ? -0.07 * Math.cos(rad()) * clamp01(level(wind.speed) * 2) : 0;
+const dirNow = () => tempestLive() ? tempest.dir : wind.dir;
+const dirOn = () => wind.useDir && dirNow() !== null && (tempestLive() || wind.speed !== null);
+const rad = () => dirNow() * Math.PI / 180;
+export const windPanNow = () => dirOn() ? 0.35 * Math.sin(rad()) * clamp01(level(speedNow()) * 2) : 0;   // calm air barely leans
+const dirShade = () => dirOn() ? -0.07 * Math.cos(rad()) * clamp01(level(speedNow()) * 2) : 0;
 export const windDirWords = () => {
   if (!dirOn()) return "";
   const p = windPanNow(), d = dirShade(), out = [];
