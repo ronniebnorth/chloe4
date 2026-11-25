@@ -156,6 +156,11 @@ export const loadPlace = () => {
     wind.useDir = localStorage.getItem("chloe-wind-dir") !== "0";
     wind.chimes = localStorage.getItem("chloe-wind-chimes") !== "0";
     wind.chimeOnly = localStorage.getItem("chloe-wind-chimeonly") === "1";
+    // A link can set the chime for this visit: wc=only (only the chime), on, or off
+    const wc = new URLSearchParams(window.location.search).get("wc");
+    if (wc === "only") Object.assign(wind, { chimes: true, chimeOnly: true });
+    else if (wc === "on") Object.assign(wind, { chimes: true, chimeOnly: false });
+    else if (wc === "off") wind.chimes = false;
   } catch {}
 };
 loadPlace();
