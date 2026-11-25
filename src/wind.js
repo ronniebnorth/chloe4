@@ -61,7 +61,7 @@ export const windVals = (ms) => {
 // gusts over the steady speed, the more often and fuller. Exactly when each strike
 // lands is chance, as with a real chime. Returns [{ at: s from now, tube: 0..n-1, v: 0..1 }].
 let burstAt = 0;
-export const windChimes = (dt, tubes = 5) => {
+export const windChimes = (dt, tubes = 7) => {
   const ms = Date.now(), x = windInst(ms), g = gustiness(), out = [];
   const calm = wind.speed !== null && wind.speed < 1;
   const rate = calm ? 0.02 : 0.04 + 1.8 * x * x;          // strikes a second: ~1 in 9 s at 2 km/h, ~2/s at 50
